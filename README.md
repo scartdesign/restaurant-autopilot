@@ -2,24 +2,38 @@
 
 MVP web aplikacija za automatizaciju marketing sadržaja za restorane.
 
-## Cilj MVP-a
+## Trenutno radi
 
-Restoran jednom unosi brend, kontakt podatke, meni i fotografije. Sistem zatim generiše nedeljni plan sadržaja, pojedinačne objave i promotivne akcije koje vlasnik može da odobri, izmeni ili regeneriše.
+- registracija i prijava preko Supabase Auth
+- onboarding restorana: kuhinja, stil, ton, boje i ritam objava
+- meni/proizvodi sa cenama, opisom, aktivno/pauzirano statusom i fotografijama
+- Storage upload fotografija sa tenant izolacijom
+- nedeljni content plan preko Supabase `content-engine` Edge Function-a
+- feed / story / promotion predlozi
+- odobravanje, ručna izmena i regeneracija teksta objave
+- generator posebne akcije koji pravi feed + story
+- podešavanja brenda i komunikacije
+- no-login demo ekran
+- responsive desktop/mobile UI
+
+## Live preview
+
+Javni demo bez korisničkih podataka:
+
+`https://pkbsveezmjkvfuiplrqb.supabase.co/functions/v1/preview`
 
 ## Stack
 
 - React + TypeScript + Vite
-- Supabase Auth, Postgres i Storage
-- Supabase Edge Functions za AI generisanje
-- Statički frontend koji može da se deploy-uje i na klasičan hosting/cPanel
+- Supabase Auth, Postgres, Row Level Security i Storage
+- Supabase Edge Functions
+- GitHub Actions CI
 
-## MVP moduli
+## Sledeći koraci
 
-1. Registracija / prijava
-2. Podešavanje restorana i brenda
-3. Meni i proizvodi
-4. Nedeljni content plan
-5. Generator promocije
-6. Pregled / odobravanje / izmena sadržaja
+1. uključiti pravi LLM provider iza `content-engine` funkcije
+2. vizuelni template renderer za feed/story export
+3. povezivanje Meta naloga i zakazivanje objava
+4. naplata i paketi
 
 > Riznica je potpuno odvojen projekat i nije deo ovog repozitorijuma niti ovog razvoja.
