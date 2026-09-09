@@ -3,6 +3,8 @@ export type Restaurant = {
   owner_id: string
   name: string
   city: string | null
+  neighborhood: string | null
+  country: string
   phone: string | null
   website: string | null
   instagram: string | null
@@ -13,6 +15,9 @@ export type Restaurant = {
   secondary_color: string | null
   logo_url: string | null
   description: string | null
+  target_audience: string | null
+  social_goal: 'reservations' | 'walk_ins' | 'delivery' | 'awareness'
+  hashtag_mode: 'smart' | 'local' | 'balanced' | 'minimal'
   language: string
   tone: 'friendly' | 'premium' | 'playful' | 'traditional' | 'direct'
   posting_frequency: number
@@ -32,6 +37,13 @@ export type MenuItem = {
   is_active: boolean
 }
 
+export type PlatformPostContent = {
+  caption?: string
+  hashtags?: string[]
+  keywords?: string[]
+  strategy?: string
+}
+
 export type Post = {
   id: string
   restaurant_id: string
@@ -47,4 +59,10 @@ export type Post = {
   visual_brief: string | null
   status: 'draft' | 'approved' | 'rejected' | 'published'
   generation_meta: Record<string, unknown>
+  platform_content: {
+    instagram?: PlatformPostContent
+    facebook?: PlatformPostContent
+  }
+  discovery_score: number
+  seo_keywords: string[]
 }
