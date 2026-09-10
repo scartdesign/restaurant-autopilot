@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { CalendarDays, ChefHat, Image as ImageIcon, LogOut, Megaphone, Palette, Send, Settings, UtensilsCrossed, X } from 'lucide-react'
+import { BadgeEuro, CalendarDays, ChefHat, Image as ImageIcon, LogOut, Megaphone, Palette, Send, Settings, ShieldCheck, UtensilsCrossed, X } from 'lucide-react'
 import type { Session } from '@supabase/supabase-js'
 import { supabase } from './lib/supabase'
 import type { MenuItem, Post, Restaurant } from './types'
@@ -13,8 +13,11 @@ import { DemoScreen } from './components/DemoScreen'
 import { VisualStudio } from './components/VisualStudio'
 import { PublishCenter } from './components/PublishCenter'
 import { BrandKit } from './components/BrandKit'
+import { BillingPage } from './components/BillingPage'
+import { SuperAdmin } from './components/SuperAdmin'
+import { AdminSetup } from './components/AdminSetup'
 
-type Tab = 'dashboard' | 'studio' | 'brand' | 'publish' | 'menu' | 'promotions' | 'settings'
+type Tab = 'dashboard' | 'studio' | 'brand' | 'publish' | 'menu' | 'promotions' | 'settings' | 'billing' | 'admin'
 
 function App() {
   const [session, setSession] = useState<Session | null>(null)
@@ -22,9 +25,14 @@ function App() {
   const [menuItems, setMenuItems] = useState<MenuItem[]>([])
   const [posts, setPosts] = useState<Post[]>([])
   const [loading, setLoading] = useState(true)
+  const [accountReady, setAccountReady] = useState(false)
+  const [isSuperadmin, setIsSuperadmin] = useState(false)
+  const [hasAccess, setHasAccess] = useState(false)
   const [notice, setNotice] = useState('')
   const [activeTab, setActiveTab] = useState<Tab>('dashboard')
   const [demo, setDemo] = useState(false)
+
+  const adminSetupRequested = new URLSearchParams(window.location.search).get('superadmin') === 'setup'
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setSession(data.session))
@@ -34,6 +42,10 @@ function App() {
         setRestaurant(null)
         setMenuItems([])
         setPosts([])
+        setIsSuperadmin(false)
+        setHasAccess(false)
+        setAccountReady(false)
+        setActiveTab('dashboard')
       }
     })
     return () => listener.subscription.unsubscribe()
@@ -44,20 +56,40 @@ function App() {
       setLoading(false)
       return
     }
-    void loadRestaurant()
-  }, [session])
+    void boot(session)
+  }, [session?.user.id])
 
-  async function loadRestaurant() {
+  async function boot(currentSession = session) {
+    if (!currentSession) return
     setLoading(true)
-    const { data, error } = await supabase.from('restaurants').select('*').order('created_at', { ascending: true }).limit(1).maybeSingle()
+    await Promise.all([loadAccountState(), loadRestaurant(currentSession.user.id)])
+    setAccountReady(true)
+    setLoading(false)
+  }
+
+  async function loadAccountState() {
+    const [{ data: adminData, error: adminError }, { data: accessData, error: accessError }] = await Promise.all([
+      supabase.rpc('is_superadmin'),
+      supabase.rpc('has_active_access'),
+    ])
+    if (adminError) setNotice(adminError.message)
+    if (accessError) setNotice(accessError.message)
+    const admin = Boolean(adminData)
+    setIsSuperadmin(admin)
+    setHasAccess(Boolean(accessData) || admin)
+    if (admin) setActiveTab((current) => current === 'dashboard' ? 'admin' : current)
+  }
+
+  async function loadRestaurant(ownerId = session?.user.id) {
+    if (!ownerId) return
+    const { data, error } = await supabase.from('restaurants').select('*').eq('owner_id', ownerId).order('created_at', { ascending: true }).limit(1).maybeSingle()
     if (error) {
       setNotice(error.message)
-      setLoading(false)
       return
     }
     setRestaurant(data as Restaurant | null)
     if (data) await Promise.all([loadMenu(data.id), loadPosts(data.id)])
-    setLoading(false)
+    else { setMenuItems([]); setPosts([]) }
   }
 
   async function loadMenu(restaurantId: string) {
@@ -85,14 +117,31 @@ function App() {
     setActiveTab(tab)
   }
 
-  async function signOut() {
-    await supabase.auth.signOut()
+  async function accessChanged() {
+    await loadAccountState()
+    setActiveTab('dashboard')
   }
 
+  async function adminActivated() {
+    window.history.replaceState({}, '', window.location.pathname)
+    await loadAccountState()
+    setActiveTab('admin')
+  }
+
+  async function signOut() { await supabase.auth.signOut() }
+
   if (demo) return <DemoScreen onExit={() => setDemo(false)} />
-  if (loading) return <div className="screen-center"><div className="loader" />Učitavanje Restaurant Autopilota…</div>
+  if (loading || (session && !accountReady)) return <div className="screen-center"><div className="loader" />Učitavanje Restaurant Autopilota…</div>
   if (!session) return <AuthScreen onDemo={() => setDemo(true)} />
-  if (!restaurant) return <Onboarding userId={session.user.id} onCreated={loadRestaurant} />
+
+  if (adminSetupRequested && !isSuperadmin) return <AdminSetup email={session.user.email || ''} onActivated={adminActivated} onCancel={() => { window.history.replaceState({}, '', window.location.pathname); void loadAccountState() }} />
+
+  if (!isSuperadmin && !hasAccess) return <BillingPage email={session.user.email || ''} onAccessChanged={accessChanged} onSignOut={signOut} />
+
+  if (!restaurant) {
+    if (isSuperadmin && activeTab === 'admin') return <div className="standalone-admin"><SuperAdmin setNotice={setNotice} onCloseApp={() => setActiveTab('dashboard')} />{notice && <div className="notice floating-notice"><span>{notice}</span><button onClick={() => setNotice('')}><X size={15}/></button></div>}</div>
+    return <Onboarding userId={session.user.id} onCreated={async () => { await loadRestaurant(session.user.id); setActiveTab('dashboard') }} />
+  }
 
   return (
     <div className="app-shell">
@@ -103,7 +152,7 @@ function App() {
             {restaurant.logo_url ? <img className="sidebar-logo" src={restaurant.logo_url} alt="" /> : <div className="avatar" style={{ background: restaurant.secondary_color || undefined }}>{restaurant.name.slice(0, 1).toUpperCase()}</div>}
             <div><strong>{restaurant.name}</strong><small>{restaurant.neighborhood || restaurant.city || restaurant.cuisine_type || 'Restoran'}</small></div>
           </div>
-          <div className="autopilot-status"><span className="live-dot" /> DESIGN + DISCOVERY ACTIVE</div>
+          <div className={`autopilot-status ${isSuperadmin ? 'owner-status' : ''}`}><span className="live-dot" /> {isSuperadmin ? 'OWNER · SUPERADMIN' : 'PAKET AKTIVAN'}</div>
           <nav>
             <button className={activeTab === 'dashboard' ? 'nav-active' : ''} onClick={() => void openTab('dashboard')}><CalendarDays size={18} /> Sadržaj</button>
             <button className={activeTab === 'studio' ? 'nav-active' : ''} onClick={() => void openTab('studio')}><ImageIcon size={18} /> Visual Studio</button>
@@ -111,21 +160,25 @@ function App() {
             <button className={activeTab === 'publish' ? 'nav-active' : ''} onClick={() => void openTab('publish')}><Send size={18} /> Publish Center</button>
             <button className={activeTab === 'menu' ? 'nav-active' : ''} onClick={() => void openTab('menu')}><UtensilsCrossed size={18} /> Meni</button>
             <button className={activeTab === 'promotions' ? 'nav-active' : ''} onClick={() => void openTab('promotions')}><Megaphone size={18} /> Akcije</button>
+            <button className={activeTab === 'billing' ? 'nav-active billing-nav' : 'billing-nav'} onClick={() => void openTab('billing')}><BadgeEuro size={18} /> Paket / licenca</button>
             <button className={activeTab === 'settings' ? 'nav-active' : ''} onClick={() => void openTab('settings')}><Settings size={18} /> Podešavanja</button>
+            {isSuperadmin && <button className={activeTab === 'admin' ? 'nav-active admin-nav' : 'admin-nav'} onClick={() => void openTab('admin')}><ShieldCheck size={18} /> Superadmin <span className="nav-beta">OWNER</span></button>}
           </nav>
         </div>
         <button className="logout" onClick={signOut}><LogOut size={18} /> Odjavi se</button>
       </aside>
 
-      <main className="main-area">
+      <main className={`main-area ${activeTab === 'admin' ? 'admin-main-area' : ''}`}>
         {notice && <div className="notice"><span>{notice}</span><button onClick={() => setNotice('')}><X size={15} /></button></div>}
         {activeTab === 'dashboard' && <Dashboard restaurant={restaurant} menuItems={menuItems} posts={posts} onChanged={refreshContent} setNotice={setNotice} />}
         {activeTab === 'studio' && <VisualStudio restaurant={restaurant} menuItems={menuItems} posts={posts} setNotice={setNotice} />}
-        {activeTab === 'brand' && <BrandKit restaurant={restaurant} menuItems={menuItems} onSaved={loadRestaurant} setNotice={setNotice} />}
+        {activeTab === 'brand' && <BrandKit restaurant={restaurant} menuItems={menuItems} onSaved={() => loadRestaurant(session.user.id)} setNotice={setNotice} />}
         {activeTab === 'publish' && <PublishCenter restaurant={restaurant} posts={posts} onChanged={() => loadPosts(restaurant.id)} setNotice={setNotice} />}
         {activeTab === 'menu' && <MenuManager restaurant={restaurant} userId={session.user.id} items={menuItems} onChanged={() => loadMenu(restaurant.id)} setNotice={setNotice} />}
         {activeTab === 'promotions' && <Promotions restaurant={restaurant} menuItems={menuItems} onChanged={() => loadPosts(restaurant.id)} setNotice={setNotice} />}
-        {activeTab === 'settings' && <SettingsPanel restaurant={restaurant} onSaved={loadRestaurant} setNotice={setNotice} />}
+        {activeTab === 'billing' && <BillingPage email={session.user.email || ''} onAccessChanged={accessChanged} onSignOut={signOut} />}
+        {activeTab === 'settings' && <SettingsPanel restaurant={restaurant} onSaved={() => loadRestaurant(session.user.id)} setNotice={setNotice} />}
+        {activeTab === 'admin' && isSuperadmin && <SuperAdmin setNotice={setNotice} onCloseApp={() => setActiveTab('dashboard')} />}
       </main>
     </div>
   )
