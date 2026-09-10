@@ -1,5 +1,5 @@
 import { FormEvent, useMemo, useState } from 'react'
-import { ArrowUpRight, CalendarDays, CheckCircle2, ChefHat, Copy, Facebook, Hash, Image as ImageIcon, Instagram, MapPin, Pencil, RefreshCw, Save, Search, Sparkles, TrendingUp, UtensilsCrossed, WandSparkles, X, Zap } from 'lucide-react'
+import { ArrowUpRight, CalendarDays, CheckCircle2, ChefHat, Clock3, Copy, Facebook, Hash, Image as ImageIcon, Instagram, MapPin, Pencil, RefreshCw, Save, Search, Sparkles, TrendingUp, UtensilsCrossed, WandSparkles, X, Zap } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import type { MenuItem, Post, Restaurant } from '../types'
 
@@ -18,6 +18,7 @@ export function Dashboard({ restaurant, menuItems, posts, onChanged, setNotice }
   const averageDiscovery = useMemo(() => posts.length ? Math.round(posts.reduce((sum, post) => sum + (post.discovery_score || 0), 0) / posts.length) : 0, [posts])
   const photoCoverage = useMemo(() => activeItems.length ? Math.round((activeItems.filter((item) => item.image_url).length / activeItems.length) * 100) : 0, [activeItems])
   const orderedPosts = useMemo(() => [...posts].sort((a, b) => new Date(a.scheduled_for || 0).getTime() - new Date(b.scheduled_for || 0).getTime()), [posts])
+  const nextScheduled = useMemo(() => orderedPosts.find((post) => post.scheduled_for && new Date(post.scheduled_for).getTime() > Date.now() && post.status !== 'published') || orderedPosts.find((post) => post.scheduled_for && post.status !== 'published'), [orderedPosts])
   const heroImage = useMemo(() => {
     const itemPhoto = activeItems.find((item) => item.image_url)?.image_url
     const postPhoto = posts.map((post) => resolvePostImage(post, menuItems)).find(Boolean)
@@ -37,7 +38,7 @@ export function Dashboard({ restaurant, menuItems, posts, onChanged, setNotice }
     if (error) setNotice(error.message)
     else if (data?.error) setNotice(data.error)
     else {
-      setNotice(`Autopilot je napravio ${data?.posts?.length || restaurant.posting_frequency} dizajniranih predloga za ovu nedelju.`)
+      setNotice(`Autopilot je napravio ${data?.posts?.length || restaurant.posting_frequency} dizajniranih predloga sa datumom i vremenom.`)
       await onChanged()
     }
     setGenerating(false)
@@ -78,7 +79,7 @@ export function Dashboard({ restaurant, menuItems, posts, onChanged, setNotice }
     if (error) setNotice(error.message)
     else if (data?.error) setNotice(data.error)
     else {
-      setNotice(action === 'regenerate' ? 'Napravljen je novi tekst; sačuvani vizuelni stil ostaje.' : 'Discovery je ponovo optimizovan.')
+      setNotice(action === 'regenerate' ? 'Napravljen je novi tekst; sačuvani vizuelni stil i termin ostaju.' : 'Discovery je ponovo optimizovan.')
       await onChanged()
     }
     setWorkingId('')
@@ -98,17 +99,17 @@ export function Dashboard({ restaurant, menuItems, posts, onChanged, setNotice }
           </div>
         </div>
         <div className="wow-score-card">
-          <div><TrendingUp size={19} /><span>Discovery score</span></div>
-          <strong>{averageDiscovery || '—'}{averageDiscovery ? <small>/100</small> : null}</strong>
-          <p>{posts.length ? 'prosek aktivnog sadržaja' : 'generiši prvu nedelju'}</p>
+          <div><TrendingUp size={19} /><span>{nextScheduled ? 'Sledeća objava' : 'Discovery score'}</span></div>
+          <strong>{nextScheduled?.scheduled_for ? formatTime(nextScheduled.scheduled_for) : (averageDiscovery || '—')}{!nextScheduled && averageDiscovery ? <small>/100</small> : null}</strong>
+          <p>{nextScheduled?.scheduled_for ? `${formatWeekday(nextScheduled.scheduled_for)} · ${nextScheduled.title || 'Objava'}` : posts.length ? 'prosek aktivnog sadržaja' : 'generiši prvu nedelju'}</p>
         </div>
       </section>
 
       <section className="wow-kpi-grid">
         <Kpi icon={<UtensilsCrossed size={18} />} label="Aktivna jela" value={String(activeItems.length)} detail={`${photoCoverage}% sa fotografijom`} />
         <Kpi icon={<CalendarDays size={18} />} label="Sadržaj" value={String(posts.length)} detail="feed · story · promo" />
+        <Kpi icon={<Clock3 size={18} />} label="Sledeći termin" value={nextScheduled?.scheduled_for ? formatTime(nextScheduled.scheduled_for) : '—'} detail={nextScheduled?.scheduled_for ? formatDateShort(nextScheduled.scheduled_for) : 'čeka generaciju'} />
         <Kpi icon={<CheckCircle2 size={18} />} label="Spremno" value={String(approvedCount)} detail={posts.length ? `${Math.round((approvedCount / posts.length) * 100)}% od plana` : 'čeka generaciju'} />
-        <Kpi icon={<ImageIcon size={18} />} label="Photo coverage" value={`${photoCoverage}%`} detail="realne fotografije menija" />
       </section>
 
       <section className="wow-dashboard-grid">
@@ -123,7 +124,8 @@ export function Dashboard({ restaurant, menuItems, posts, onChanged, setNotice }
                     <span>{post.post_type === 'story' ? 'STORY' : post.post_type === 'promotion' ? 'PROMO' : 'FEED'}</span>
                     {post.status === 'approved' || post.status === 'published' ? <i><CheckCircle2 size={14} /></i> : null}
                   </div>
-                  <strong>{post.scheduled_for ? new Date(post.scheduled_for).toLocaleDateString('sr-RS', { weekday: 'short', day: 'numeric' }) : 'Bez datuma'}</strong>
+                  <strong>{post.scheduled_for ? formatDateShort(post.scheduled_for) : 'Bez datuma'}</strong>
+                  {post.scheduled_for && <span className="demo-time-pill"><Clock3 size={11} /> {formatTime(post.scheduled_for)}</span>}
                   <p>{post.title || 'Nova objava'}</p>
                 </div>
               })}
@@ -150,7 +152,7 @@ export function Dashboard({ restaurant, menuItems, posts, onChanged, setNotice }
       <section className="content-section wow-content-section">
         <div className="section-title">
           <div><p className="eyebrow">CONTENT LIBRARY</p><h2>Sadržaj ove nedelje</h2></div>
-          <span className="engine-badge"><Sparkles size={14} /> Design + Discovery</span>
+          <span className="engine-badge"><Sparkles size={14} /> Design + Schedule + Discovery</span>
         </div>
         {posts.length === 0 ? (
           <div className="empty-state wow-empty"><Sparkles size={30} /><h3>Još nema sadržaja</h3><p>Dodaj kvalitetne fotografije i jela u meni, zatim pokreni nedelju.</p><button className="wow-primary" onClick={generateWeek}><Sparkles size={17} /> Generiši sada</button></div>
@@ -225,7 +227,7 @@ function PostCard({ post, restaurant, menuItems, working, onEdit, onRegenerate, 
       </div>
       <div className="post-body post-body-pro">
         <div className="post-meta">
-          {post.scheduled_for ? new Date(post.scheduled_for).toLocaleDateString('sr-RS', { weekday: 'long', day: 'numeric', month: 'short' }) : 'Bez termina'}
+          <span>{post.scheduled_for ? formatDateLong(post.scheduled_for) : 'Bez termina'}{post.scheduled_for && <> · <b className="post-time-strong"><Clock3 size={11} /> {formatTime(post.scheduled_for)}</b></>}</span>
           <span className={`status ${post.status}`}>{post.status}</span>
         </div>
         <div className="post-title-line"><h3>{post.title}</h3><span className="visual-template-chip">{template}</span></div>
@@ -239,7 +241,7 @@ function PostCard({ post, restaurant, menuItems, working, onEdit, onRegenerate, 
 
         <div className="post-actions post-actions-pro">
           <button className="icon-button" title="Kopiraj Instagram objavu" onClick={copyInstagram}><Copy size={15} /></button>
-          <button className="icon-button" title="Izmeni" onClick={onEdit}><Pencil size={15} /></button>
+          <button className="icon-button" title="Izmeni objavu i termin" onClick={onEdit}><Pencil size={15} /></button>
           <button className="icon-button" title="Novi tekst" disabled={working} onClick={onRegenerate}><RefreshCw size={15} /></button>
           <button className="icon-button discovery-button" title="Optimizuj discovery" disabled={working} onClick={onOptimize}><Hash size={15} /></button>
           {post.status !== 'approved' && post.status !== 'published'
@@ -266,7 +268,7 @@ function PostEditor({ post, onClose, onSaved, setNotice }: {
     facebook_caption: post.platform_content?.facebook?.caption || post.caption || '',
     facebook_hashtags: (post.platform_content?.facebook?.hashtags || []).join(' '),
     visual_brief: post.visual_brief || '',
-    scheduled_for: post.scheduled_for ? new Date(post.scheduled_for).toISOString().slice(0, 16) : '',
+    scheduled_for: post.scheduled_for ? toLocalDateTimeValue(post.scheduled_for) : '',
   })
   const [working, setWorking] = useState(false)
 
@@ -307,7 +309,7 @@ function PostEditor({ post, onClose, onSaved, setNotice }: {
     }).eq('id', post.id)
     if (error) setNotice(error.message)
     else {
-      setNotice('Objava, platformske verzije i vizuelni tekst su sinhronizovani.')
+      setNotice('Objava, termin, platformske verzije i vizuelni tekst su sinhronizovani.')
       await onSaved()
     }
     setWorking(false)
@@ -325,7 +327,7 @@ function PostEditor({ post, onClose, onSaved, setNotice }: {
           <section className="platform-editor-card facebook-card"><div className="platform-editor-head"><Facebook size={17} /><strong>Facebook</strong><span>čisto i lokalno</span></div><label>Tekst<textarea rows={5} value={form.facebook_caption} onChange={(e) => setForm({ ...form, facebook_caption: e.target.value })} /></label><label>Hashtagovi · max 3<input value={form.facebook_hashtags} onChange={(e) => setForm({ ...form, facebook_hashtags: e.target.value })} /></label></section>
         </div>
 
-        <div className="grid-form compact-grid"><label>Termin<input type="datetime-local" value={form.scheduled_for} onChange={(e) => setForm({ ...form, scheduled_for: e.target.value })} /></label><label>Discovery score<input value={`${post.discovery_score || 0}/100`} disabled /></label></div>
+        <div className="grid-form compact-grid"><label>Datum i vreme objave<input type="datetime-local" value={form.scheduled_for} onChange={(e) => setForm({ ...form, scheduled_for: e.target.value })} /></label><label>Discovery score<input value={`${post.discovery_score || 0}/100`} disabled /></label></div>
         <label>Brief za vizual<textarea rows={3} value={form.visual_brief} onChange={(e) => setForm({ ...form, visual_brief: e.target.value })} /></label>
         <div className="modal-actions"><button type="button" className="secondary" onClick={onClose}>Otkaži</button><button className="primary" disabled={working}><Save size={17} /> {working ? 'Čuvam…' : 'Sačuvaj sve verzije'}</button></div>
       </form>
@@ -333,6 +335,15 @@ function PostEditor({ post, onClose, onSaved, setNotice }: {
   )
 }
 
+function toLocalDateTimeValue(value: string) {
+  const d = new Date(value)
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
+}
+function formatTime(value: string) { return new Date(value).toLocaleTimeString('sr-RS', { hour: '2-digit', minute: '2-digit' }) }
+function formatWeekday(value: string) { return new Date(value).toLocaleDateString('sr-RS', { weekday: 'short' }) }
+function formatDateShort(value: string) { return new Date(value).toLocaleDateString('sr-RS', { weekday: 'short', day: 'numeric' }) }
+function formatDateLong(value: string) { return new Date(value).toLocaleDateString('sr-RS', { weekday: 'long', day: 'numeric', month: 'short' }) }
 function shorten(value: string, max: number) {
   const clean = value.replace(/\s+/g, ' ').trim()
   return clean.length <= max ? clean : `${clean.slice(0, max - 1).trim()}…`
