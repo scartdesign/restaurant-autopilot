@@ -76,6 +76,14 @@ function App() {
     await Promise.all([loadMenu(restaurant.id), loadPosts(restaurant.id)])
   }
 
+  async function openTab(tab: Tab) {
+    if (restaurant) {
+      if (tab === 'dashboard' || tab === 'publish' || tab === 'studio') await loadPosts(restaurant.id)
+      if (tab === 'menu' || tab === 'promotions' || tab === 'studio') await loadMenu(restaurant.id)
+    }
+    setActiveTab(tab)
+  }
+
   async function signOut() {
     await supabase.auth.signOut()
   }
@@ -96,12 +104,12 @@ function App() {
           </div>
           <div className="autopilot-status"><span className="live-dot" /> DESIGN + DISCOVERY ACTIVE</div>
           <nav>
-            <button className={activeTab === 'dashboard' ? 'nav-active' : ''} onClick={() => setActiveTab('dashboard')}><CalendarDays size={18} /> Sadržaj</button>
-            <button className={activeTab === 'studio' ? 'nav-active' : ''} onClick={() => setActiveTab('studio')}><ImageIcon size={18} /> Visual Studio</button>
-            <button className={activeTab === 'publish' ? 'nav-active' : ''} onClick={() => setActiveTab('publish')}><Send size={18} /> Publish Center</button>
-            <button className={activeTab === 'menu' ? 'nav-active' : ''} onClick={() => setActiveTab('menu')}><UtensilsCrossed size={18} /> Meni</button>
-            <button className={activeTab === 'promotions' ? 'nav-active' : ''} onClick={() => setActiveTab('promotions')}><Megaphone size={18} /> Akcije</button>
-            <button className={activeTab === 'settings' ? 'nav-active' : ''} onClick={() => setActiveTab('settings')}><Settings size={18} /> Podešavanja</button>
+            <button className={activeTab === 'dashboard' ? 'nav-active' : ''} onClick={() => void openTab('dashboard')}><CalendarDays size={18} /> Sadržaj</button>
+            <button className={activeTab === 'studio' ? 'nav-active' : ''} onClick={() => void openTab('studio')}><ImageIcon size={18} /> Visual Studio</button>
+            <button className={activeTab === 'publish' ? 'nav-active' : ''} onClick={() => void openTab('publish')}><Send size={18} /> Publish Center</button>
+            <button className={activeTab === 'menu' ? 'nav-active' : ''} onClick={() => void openTab('menu')}><UtensilsCrossed size={18} /> Meni</button>
+            <button className={activeTab === 'promotions' ? 'nav-active' : ''} onClick={() => void openTab('promotions')}><Megaphone size={18} /> Akcije</button>
+            <button className={activeTab === 'settings' ? 'nav-active' : ''} onClick={() => void openTab('settings')}><Settings size={18} /> Podešavanja</button>
           </nav>
         </div>
         <button className="logout" onClick={signOut}><LogOut size={18} /> Odjavi se</button>
