@@ -22,6 +22,7 @@ import './creative-hub.css'
 import './menu-ai.css'
 import './ai-provider.css'
 import './demo-creative.css'
+import './owner-control.css'
 import './mobile-final.css'
 
 function CreativePreview() {
