@@ -42,6 +42,28 @@ export type PlatformPostContent = {
   hashtags?: string[]
   keywords?: string[]
   strategy?: string
+  alt_text?: string
+}
+
+export type VisualDesignMeta = {
+  template?: 'editorial' | 'bold' | 'minimal' | 'split' | 'poster' | 'luxe'
+  format?: 'feed' | 'story'
+  headline?: string
+  subline?: string
+  cta?: string
+  image_url?: string | null
+  photo_position?: 'left' | 'center' | 'right'
+  overlay?: number
+  saved_at?: string
+}
+
+export type GenerationMeta = Record<string, unknown> & {
+  image_url?: string | null
+  engine?: string
+  pillar?: string
+  variation?: number
+  format?: string
+  visual_design?: VisualDesignMeta
 }
 
 export type Post = {
@@ -58,7 +80,7 @@ export type Post = {
   hashtags: string[]
   visual_brief: string | null
   status: 'draft' | 'approved' | 'rejected' | 'published'
-  generation_meta: Record<string, unknown>
+  generation_meta: GenerationMeta
   platform_content: {
     instagram?: PlatformPostContent
     facebook?: PlatformPostContent
