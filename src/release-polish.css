@@ -1,0 +1,73 @@
+/* Final release readability pass: larger controls, clearer hierarchy, desktop + mobile. */
+:root{font-size:16px}
+body{font-size:15px;line-height:1.5}
+.main-area{padding:40px 44px!important;max-width:1560px!important}
+.sidebar.sidebar-pro{padding:26px 18px!important}
+.sidebar .brand-mark{font-size:18px!important;margin-bottom:24px!important}
+.sidebar .restaurant-chip{padding:14px!important;border-radius:16px!important;margin-bottom:18px!important}
+.sidebar .restaurant-chip strong{font-size:14px!important}
+.sidebar .restaurant-chip small{font-size:11px!important}
+.sidebar nav{gap:7px!important}
+.sidebar nav button,.sidebar .logout{min-height:46px!important;padding:11px 13px!important;font-size:13px!important;border-radius:12px!important}
+.sidebar nav button svg,.sidebar .logout svg{width:19px!important;height:19px!important}
+.sidebar .nav-beta{font-size:8px!important;padding:3px 5px!important}
+.sidebar .autopilot-status{font-size:9px!important;letter-spacing:.06em!important;padding:8px 10px!important}
+.sidebar .sidebar-plan-mini{font-size:10px!important;line-height:1.45!important}
+.page-header,.studio-header,.menu-header-pro{margin-bottom:28px!important}
+.page-header h1,.studio-header h1,.menu-header-pro h1{font-size:clamp(36px,3.6vw,54px)!important;line-height:1.02!important}
+.page-header p,.studio-header p,.menu-header-pro p,.muted{font-size:14px!important}
+.eyebrow{font-size:12px!important;letter-spacing:.12em!important}
+h2{font-size:26px!important} h3{font-size:18px}
+.primary,.secondary,.approved-button,.mini-button,.paid-button,.refund-button,.danger-soft{min-height:44px!important;font-size:13px!important;padding:0 16px!important;border-radius:11px!important;font-weight:800!important}
+.icon-button{width:44px!important;height:44px!important}
+input,select,textarea{font-size:14px!important;min-height:44px!important;padding:11px 12px!important}
+textarea{min-height:92px!important}
+label{font-size:13px!important;gap:8px!important}
+.panel,.admin-panel,.pricing-card,.stat-card{padding:24px!important;border-radius:18px!important}
+.stat-card span{font-size:13px!important}.stat-card strong{font-size:36px!important}
+.engine-badge,.pill,.status{font-size:10px!important}
+.post-grid,.post-grid-pro,.wow-post-grid{gap:20px!important}
+.post-card{border-radius:20px!important}.post-body{padding:20px!important}.post-body h3{font-size:21px!important}.post-body p{font-size:14px!important;line-height:1.6!important}.post-meta,.hashtags{font-size:12px!important}
+.menu-row{padding:14px 0!important;gap:14px!important}.menu-copy strong{font-size:15px!important}.menu-copy small{font-size:12px!important}.price{font-size:14px!important}
+.food-thumb,.food-icon{width:62px!important;height:62px!important}
+.wow-kpi-grid{gap:14px!important}.wow-kpi-grid>*,.wow-day{padding:16px!important}.wow-day strong{font-size:13px!important}.wow-day span,.wow-day small{font-size:10px!important}
+.creative-hub,.billing-page{font-size:14px!important}.creative-hero h1,.billing-hero h1{font-size:clamp(34px,4vw,54px)!important}.creative-hero p,.billing-hero p{font-size:14px!important;line-height:1.6!important}
+.template-picker-six button,.campaign-presets button,.promotion-presets button{min-height:76px!important;font-size:12px!important}
+.studio-controls{font-size:13px!important}.studio-controls label{font-size:12px!important}.stage-toolbar{font-size:11px!important}
+.publish-grid,.publish-queue,.publish-cards{gap:16px!important}.publish-row,.publish-table-row{font-size:13px!important}.publish-row small,.publish-table-row small{font-size:11px!important}
+.pricing-card h2{font-size:38px!important}.pricing-card p,.plan-features span,.profile-summary span,.customer-order-row{font-size:12px!important}.billing-period{font-size:12px!important}
+.auth-card-wow{font-size:14px!important}.auth-card-wow h1{font-size:46px!important}.auth-card-wow .muted{font-size:14px!important}.auth-benefits span{font-size:11px!important}.auth-showcase-copy p{font-size:15px!important}.auth-showcase-pills span{font-size:11px!important}
+/* OWNER: previous dense 7-9px UI is now comfortable to use. */
+.owner-control-v3{font-size:14px!important;max-width:1600px!important}
+.owner-control-v3 .admin-topbar{padding:20px 22px!important}.owner-control-v3 .admin-topbar h1{font-size:26px!important}.owner-control-v3 .admin-topbar p{font-size:10px!important}
+.owner-control-v3 .admin-tabs{gap:7px!important}.owner-control-v3 .admin-tabs button{min-height:44px!important;padding:0 14px!important;font-size:12px!important}.owner-control-v3 .admin-tabs button b{font-size:9px!important}
+.owner-control-v3 .admin-metric{padding:18px!important;min-height:86px!important}.owner-control-v3 .admin-metric small{font-size:10px!important}.owner-control-v3 .admin-metric strong{font-size:25px!important}
+.owner-health{padding:18px!important;min-height:90px!important}.owner-health>span{width:44px!important;height:44px!important}.owner-health small{font-size:10px!important}.owner-health strong{font-size:16px!important}.owner-health p{font-size:11px!important}
+.owner-control-v3 .admin-panel-head h2{font-size:23px!important}.owner-control-v3 .admin-panel-head .eyebrow{font-size:10px!important}
+.owner-control-v3 .admin-table-head{font-size:10px!important}.owner-control-v3 .admin-table-row{font-size:13px!important;min-height:68px!important}.owner-control-v3 .admin-table-row strong{font-size:13px!important}.owner-control-v3 .admin-table-row small{font-size:10px!important;line-height:1.45!important}.owner-control-v3 .status{font-size:9px!important;padding:5px 8px!important}
+.owner-usage-mini span{font-size:10px!important}.owner-plan-head span{font-size:10px!important}.owner-plan-head b{font-size:10px!important}.owner-plan-head button{font-size:9px!important;min-height:32px!important;padding:5px 9px!important}.owner-plan-card h3{font-size:24px!important}.owner-plan-card>p{font-size:11px!important;min-height:36px!important}.owner-plan-fields label{font-size:10px!important}.owner-plan-fields input{height:42px!important;font-size:13px!important}.owner-feature-toggles .sales-toggle b{font-size:11px!important}
+.owner-big-toggle{padding:14px!important}.owner-big-toggle>span{width:42px!important;height:42px!important}.owner-big-toggle strong{font-size:13px!important}.owner-big-toggle small{font-size:10px!important;line-height:1.45!important}.owner-big-toggle>b{font-size:9px!important;padding:7px 10px!important}
+.owner-ai-status{padding:16px!important}.owner-ai-status strong{font-size:14px!important}.owner-ai-status small{font-size:10px!important}.owner-ai-key{font-size:11px!important}.owner-ai-usage span{font-size:9px!important}.owner-ai-usage small{font-size:10px!important}
+.outbox-row strong,.audit-row strong{font-size:13px!important}.outbox-row span,.outbox-row p,.audit-row span,.audit-row code,.audit-row time{font-size:10px!important;line-height:1.5!important}
+.generated-license strong{font-size:20px!important;letter-spacing:.06em!important}
+.owner-preview .owner-preview-kpis strong{font-size:29px!important}.owner-preview .owner-preview-kpis span{font-size:11px!important}
+
+@media(max-width:900px){
+  body{font-size:15px!important}.main-area,.admin-main-area{padding:16px 13px 104px!important}
+  .sidebar.sidebar-pro{padding:10px 12px!important}.sidebar .restaurant-chip{padding:8px 10px!important}.sidebar .restaurant-chip strong{font-size:13px!important}.sidebar .restaurant-chip small{font-size:10px!important}
+  .sidebar nav{padding:8px 8px calc(8px + env(safe-area-inset-bottom))!important;gap:6px!important}.sidebar nav button{flex-basis:92px!important;min-width:92px!important;min-height:60px!important;font-size:11px!important;gap:5px!important}.sidebar nav button svg{width:20px!important;height:20px!important}.sidebar nav .nav-beta{font-size:7px!important}
+  .page-header h1,.studio-header h1,.menu-header-pro h1,.creative-hero h1,.billing-hero h1{font-size:32px!important}.page-header p,.studio-header p,.menu-header-pro p,.creative-hero p,.billing-hero p{font-size:14px!important}
+  .panel,.admin-panel,.pricing-card,.stat-card{padding:18px!important}.primary,.secondary,.approved-button,.mini-button{min-height:46px!important;font-size:14px!important}
+  .post-body{padding:18px!important}.post-body h3{font-size:20px!important}.post-body p{font-size:14px!important}
+  .food-thumb,.food-icon{width:68px!important;height:68px!important}
+  .stage-toolbar{font-size:11px!important}.studio-controls{font-size:14px!important}.studio-controls label{font-size:13px!important}
+  .admin-table{min-width:820px!important}.owner-control-v3 .admin-tabs{top:0!important}.owner-control-v3 .admin-tabs button{font-size:12px!important;min-height:46px!important}.owner-control-v3 .admin-panel{padding:16px!important}
+  .owner-control-v3 .admin-table-row{font-size:13px!important}.owner-control-v3 .admin-table-row small{font-size:10px!important}
+  .owner-preview .owner-preview-tabs button{font-size:12px!important;min-height:46px!important}
+}
+@media(max-width:520px){
+  .main-area,.admin-main-area{padding-left:11px!important;padding-right:11px!important}.sidebar nav button{flex-basis:88px!important;min-width:88px!important;font-size:10.5px!important}
+  .page-header h1,.studio-header h1,.menu-header-pro h1,.creative-hero h1,.billing-hero h1{font-size:29px!important}.auth-card-wow h1{font-size:38px!important}
+  .owner-metrics{grid-template-columns:1fr 1fr!important}.owner-control-v3 .admin-metric{min-height:82px!important;padding:14px!important}.owner-control-v3 .admin-metric strong{font-size:22px!important}
+  .owner-plan-fields{grid-template-columns:1fr!important}.owner-ai-usage{grid-template-columns:1fr 1fr!important}
+}
