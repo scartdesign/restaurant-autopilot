@@ -11,6 +11,7 @@ import './campaign.css'
 import './wow.css'
 import './design-cards.css'
 import './brand-controls.css'
+import './brand-kit.css'
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
