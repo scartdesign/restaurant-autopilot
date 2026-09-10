@@ -1,7 +1,9 @@
 import { useState } from 'react'
-import { ArrowLeft, CalendarDays, CheckCircle2, ChefHat, Facebook, Hash, Instagram, MapPin, Megaphone, Search, Settings, Sparkles, UtensilsCrossed, Zap } from 'lucide-react'
+import { ArrowLeft, CalendarDays, CheckCircle2, ChefHat, Facebook, Hash, Image as ImageIcon, Instagram, MapPin, Megaphone, Search, Settings, Sparkles, UtensilsCrossed, Zap } from 'lucide-react'
+import { VisualStudio } from './VisualStudio'
+import type { MenuItem, Post, Restaurant } from '../types'
 
-type DemoTab = 'content' | 'menu' | 'promotions' | 'settings'
+type DemoTab = 'content' | 'studio' | 'menu' | 'promotions' | 'settings'
 
 const demoPosts = [
   { type: 'FEED', day: 'ponedeljak, 14. sep', title: 'Pizza Capricciosa', caption: 'Sveže iz peći, taman kada treba. Capricciosa sa mozzarellom, šunkom i pečurkama. Svratite danas.', status: 'approved', score: 94, ig: ['#BellaNapoli','#BeogradFood','#GdeJestiBeograd','#Pizza','#PizzaLovers','#ItalianFood','#Foodstagram'], fb: ['#BellaNapoli','#BeogradFood','#Pizza'], keywords: ['pizza Beograd','italijanski restoran Beograd','Pizza Capricciosa'] },
@@ -18,6 +20,19 @@ const menuItems = [
   ['🥗','Burrata salad','Predjelo','790 RSD'],
 ]
 
+const demoRestaurant: Restaurant = {
+  id: 'demo-restaurant', owner_id: 'demo', name: 'Bella Napoli', city: 'Beograd', neighborhood: 'Vračar', country: 'Serbia', phone: '+381 11 555 2026', website: 'https://example.com', instagram: '@bellanapoli', facebook: 'Bella Napoli Beograd', cuisine_type: 'Italijanska', brand_style: 'premium', primary_color: '#17211b', secondary_color: '#b9df72', logo_url: null, description: 'Savremeni italijanski restoran sa ručno pravljenom pastom i pizzom iz peći.', target_audience: 'Parovi, porodice i ljubitelji italijanske kuhinje', social_goal: 'reservations', hashtag_mode: 'smart', language: 'sr', tone: 'premium', posting_frequency: 5, reservation_url: 'https://example.com/reservations', onboarding_completed: true,
+}
+
+const demoMenu: MenuItem[] = [
+  { id: 'demo-pizza', restaurant_id: 'demo-restaurant', name: 'Pizza Capricciosa', description: 'Pelat, mozzarella, šunka, pečurke i masline.', category: 'Pizza', price: 890, currency: 'RSD', image_url: './demo-pizza.svg', is_active: true },
+  { id: 'demo-carbonara', restaurant_id: 'demo-restaurant', name: 'Carbonara', description: 'Guanciale, jaje, pecorino i sveže mleven biber.', category: 'Pasta', price: 940, currency: 'RSD', image_url: null, is_active: true },
+]
+
+const demoVisualPosts: Post[] = [
+  { id: 'demo-post', restaurant_id: 'demo-restaurant', content_plan_id: null, menu_item_id: 'demo-pizza', promotion_id: null, post_type: 'feed', scheduled_for: new Date().toISOString(), title: 'Pizza Capricciosa', caption: 'Veče zaslužuje nešto posebno. Capricciosa iz peći, sa mozzarellom, šunkom i pečurkama. Rezervišite svoj sto.', cta: 'Rezerviši sto', hashtags: ['#BellaNapoli','#BeogradFood','#GdeJestiBeograd','#PizzaLovers','#ItalianFood'], visual_brief: 'Premium feed 4:5 sa fotografijom pizze.', status: 'approved', generation_meta: { image_url: './demo-pizza.svg', engine: 'smart-discovery-v2' }, platform_content: { instagram: { caption: 'Veče zaslužuje nešto posebno.', hashtags: ['#BellaNapoli','#BeogradFood','#GdeJestiBeograd','#PizzaLovers','#ItalianFood'] }, facebook: { caption: 'Capricciosa iz peći. Rezervišite svoj sto.', hashtags: ['#BellaNapoli','#BeogradFood'] } }, discovery_score: 94, seo_keywords: ['pizza Beograd','italijanski restoran Beograd'] },
+]
+
 export function DemoScreen({ onExit }: { onExit: () => void }) {
   const [tab, setTab] = useState<DemoTab>('content')
   const [approved, setApproved] = useState<string[]>(['Pizza Capricciosa'])
@@ -25,7 +40,7 @@ export function DemoScreen({ onExit }: { onExit: () => void }) {
 
   function notify(message: string) {
     setToast(message)
-    window.setTimeout(() => setToast(''), 1800)
+    window.setTimeout(() => setToast(''), 2200)
   }
 
   return (
@@ -37,6 +52,7 @@ export function DemoScreen({ onExit }: { onExit: () => void }) {
           <div className="autopilot-status"><span className="live-dot" /> AUTOPILOT ACTIVE</div>
           <nav>
             <button className={tab === 'content' ? 'nav-active' : ''} onClick={() => setTab('content')}><CalendarDays size={18} /> Sadržaj</button>
+            <button className={tab === 'studio' ? 'nav-active' : ''} onClick={() => setTab('studio')}><ImageIcon size={18} /> Visual Studio <span className="nav-beta">BETA</span></button>
             <button className={tab === 'menu' ? 'nav-active' : ''} onClick={() => setTab('menu')}><UtensilsCrossed size={18} /> Meni</button>
             <button className={tab === 'promotions' ? 'nav-active' : ''} onClick={() => setTab('promotions')}><Megaphone size={18} /> Akcije</button>
             <button className={tab === 'settings' ? 'nav-active' : ''} onClick={() => setTab('settings')}><Settings size={18} /> Podešavanja</button>
@@ -46,8 +62,9 @@ export function DemoScreen({ onExit }: { onExit: () => void }) {
       </aside>
 
       <main className="main-area">
-        <div className="demo-banner"><Sparkles size={14} /> INTERAKTIVNI DEMO · Klikći kroz aplikaciju. Podaci su primer i ništa se ne upisuje u bazu.</div>
+        <div className="demo-banner"><Sparkles size={14} /> INTERAKTIVNI DEMO · Klikći kroz aplikaciju. Visual Studio može čak da izveze demo PNG.</div>
         {tab === 'content' && <DemoContent approved={approved} setApproved={setApproved} notify={notify} />}
+        {tab === 'studio' && <VisualStudio restaurant={demoRestaurant} posts={demoVisualPosts} menuItems={demoMenu} setNotice={notify} />}
         {tab === 'menu' && <DemoMenu />}
         {tab === 'promotions' && <DemoPromotions notify={notify} />}
         {tab === 'settings' && <DemoSettings />}
@@ -75,5 +92,5 @@ function DemoPromotions({ notify }: { notify: (value: string) => void }) {
 }
 
 function DemoSettings() {
-  return <><header className="page-header settings-header"><div><p className="eyebrow">AUTOPILOT SETUP</p><h1>Podešavanja</h1><p className="muted">Brend, lokalni discovery, cilj i automatizacija.</p></div><div className="setup-score"><span>Discovery setup</span><strong>5/5</strong></div></header><div className="settings-demo-grid"><div className="panel demo-setting"><MapPin size={20} /><div><strong>Lokalni discovery</strong><span>Vračar · Beograd · Serbia</span><small>#BeogradFood · #GdeJestiBeograd · #VracarFood</small></div></div><div className="panel demo-setting"><Hash size={20} /><div><strong>Hashtag strategija</strong><span>Smart — automatski balans</span><small>Brend + lokalno + jelo/niša + 1 širi relevantan tag</small></div></div><div className="panel demo-setting"><Instagram size={20} /><div><strong>Instagram</strong><span>@bellanapoli</span><small>5–8 fokusiranih hashtagova + search keywords</small></div></div><div className="panel demo-setting"><Facebook size={20} /><div><strong>Facebook</strong><span>Bella Napoli Beograd</span><small>2–3 lokalna/brendirana taga, bez hashtag spama</small></div></div></div></>
+  return <><header className="page-header settings-header"><div><p className="eyebrow">AUTOPILOT SETUP</p><h1>Podešavanja</h1><p className="muted">Brend, lokalni discovery, cilj i automatizacija.</p></div><div className="setup-score"><span>Setup score</span><strong>6/6</strong></div></header><div className="settings-demo-grid"><div className="panel demo-setting"><MapPin size={20} /><div><strong>Lokalni discovery</strong><span>Vračar · Beograd · Serbia</span><small>#BeogradFood · #GdeJestiBeograd · #VracarFood</small></div></div><div className="panel demo-setting"><Hash size={20} /><div><strong>Hashtag strategija</strong><span>Smart — automatski balans</span><small>Brend + lokalno + jelo/niša + 1 širi relevantan tag</small></div></div><div className="panel demo-setting"><Instagram size={20} /><div><strong>Instagram</strong><span>@bellanapoli</span><small>5–8 fokusiranih hashtagova + search keywords</small></div></div><div className="panel demo-setting"><Facebook size={20} /><div><strong>Facebook</strong><span>Bella Napoli Beograd</span><small>2–3 lokalna/brendirana taga, bez hashtag spama</small></div></div></div></>
 }
