@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client'
 import App from './App'
 import { DemoCreative } from './components/DemoCreative'
 import { DemoOwner } from './components/DemoOwner'
+import { AppControlGate } from './components/AppControlGate'
 import './styles.css'
 import './premium.css'
 import './final.css'
@@ -27,6 +28,7 @@ import './owner-control.css'
 import './demo-owner.css'
 import './app-control-ui.css'
 import './mobile-final.css'
+import './release-polish.css'
 
 function PreviewShell({kind}:{kind:'creative'|'owner'}) {
   const [message, setMessage] = React.useState('')
@@ -43,6 +45,6 @@ const ownerPreview = params.get('owner') === 'demo'
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    {ownerPreview ? <PreviewShell kind="owner"/> : creativePreview ? <PreviewShell kind="creative"/> : <App />}
+    {ownerPreview ? <PreviewShell kind="owner"/> : creativePreview ? <PreviewShell kind="creative"/> : <AppControlGate><App /></AppControlGate>}
   </React.StrictMode>,
 )
