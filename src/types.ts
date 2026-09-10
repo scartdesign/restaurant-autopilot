@@ -1,3 +1,7 @@
+export type LogoPosition = 'top-left' | 'top-right' | 'top-center' | 'bottom-left' | 'bottom-right'
+export type LogoSize = 's' | 'm' | 'l'
+export type LogoBadge = 'none' | 'white' | 'dark' | 'blur'
+
 export type Restaurant = {
   id: string
   owner_id: string
@@ -23,6 +27,11 @@ export type Restaurant = {
   posting_frequency: number
   reservation_url: string | null
   onboarding_completed: boolean
+  default_logo_visible: boolean
+  default_logo_position: LogoPosition
+  default_logo_size: LogoSize
+  default_logo_badge: LogoBadge
+  default_overlay_strength: number
 }
 
 export type MenuItem = {
@@ -54,6 +63,12 @@ export type VisualDesignMeta = {
   image_url?: string | null
   photo_position?: 'left' | 'center' | 'right'
   overlay?: number
+  primary_color?: string
+  accent_color?: string
+  logo_visible?: boolean
+  logo_position?: LogoPosition
+  logo_size?: LogoSize
+  logo_badge?: LogoBadge
   saved_at?: string
 }
 
