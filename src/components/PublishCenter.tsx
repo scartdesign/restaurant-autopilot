@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { CalendarClock, CheckCircle2, ClipboardCopy, Download, ExternalLink, Instagram, Facebook, Send, Sparkles } from 'lucide-react'
+import { CalendarClock, CheckCircle2, ClipboardCopy, Download, ExternalLink, Instagram, Facebook, Send, ShieldCheck, Sparkles } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import type { Post, Restaurant } from '../types'
 
@@ -10,6 +10,7 @@ export function PublishCenter({ restaurant, posts, onChanged, setNotice }: {
   setNotice: (value: string) => void
 }) {
   const [workingId, setWorkingId] = useState('')
+  const [qualityScores, setQualityScores] = useState<Record<string, number>>({})
   const ordered = useMemo(() => [...posts].sort((a, b) => new Date(a.scheduled_for || 0).getTime() - new Date(b.scheduled_for || 0).getTime()), [posts])
   const approved = posts.filter((post) => post.status === 'approved')
   const published = posts.filter((post) => post.status === 'published')
@@ -58,6 +59,20 @@ export function PublishCenter({ restaurant, posts, onChanged, setNotice }: {
     } catch { setNotice('Browser nije dozvolio kopiranje. Koristi CSV export.') }
   }
 
+  async function qualityCheck(post: Post) {
+    setWorkingId(post.id)
+    const { data, error } = await supabase.functions.invoke('content-engine', { body: { action: 'quality_check', restaurantId: restaurant.id, postId: post.id } })
+    if (error) setNotice(error.message)
+    else if (data?.error) setNotice(data.error)
+    else {
+      const score = Number(data?.score || 0)
+      setQualityScores((current) => ({ ...current, [post.id]: score }))
+      const missing = Object.entries(data?.checks || {}).filter(([, ok]) => !ok).map(([key]) => qualityLabel(key))
+      setNotice(missing.length ? `Quality ${score}/100 · popravi: ${missing.join(', ')}.` : `Quality ${score}/100 · objava je tehnički spremna.`)
+    }
+    setWorkingId('')
+  }
+
   async function markPublished(post: Post) {
     setWorkingId(post.id)
     const { error } = await supabase.from('posts').update({ status: 'published' }).eq('id', post.id)
@@ -72,7 +87,7 @@ export function PublishCenter({ restaurant, posts, onChanged, setNotice }: {
   return (
     <>
       <header className="page-header publish-header">
-        <div><p className="eyebrow">PUBLISH CENTER</p><h1>Spremno za objavu.</h1><p className="muted">Pregledaj redosled, izvezi kalendar ili kopiraj odobren sadržaj. Auto-publishing povezujemo kao sledeći sloj.</p></div>
+        <div><p className="eyebrow">PUBLISH CENTER</p><h1>Spremno za objavu.</h1><p className="muted">Pregledaj redosled, proveri kvalitet, izvezi kalendar ili kopiraj odobren sadržaj.</p></div>
         <div className="publish-actions"><button className="secondary" onClick={exportCalendar}><CalendarClock size={16} /> .ICS kalendar</button><button className="primary" onClick={exportCsv}><Download size={16} /> Export CSV</button></div>
       </header>
 
@@ -90,8 +105,8 @@ export function PublishCenter({ restaurant, posts, onChanged, setNotice }: {
         {ordered.length === 0 ? <div className="empty-small">Generiši nedelju sadržaja da bi se pojavio red za objavu.</div> : <div className="queue-list">
           {ordered.map((post) => <div className="queue-item" key={post.id}>
             <div className={`queue-date ${post.status}`}><strong>{post.scheduled_for ? new Date(post.scheduled_for).toLocaleDateString('sr-RS', { day: '2-digit', month: 'short' }) : '—'}</strong><span>{post.scheduled_for ? new Date(post.scheduled_for).toLocaleTimeString('sr-RS', { hour: '2-digit', minute: '2-digit' }) : 'bez termina'}</span></div>
-            <div className="queue-copy"><div className="queue-title"><span className="queue-format">{post.post_type}</span><strong>{post.title || 'Objava'}</strong></div><p>{post.caption}</p><div className="queue-platforms"><span><Instagram size={13} /> {(post.platform_content?.instagram?.hashtags || post.hashtags || []).length} IG tags</span><span><Facebook size={13} /> {(post.platform_content?.facebook?.hashtags || []).length} FB tags</span><span>{post.discovery_score || 0}/100 discovery</span></div></div>
-            <div className="queue-state"><span className={`status ${post.status}`}>{post.status}</span>{post.status === 'approved' && <button className="mini-publish" disabled={workingId === post.id} onClick={() => markPublished(post)}><CheckCircle2 size={14} /> Označi objavljeno</button>}{post.status === 'published' && <span className="published-ok"><CheckCircle2 size={15} /> završeno</span>}</div>
+            <div className="queue-copy"><div className="queue-title"><span className="queue-format">{post.post_type}</span><strong>{post.title || 'Objava'}</strong></div><p>{post.caption}</p><div className="queue-platforms"><span><Instagram size={13} /> {(post.platform_content?.instagram?.hashtags || post.hashtags || []).length} IG tags</span><span><Facebook size={13} /> {(post.platform_content?.facebook?.hashtags || []).length} FB tags</span><span>{post.discovery_score || 0}/100 discovery</span>{qualityScores[post.id] !== undefined && <span className="quality-inline"><ShieldCheck size={13} /> {qualityScores[post.id]}/100 quality</span>}</div></div>
+            <div className="queue-state"><span className={`status ${post.status}`}>{post.status}</span><button className="mini-quality" disabled={workingId === post.id} onClick={() => qualityCheck(post)}><ShieldCheck size={14} /> Quality check</button>{post.status === 'approved' && <button className="mini-publish" disabled={workingId === post.id} onClick={() => markPublished(post)}><CheckCircle2 size={14} /> Označi objavljeno</button>}{post.status === 'published' && <span className="published-ok"><CheckCircle2 size={15} /> završeno</span>}</div>
           </div>)}
         </div>}
       </section>
@@ -101,6 +116,10 @@ export function PublishCenter({ restaurant, posts, onChanged, setNotice }: {
   )
 }
 
+function qualityLabel(key: string) {
+  const labels: Record<string, string> = { caption: 'dužina teksta', local_signal: 'lokalni signal', focused_hashtags: 'hashtag fokus', clear_cta: 'CTA', photo_ready: 'fotografija', platform_versions: 'IG/FB verzije' }
+  return labels[key] || key
+}
 function csvCell(value: string) { return `"${String(value).replace(/"/g, '""')}"` }
 function icsText(value: string) { return value.replace(/\\/g, '\\\\').replace(/\n/g, '\\n').replace(/,/g, '\\,').replace(/;/g, '\\;') }
 function slug(value: string) { return value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-|-$/g, '').toLowerCase() || 'restaurant' }
