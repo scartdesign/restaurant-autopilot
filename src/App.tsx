@@ -14,12 +14,14 @@ import { VisualStudio } from './components/VisualStudio'
 import { PublishCenter } from './components/PublishCenter'
 import { BrandKit } from './components/BrandKit'
 import { BillingPage } from './components/BillingPage'
-import { SuperAdmin } from './components/SuperAdmin'
+import { OwnerControl } from './components/OwnerControl'
 import { AdminSetup } from './components/AdminSetup'
 import { CreativeHub } from './components/CreativeHub'
 
 type Tab = 'dashboard' | 'creative' | 'studio' | 'brand' | 'publish' | 'menu' | 'promotions' | 'settings' | 'billing' | 'admin'
+type AppControlsLite = { maintenance_mode:boolean; maintenance_message:string|null; sales_open:boolean; signup_open:boolean; announcement_enabled:boolean; announcement_text:string|null; announcement_tone:'info'|'success'|'warning'; app_version:string }
 const ACTIVE_RESTAURANT_KEY = 'restaurant-autopilot-active-restaurant'
+const defaultControls:AppControlsLite={maintenance_mode:false,maintenance_message:null,sales_open:true,signup_open:true,announcement_enabled:false,announcement_text:null,announcement_tone:'info',app_version:'1.0'}
 
 function App() {
   const [session, setSession] = useState<Session | null>(null)
@@ -28,6 +30,7 @@ function App() {
   const [menuItems, setMenuItems] = useState<MenuItem[]>([])
   const [posts, setPosts] = useState<Post[]>([])
   const [entitlement, setEntitlement] = useState<Entitlement | null>(null)
+  const [appControls,setAppControls]=useState<AppControlsLite>(defaultControls)
   const [loading, setLoading] = useState(true)
   const [accountReady, setAccountReady] = useState(false)
   const [isSuperadmin, setIsSuperadmin] = useState(false)
@@ -39,6 +42,7 @@ function App() {
   const adminSetupRequested = new URLSearchParams(window.location.search).get('superadmin') === 'setup'
 
   useEffect(() => {
+    void loadAppControls()
     supabase.auth.getSession().then(({ data }) => setSession(data.session))
     const { data: listener } = supabase.auth.onAuthStateChange((_event, nextSession) => {
       setSession(nextSession)
@@ -52,6 +56,11 @@ function App() {
     void boot(session)
   }, [session?.user.id])
 
+  async function loadAppControls(){
+    const {data}=await supabase.from('app_controls').select('maintenance_mode,maintenance_message,sales_open,signup_open,announcement_enabled,announcement_text,announcement_tone,app_version').eq('id',1).maybeSingle()
+    if(data)setAppControls(data as AppControlsLite)
+  }
+
   function resetLocalState() {
     setRestaurants([]); setRestaurant(null); setMenuItems([]); setPosts([]); setEntitlement(null)
     setIsSuperadmin(false); setHasAccess(false); setAccountReady(false); setActiveTab('dashboard'); setAddingRestaurant(false)
@@ -60,7 +69,7 @@ function App() {
   async function boot(currentSession = session) {
     if (!currentSession) return
     setLoading(true)
-    await loadAccountState()
+    await Promise.all([loadAccountState(),loadAppControls()])
     await loadRestaurants(currentSession.user.id)
     setAccountReady(true)
     setLoading(false)
@@ -124,8 +133,8 @@ function App() {
     setActiveTab(tab)
   }
 
-  async function accessChanged() { await loadAccountState(); if (session) await loadRestaurants(session.user.id, restaurant?.id); setActiveTab('dashboard') }
-  async function adminActivated() { window.history.replaceState({}, '', window.location.pathname); await loadAccountState(); setActiveTab('admin') }
+  async function accessChanged() { await loadAccountState(); await loadAppControls(); if (session) await loadRestaurants(session.user.id, restaurant?.id); setActiveTab('dashboard') }
+  async function adminActivated() { window.history.replaceState({}, '', window.location.pathname); await loadAccountState(); await loadAppControls(); setActiveTab('admin') }
   async function signOut() { await supabase.auth.signOut() }
 
   const canUseCampaigns = isSuperadmin || entitlement?.features?.campaigns === true
@@ -137,14 +146,15 @@ function App() {
 
   if (demo) return <DemoScreen onExit={() => setDemo(false)} />
   if (loading || (session && !accountReady)) return <div className="screen-center"><div className="loader" />Učitavanje Restaurant Autopilota…</div>
-  if (!session) return <AuthScreen onDemo={() => setDemo(true)} />
+  if (!session) return <AuthScreen onDemo={() => setDemo(true)} signupOpen={appControls.signup_open} />
   if (adminSetupRequested && !isSuperadmin) return <AdminSetup email={session.user.email || ''} onActivated={adminActivated} onCancel={() => { window.history.replaceState({}, '', window.location.pathname); void loadAccountState() }} />
+  if (!isSuperadmin && appControls.maintenance_mode) return <MaintenanceScreen message={appControls.maintenance_message} version={appControls.app_version} onSignOut={signOut}/>
   if (!isSuperadmin && !hasAccess) return <BillingPage email={session.user.email || ''} onAccessChanged={accessChanged} onSignOut={signOut} />
 
   if (addingRestaurant) return <Onboarding additional userId={session.user.id} onCancel={() => setAddingRestaurant(false)} onCreated={async () => { setAddingRestaurant(false); await loadAccountState(); await loadRestaurants(session.user.id); setActiveTab('dashboard') }} />
 
   if (!restaurant) {
-    if (isSuperadmin && activeTab === 'admin') return <div className="standalone-admin"><SuperAdmin setNotice={setNotice} onCloseApp={() => setActiveTab('dashboard')} />{notice && <div className="notice floating-notice"><span>{notice}</span><button onClick={() => setNotice('')}><X size={15}/></button></div>}</div>
+    if (isSuperadmin && activeTab === 'admin') return <div className="standalone-admin"><OwnerControl setNotice={setNotice} onCloseApp={async()=>{await loadAppControls();setActiveTab('dashboard')}} />{notice && <div className="notice floating-notice"><span>{notice}</span><button onClick={() => setNotice('')}><X size={15}/></button></div>}</div>
     return <Onboarding userId={session.user.id} onCreated={async () => { await loadAccountState(); await loadRestaurants(session.user.id); setActiveTab('dashboard') }} />
   }
 
@@ -169,7 +179,9 @@ function App() {
       </nav>
     </div><button className="logout" onClick={signOut}><LogOut size={18}/> Odjavi se</button></aside>
 
-    <main className={`main-area ${activeTab==='admin'?'admin-main-area':''}`}>{notice&&<div className="notice"><span>{notice}</span><button onClick={()=>setNotice('')}><X size={15}/></button></div>}
+    <main className={`main-area ${activeTab==='admin'?'admin-main-area':''}`}>
+      {appControls.announcement_enabled&&appControls.announcement_text&&<div className={`global-announcement ${appControls.announcement_tone}`}><Megaphone size={15}/><span>{appControls.announcement_text}</span></div>}
+      {notice&&<div className="notice"><span>{notice}</span><button onClick={()=>setNotice('')}><X size={15}/></button></div>}
       {activeTab==='dashboard'&&<Dashboard restaurant={restaurant} menuItems={menuItems} posts={posts} onChanged={refreshContent} setNotice={setNotice}/>} 
       {activeTab==='creative'&&<CreativeHub restaurant={restaurant} menuItems={menuItems} entitlement={isSuperadmin?{active:true,is_superadmin:true,features:{campaign_pack:true}}:entitlement} onChanged={refreshContent} setNotice={setNotice}/>} 
       {activeTab==='studio'&&<VisualStudio restaurant={restaurant} menuItems={menuItems} posts={posts} setNotice={setNotice}/>} 
@@ -179,8 +191,13 @@ function App() {
       {activeTab==='promotions'&&canUseCampaigns&&<Promotions restaurant={restaurant} menuItems={menuItems} onChanged={refreshContent} setNotice={setNotice}/>} 
       {activeTab==='billing'&&<BillingPage email={session.user.email||''} onAccessChanged={accessChanged} onSignOut={signOut}/>} 
       {activeTab==='settings'&&<SettingsPanel restaurant={restaurant} onSaved={refreshRestaurant} setNotice={setNotice}/>} 
-      {activeTab==='admin'&&isSuperadmin&&<SuperAdmin setNotice={setNotice} onCloseApp={()=>setActiveTab('dashboard')}/>} 
+      {activeTab==='admin'&&isSuperadmin&&<OwnerControl setNotice={setNotice} onCloseApp={async()=>{await loadAppControls();setActiveTab('dashboard')}}/>} 
     </main>
   </div>
 }
+
+function MaintenanceScreen({message,version,onSignOut}:{message:string|null;version:string;onSignOut:()=>Promise<void>}){
+  return <div className="maintenance-screen"><div className="maintenance-card"><div className="maintenance-logo"><ChefHat size={30}/></div><span>RESTAURANT AUTOPILOT · v{version}</span><h1>Kratko održavanje.</h1><p>{message||'OWNER trenutno radi na sistemu. Tvoji podaci ostaju sačuvani i pristup će se vratiti čim održavanje bude završeno.'}</p><button className="secondary" onClick={onSignOut}><LogOut size={15}/> Odjavi se</button></div></div>
+}
+
 export default App
