@@ -5,6 +5,7 @@ import './styles.css'
 import './premium.css'
 import './final.css'
 import './studio.css'
+import './extras.css'
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
