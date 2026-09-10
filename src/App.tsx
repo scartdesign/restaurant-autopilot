@@ -101,13 +101,14 @@ function App() {
 
   return (
     <div className="app-shell">
-      <aside className="sidebar">
+      <aside className="sidebar sidebar-pro">
         <div>
-          <div className="brand-mark"><ChefHat size={24} /><span>Restaurant<br /><strong>Autopilot</strong></span></div>
+          <div className="brand-mark"><div className="brand-icon"><ChefHat size={21} /></div><span>Restaurant<br /><strong>Autopilot</strong></span></div>
           <div className="restaurant-chip">
             <div className="avatar" style={{ background: restaurant.secondary_color || undefined }}>{restaurant.name.slice(0, 1).toUpperCase()}</div>
-            <div><strong>{restaurant.name}</strong><small>{restaurant.city || restaurant.cuisine_type || 'Restoran'}</small></div>
+            <div><strong>{restaurant.name}</strong><small>{restaurant.neighborhood || restaurant.city || restaurant.cuisine_type || 'Restoran'}</small></div>
           </div>
+          <div className="autopilot-status"><span className="live-dot" /> SMART DISCOVERY ACTIVE</div>
           <nav>
             <button className={activeTab === 'dashboard' ? 'nav-active' : ''} onClick={() => setActiveTab('dashboard')}><CalendarDays size={18} /> Sadržaj</button>
             <button className={activeTab === 'menu' ? 'nav-active' : ''} onClick={() => setActiveTab('menu')}><UtensilsCrossed size={18} /> Meni</button>
