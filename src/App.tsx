@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { BadgeEuro, Building2, CalendarDays, ChefHat, Image as ImageIcon, LockKeyhole, LogOut, Megaphone, Palette, Plus, Send, Settings, ShieldCheck, UtensilsCrossed, X } from 'lucide-react'
+import { BadgeEuro, Building2, CalendarDays, ChefHat, Image as ImageIcon, LockKeyhole, LogOut, Megaphone, Palette, Plus, Send, Settings, ShieldCheck, Sparkles, UtensilsCrossed, X } from 'lucide-react'
 import type { Session } from '@supabase/supabase-js'
 import { supabase } from './lib/supabase'
 import type { Entitlement, MenuItem, Post, Restaurant } from './types'
@@ -16,8 +16,9 @@ import { BrandKit } from './components/BrandKit'
 import { BillingPage } from './components/BillingPage'
 import { SuperAdmin } from './components/SuperAdmin'
 import { AdminSetup } from './components/AdminSetup'
+import { CreativeHub } from './components/CreativeHub'
 
-type Tab = 'dashboard' | 'studio' | 'brand' | 'publish' | 'menu' | 'promotions' | 'settings' | 'billing' | 'admin'
+type Tab = 'dashboard' | 'creative' | 'studio' | 'brand' | 'publish' | 'menu' | 'promotions' | 'settings' | 'billing' | 'admin'
 const ACTIVE_RESTAURANT_KEY = 'restaurant-autopilot-active-restaurant'
 
 function App() {
@@ -116,8 +117,9 @@ function App() {
       setActiveTab('billing'); return
     }
     if (restaurant) {
-      if (tab === 'dashboard' || tab === 'publish' || tab === 'studio') await loadPosts(restaurant.id)
-      if (tab === 'menu' || tab === 'promotions' || tab === 'studio' || tab === 'brand') await loadMenu(restaurant.id)
+      if (tab === 'dashboard' || tab === 'creative' || tab === 'publish' || tab === 'studio') await loadPosts(restaurant.id)
+      if (tab === 'creative' || tab === 'menu' || tab === 'promotions' || tab === 'studio' || tab === 'brand') await loadMenu(restaurant.id)
+      if (tab === 'creative') await loadAccountState()
     }
     setActiveTab(tab)
   }
@@ -155,6 +157,7 @@ function App() {
       {!isSuperadmin && <div className="sidebar-plan-mini"><span>{restaurants.length}/{restaurantLimit || '∞'} lokacija</span>{generationUsage&&<span>{generationUsage} objava</span>}{remainingRestaurants===0&&restaurantLimit!==null?<small>Za više lokacija promeni paket.</small>:null}</div>}
       <nav>
         <button className={activeTab==='dashboard'?'nav-active':''} onClick={()=>void openTab('dashboard')}><CalendarDays size={18}/> Sadržaj</button>
+        <button className={activeTab==='creative'?'nav-active creative-nav':''} onClick={()=>void openTab('creative')}><Sparkles size={18}/> Creative AI <span className="nav-beta">NEW</span></button>
         <button className={activeTab==='studio'?'nav-active':''} onClick={()=>void openTab('studio')}><ImageIcon size={18}/> Visual Studio</button>
         <button className={activeTab==='brand'?'nav-active brand-nav':'brand-nav'} onClick={()=>void openTab('brand')}><Palette size={18}/> Brend <span className="nav-beta">LOGO</span></button>
         <button className={activeTab==='publish'?'nav-active':''} onClick={()=>void openTab('publish')}><Send size={18}/> Publish Center</button>
@@ -168,6 +171,7 @@ function App() {
 
     <main className={`main-area ${activeTab==='admin'?'admin-main-area':''}`}>{notice&&<div className="notice"><span>{notice}</span><button onClick={()=>setNotice('')}><X size={15}/></button></div>}
       {activeTab==='dashboard'&&<Dashboard restaurant={restaurant} menuItems={menuItems} posts={posts} onChanged={refreshContent} setNotice={setNotice}/>} 
+      {activeTab==='creative'&&<CreativeHub restaurant={restaurant} menuItems={menuItems} entitlement={isSuperadmin?{active:true,is_superadmin:true,features:{campaign_pack:true}}:entitlement} onChanged={refreshContent} setNotice={setNotice}/>} 
       {activeTab==='studio'&&<VisualStudio restaurant={restaurant} menuItems={menuItems} posts={posts} setNotice={setNotice}/>} 
       {activeTab==='brand'&&<BrandKit restaurant={restaurant} menuItems={menuItems} onSaved={refreshRestaurant} setNotice={setNotice}/>} 
       {activeTab==='publish'&&<PublishCenter restaurant={restaurant} posts={posts} onChanged={()=>loadPosts(restaurant.id)} setNotice={setNotice}/>} 
