@@ -28,6 +28,7 @@ import './demo-owner.css'
 import './app-control-ui.css'
 import './mobile-final.css'
 import './release-polish.css'
+import './commerce-release.css'
 
 function PreviewShell({kind}:{kind:'creative'|'owner'}) {
   const [message, setMessage] = React.useState('')
