@@ -1,7 +1,7 @@
 import { ChangeEvent, FormEvent, useMemo, useState } from 'react'
-import { Hash, Image as ImageIcon, MapPin, Palette, Save, Settings, Share2, Target, Trash2, Upload } from 'lucide-react'
+import { Eye, EyeOff, Hash, Image as ImageIcon, MapPin, Palette, Save, Settings, Share2, Target, Trash2, Upload } from 'lucide-react'
 import { supabase } from '../lib/supabase'
-import type { Restaurant } from '../types'
+import type { LogoBadge, LogoPosition, LogoSize, Restaurant } from '../types'
 
 export function SettingsPanel({ restaurant, onSaved, setNotice }: {
   restaurant: Restaurant
@@ -28,6 +28,11 @@ export function SettingsPanel({ restaurant, onSaved, setNotice }: {
     posting_frequency: String(restaurant.posting_frequency || 5),
     primary_color: restaurant.primary_color || '#17211b',
     secondary_color: restaurant.secondary_color || '#b9df72',
+    default_logo_visible: restaurant.default_logo_visible ?? true,
+    default_logo_position: restaurant.default_logo_position || 'top-right' as LogoPosition,
+    default_logo_size: restaurant.default_logo_size || 'm' as LogoSize,
+    default_logo_badge: restaurant.default_logo_badge || 'white' as LogoBadge,
+    default_overlay_strength: Number(restaurant.default_overlay_strength ?? .68),
   })
   const [working, setWorking] = useState(false)
   const [logoFile, setLogoFile] = useState<File | null>(null)
@@ -99,6 +104,11 @@ export function SettingsPanel({ restaurant, onSaved, setNotice }: {
         posting_frequency: Number(form.posting_frequency),
         primary_color: form.primary_color,
         secondary_color: form.secondary_color,
+        default_logo_visible: form.default_logo_visible,
+        default_logo_position: form.default_logo_position,
+        default_logo_size: form.default_logo_size,
+        default_logo_badge: form.default_logo_badge,
+        default_overlay_strength: form.default_overlay_strength,
       }
       if (uploadedLogo) payload.logo_url = uploadedLogo
       const { error } = await supabase.from('restaurants').update(payload).eq('id', restaurant.id)
@@ -107,7 +117,7 @@ export function SettingsPanel({ restaurant, onSaved, setNotice }: {
         setLogoPreview(uploadedLogo)
         setLogoFile(null)
       }
-      setNotice('Podešavanja su sačuvana. Sadržaj i Visual Studio sada koriste novi brend profil.')
+      setNotice('Podešavanja su sačuvana. Visual Studio sada koristi novi logo, boje i podrazumevani raspored.')
       await onSaved()
     } catch (error) {
       setNotice(error instanceof Error ? error.message : 'Greška pri čuvanju podešavanja.')
@@ -165,16 +175,43 @@ export function SettingsPanel({ restaurant, onSaved, setNotice }: {
         </section>
 
         <section className="settings-section panel">
-          <div className="settings-section-head"><div className="settings-icon"><Palette size={19} /></div><div><h2>Vizuelni identitet</h2><p>Logo i boje direktno ulaze u Visual Studio i svaki export.</p></div></div>
-          <div className="brand-identity-grid">
-            <div className="brand-logo-control">
-              <div className="brand-logo-preview">{logoPreview ? <img src={logoPreview} alt="Logo preview" /> : <ImageIcon size={28} />}</div>
-              <div className="brand-logo-copy"><strong>Logo restorana</strong><span>Najbolje PNG/SVG sa transparentnom pozadinom. Koristi se u gotovim feed i story vizualima.</span><div className="brand-logo-actions"><label className="mini-upload"><Upload size={15} /> {logoPreview ? 'Promeni logo' : 'Dodaj logo'}<input type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" onChange={chooseLogo} /></label>{restaurant.logo_url && <button type="button" className="mini-remove" onClick={removeLogo} disabled={working}><Trash2 size={14} /> Ukloni</button>}</div></div>
+          <div className="settings-section-head"><div className="settings-icon"><Palette size={19} /></div><div><h2>Vizuelni identitet</h2><p>Logo, boje i podrazumevana pozicija direktno ulaze u Visual Studio i svaki export.</p></div></div>
+
+          <div className="brand-system-grid">
+            <div className="brand-system-controls">
+              <div className="brand-logo-control">
+                <div className="brand-logo-preview">{logoPreview ? <img src={logoPreview} alt="Logo preview" /> : <ImageIcon size={28} />}</div>
+                <div className="brand-logo-copy"><strong>Logo restorana</strong><span>Najbolje PNG/SVG sa transparentnom pozadinom. Može da stoji na više pozicija u svakoj objavi.</span><div className="brand-logo-actions"><label className="mini-upload"><Upload size={15} /> {logoPreview ? 'Promeni logo' : 'Dodaj logo'}<input type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" onChange={chooseLogo} /></label>{restaurant.logo_url && <button type="button" className="mini-remove" onClick={removeLogo} disabled={working}><Trash2 size={14} /> Ukloni</button>}</div></div>
+              </div>
+
+              <div className="visual-fields brand-visual-fields">
+                <label>Stil brenda<select value={form.brand_style} onChange={(e) => setForm({ ...form, brand_style: e.target.value as Restaurant['brand_style'] })}><option value="modern">Moderan</option><option value="premium">Premium</option><option value="traditional">Tradicionalan</option><option value="fast_food">Fast food</option><option value="casual">Casual</option></select></label>
+                <div className="color-pair brand-color-pair">
+                  <label>Primarna boja<div className="color-input-pro"><input type="color" value={form.primary_color} onChange={(e) => setForm({ ...form, primary_color: e.target.value })} /><input value={form.primary_color} onChange={(e) => setForm({ ...form, primary_color: normalizeHex(e.target.value, form.primary_color) })} /></div></label>
+                  <label>Akcent boja<div className="color-input-pro"><input type="color" value={form.secondary_color} onChange={(e) => setForm({ ...form, secondary_color: e.target.value })} /><input value={form.secondary_color} onChange={(e) => setForm({ ...form, secondary_color: normalizeHex(e.target.value, form.secondary_color) })} /></div></label>
+                </div>
+              </div>
+
+              <div className="brand-default-grid">
+                <label className="brand-toggle">Logo na objavama<button type="button" className={form.default_logo_visible ? 'toggle active' : 'toggle'} onClick={() => setForm({ ...form, default_logo_visible: !form.default_logo_visible })}>{form.default_logo_visible ? <Eye size={15} /> : <EyeOff size={15} />}<span>{form.default_logo_visible ? 'Uključen' : 'Isključen'}</span></button></label>
+                <label>Pozicija loga<select value={form.default_logo_position} onChange={(e) => setForm({ ...form, default_logo_position: e.target.value as LogoPosition })}><option value="top-left">Gore levo</option><option value="top-right">Gore desno</option><option value="top-center">Gore centar</option><option value="bottom-left">Dole levo</option><option value="bottom-right">Dole desno</option></select></label>
+                <label>Veličina loga<select value={form.default_logo_size} onChange={(e) => setForm({ ...form, default_logo_size: e.target.value as LogoSize })}><option value="s">Mali</option><option value="m">Srednji</option><option value="l">Veliki</option></select></label>
+                <label>Podloga loga<select value={form.default_logo_badge} onChange={(e) => setForm({ ...form, default_logo_badge: e.target.value as LogoBadge })}><option value="none">Bez podloge</option><option value="white">Bela</option><option value="dark">Tamna</option><option value="blur">Glass / blur</option></select></label>
+                <label className="span-2 overlay-control"><span>Podrazumevano zatamnjenje fotografije <strong>{Math.round(form.default_overlay_strength * 100)}%</strong></span><input type="range" min="20" max="90" value={Math.round(form.default_overlay_strength * 100)} onChange={(e) => setForm({ ...form, default_overlay_strength: Number(e.target.value) / 100 })} /></label>
+              </div>
             </div>
-            <div className="visual-fields">
-              <label>Stil brenda<select value={form.brand_style} onChange={(e) => setForm({ ...form, brand_style: e.target.value as Restaurant['brand_style'] })}><option value="modern">Moderan</option><option value="premium">Premium</option><option value="traditional">Tradicionalan</option><option value="fast_food">Fast food</option><option value="casual">Casual</option></select></label>
-              <div className="color-pair"><label>Primarna<input type="color" value={form.primary_color} onChange={(e) => setForm({ ...form, primary_color: e.target.value })} /></label><label>Akcent<input type="color" value={form.secondary_color} onChange={(e) => setForm({ ...form, secondary_color: e.target.value })} /></label></div>
-            </div>
+
+            <BrandPreview
+              name={form.name || restaurant.name}
+              logo={logoPreview}
+              primary={form.primary_color}
+              accent={form.secondary_color}
+              visible={form.default_logo_visible}
+              position={form.default_logo_position}
+              size={form.default_logo_size}
+              badge={form.default_logo_badge}
+              overlay={form.default_overlay_strength}
+            />
           </div>
         </section>
 
@@ -182,4 +219,35 @@ export function SettingsPanel({ restaurant, onSaved, setNotice }: {
       </form>
     </>
   )
+}
+
+function BrandPreview({ name, logo, primary, accent, visible, position, size, badge, overlay }: {
+  name: string
+  logo: string
+  primary: string
+  accent: string
+  visible: boolean
+  position: LogoPosition
+  size: LogoSize
+  badge: LogoBadge
+  overlay: number
+}) {
+  return (
+    <aside className="brand-preview-wrap">
+      <div className="brand-preview-label"><span>LIVE BRAND PREVIEW</span><strong>{position.replace('-', ' ')}</strong></div>
+      <div className="brand-preview-card" style={{ '--preview-primary': primary, '--preview-accent': accent, '--preview-overlay': String(overlay) } as React.CSSProperties}>
+        <div className="brand-preview-photo" />
+        <div className="brand-preview-shade" />
+        {visible && <div className={`brand-preview-logo pos-${position} size-${size} badge-${badge}`}>{logo ? <img src={logo} alt="" /> : <span>{name.slice(0,1).toUpperCase()}</span>}</div>}
+        <div className="brand-preview-copy"><span>CHEF'S PICK</span><h3>{name}</h3><p>Logo, boje i kontrast menjaju se odmah.</p><b>Rezerviši sto</b></div>
+      </div>
+      <small>Ovo su globalne vrednosti. U Visual Studiju svaka objava može da ih pregazi bez menjanja ostatka brenda.</small>
+    </aside>
+  )
+}
+
+function normalizeHex(value: string, fallback: string) {
+  const next = value.trim()
+  if (/^#[0-9a-fA-F]{6}$/.test(next)) return next
+  return fallback
 }
