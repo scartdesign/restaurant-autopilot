@@ -217,6 +217,8 @@ export type SalesSettings = {
   invoice_note?: string | null
   order_due_days?: number
   renewal_notice_days?: number
+  email_from?: string | null
+  email_sender_name?: string | null
 }
 
 export type LicenseCodeRow = {
@@ -267,6 +269,9 @@ export type NotificationOutbox = {
   visible_in_app: boolean
   read_at: string | null
   sent_at: string | null
+  provider_message_id?: string | null
+  error_message?: string | null
+  retry_count?: number
   created_at: string
 }
 
