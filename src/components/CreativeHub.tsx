@@ -24,6 +24,8 @@ type CreativeStatus = {
   ai_images_limit:number|null
   campaign_pack:boolean
   photo_coverage?:number
+  ai_text_ready?:boolean
+  advisor_engine?:string
 }
 
 type Collection = 'premium-grid'|'dark-luxe'|'bright-sale'|'clean-menu'|'family'|'lunch'
@@ -47,7 +49,7 @@ export function CreativeHub({ restaurant, menuItems, entitlement, onChanged, set
   const [suggestions,setSuggestions] = useState<Suggestion[]>([])
   const [selectedId,setSelectedId] = useState('')
   const [collection,setCollection] = useState<Collection>('premium-grid')
-  const [status,setStatus] = useState<CreativeStatus>({ai_image_ready:false,ai_images_used:0,ai_images_limit:0,campaign_pack:false})
+  const [status,setStatus] = useState<CreativeStatus>({ai_image_ready:false,ai_images_used:0,ai_images_limit:0,campaign_pack:false,ai_text_ready:false,advisor_engine:'rules-fallback'})
   const [loading,setLoading] = useState(true)
   const [working,setWorking] = useState('')
   const [providerKey,setProviderKey] = useState('')
@@ -78,7 +80,7 @@ export function CreativeHub({ restaurant, menuItems, entitlement, onChanged, set
   async function loadAdvisor(){
     setLoading(true)
     const [advisorResult,imageResult]=await Promise.all([
-      supabase.functions.invoke('creative-engine',{body:{action:'recommend',restaurantId:restaurant.id}}),
+      supabase.functions.invoke('creative-advisor',{body:{action:'recommend',restaurantId:restaurant.id,timezoneOffsetMinutes:new Date().getTimezoneOffset()}}),
       loadImageStatus(),
     ])
     if(advisorResult.error) setNotice(advisorResult.error.message)
@@ -88,13 +90,16 @@ export function CreativeHub({ restaurant, menuItems, entitlement, onChanged, set
       setSuggestions(list)
       setSelectedId(current=>list.some(item=>item.id===current)?current:list[0]?.id||'')
       const imageData=imageResult.data
-      setStatus({
+      setStatus(current=>({
         ai_image_ready:Boolean(imageData?.ai_image_ready),
-        ai_images_used:Number(imageData?.ai_images_used??advisorResult.data?.ai_images_used??0),
-        ai_images_limit:imageData?.ai_images_limit==null?(advisorResult.data?.ai_images_limit==null?null:Number(advisorResult.data.ai_images_limit)):Number(imageData.ai_images_limit),
-        campaign_pack:Boolean(advisorResult.data?.campaign_pack),
+        ai_images_used:Number(imageData?.ai_images_used??current.ai_images_used??0),
+        ai_images_limit:imageData?.ai_images_limit==null?null:Number(imageData.ai_images_limit),
+        campaign_pack:Boolean(entitlement?.features?.campaign_pack===true||entitlement?.is_superadmin===true),
         photo_coverage:Number(advisorResult.data?.photo_coverage||0),
-      })
+        ai_text_ready:Boolean(advisorResult.data?.ai_text_ready),
+        advisor_engine:String(advisorResult.data?.engine||'rules-fallback'),
+      }))
+      if(advisorResult.data?.ai_error) setNotice('AI Advisor je trenutno koristio sigurni fallback; predlozi su i dalje dostupni.')
     }
     if(imageResult.error && !advisorResult.error) setNotice(imageResult.error)
     setLoading(false)
@@ -110,8 +115,9 @@ export function CreativeHub({ restaurant, menuItems, entitlement, onChanged, set
       setProviderKey('')
       const result=await loadImageStatus()
       if(result.data?.ai_image_ready){
-        setStatus(current=>({...current,ai_image_ready:true,ai_images_used:Number(result.data.ai_images_used||0),ai_images_limit:result.data.ai_images_limit==null?null:Number(result.data.ai_images_limit)}))
-        setNotice('AI Food Image je aktiviran. Ključ je sačuvan server-side u Vault-u i ne vraća se u browser.')
+        setStatus(current=>({...current,ai_image_ready:true,ai_text_ready:true,ai_images_used:Number(result.data.ai_images_used||0),ai_images_limit:result.data.ai_images_limit==null?null:Number(result.data.ai_images_limit)}))
+        setNotice('AI je aktiviran za fotografije i Creative Advisor. Ključ je sačuvan server-side u Vault-u.')
+        await loadAdvisor()
       } else setNotice(result.error||'Ključ je sačuvan, ali AI status još nije potvrđen.')
     }
     setSavingProvider(false)
@@ -168,28 +174,29 @@ export function CreativeHub({ restaurant, menuItems, entitlement, onChanged, set
 
   const heroItem = previewItems[0]
   const aiLimitText = status.ai_images_limit==null ? `${status.ai_images_used} / ∞` : `${status.ai_images_used} / ${status.ai_images_limit}`
+  const advisorLabel = status.advisor_engine==='gpt-5.6-luna'?'GPT-5.6 Luna':'Smart fallback'
 
   return <div className="creative-hub">
     <header className="creative-hero">
       <div>
         <span className="creative-kicker"><Sparkles size={15}/> CREATIVE AUTOPILOT</span>
         <h1>Ne pitaj se više šta da reklamiraš.</h1>
-        <p>Autopilot predlaže jelo, kampanju, format, CTA i vreme — a ako nema fotografije, AI pravi realističan food vizual.</p>
-        <div className="creative-hero-actions"><button className="creative-primary" onClick={()=>void loadAdvisor()} disabled={loading}><RefreshCw size={16}/>{loading?'Analiziram…':'Osveži predloge'}</button><span><ImagePlus size={15}/> AI slike {aiLimitText}</span><span><LayoutGrid size={15}/> {campaignFeature?'Campaign Pack aktivan':'Campaign Pack · PRO'}</span></div>
+        <p>AI analizira tvoj meni, cilj, publiku i lokalni kontekst, pa predlaže jelo, kampanju, CTA i vreme — a ako nema fotografije, pravi realističan food vizual.</p>
+        <div className="creative-hero-actions"><button className="creative-primary" onClick={()=>void loadAdvisor()} disabled={loading}><RefreshCw size={16}/>{loading?'AI analizira…':'Novi AI predlozi'}</button><span><Sparkles size={15}/> Strateg · {advisorLabel}</span><span><ImagePlus size={15}/> AI slike {aiLimitText}</span><span><LayoutGrid size={15}/> {campaignFeature?'Campaign Pack aktivan':'Campaign Pack · PRO'}</span></div>
       </div>
       <div className="creative-pulse"><i/><strong>{status.photo_coverage??0}%</strong><span>photo ready</span></div>
     </header>
 
     {isOwner&&<section className={`ai-provider-owner ${status.ai_image_ready?'ready':''}`}>
       <div className="ai-provider-icon">{status.ai_image_ready?<ShieldCheck size={21}/>:<KeyRound size={21}/>}</div>
-      <div className="ai-provider-copy"><strong>{status.ai_image_ready?'AI Food Image · spreman':'OWNER · Aktiviraj AI Food Image'}</strong><span>{status.ai_image_ready?'Server-side OpenAI ključ je podešen. Možeš ga zameniti bez prikazivanja postojećeg ključa.':'Unesi OpenAI API ključ jednom. Čuva se šifrovano u Supabase Vault-u i nikad se ne prikazuje kupcima.'}</span></div>
+      <div className="ai-provider-copy"><strong>{status.ai_image_ready?'OpenAI · fotografije + strateg spremni':'OWNER · Aktiviraj AI Engine'}</strong><span>{status.ai_image_ready?'Jedan server-side ključ pokreće Creative Advisor i AI Food Image. Možeš ga zameniti bez prikazivanja postojećeg ključa.':'Unesi OpenAI API ključ jednom. Čuva se šifrovano u Supabase Vault-u i nikad se ne prikazuje kupcima.'}</span></div>
       <div className="ai-provider-form"><input type="password" autoComplete="new-password" value={providerKey} onChange={e=>setProviderKey(e.target.value)} placeholder={status.ai_image_ready?'Novi sk-… ključ (samo ako menjaš)':'sk-…'}/><button type="button" onClick={()=>void saveProviderKey()} disabled={savingProvider||!providerKey.trim()}>{savingProvider?'Čuvam…':status.ai_image_ready?'Promeni ključ':'Aktiviraj AI'}</button></div>
     </section>}
 
     <section className="creative-section">
-      <div className="creative-section-head"><div><p className="eyebrow">ŠTA DA REKLAMIRAŠ DANAS</p><h2>Autopilot preporuke</h2></div><span className="creative-ai-state"><Zap size={14}/>{status.ai_image_ready?'AI FOOD IMAGE READY':'AI FOOD IMAGE SETUP'}</span></div>
+      <div className="creative-section-head"><div><p className="eyebrow">ŠTA DA REKLAMIRAŠ DANAS</p><h2>AI preporuke</h2></div><span className="creative-ai-state"><Zap size={14}/>{status.ai_text_ready?'AI STRATEG READY':'SMART FALLBACK'}</span></div>
       <div className="creative-recommendations">
-        {loading ? <div className="creative-loading">Analiziram meni i cilj restorana…</div> : suggestions.map((item,index)=><button type="button" key={item.id} onClick={()=>setSelectedId(item.id)} className={`creative-rec-card ${selected?.id===item.id?'active':''}`}>
+        {loading ? <div className="creative-loading">AI analizira meni, cilj i sadržaj restorana…</div> : suggestions.map((item,index)=><button type="button" key={item.id} onClick={()=>setSelectedId(item.id)} className={`creative-rec-card ${selected?.id===item.id?'active':''}`}>
           <div className="creative-rec-top"><span>0{index+1}</span><b>{item.subtitle}</b></div>
           <div className="creative-rec-image" style={item.image_url?{backgroundImage:`linear-gradient(180deg,transparent,rgba(7,12,9,.78)),url(${item.image_url})`}:{background:`radial-gradient(circle at 70% 20%,${restaurant.secondary_color||'#b9df72'}55,transparent 34%),linear-gradient(145deg,${restaurant.primary_color||'#17211b'},#2b382f)`}}><ChefHat size={22}/></div>
           <strong>{item.title}</strong><p>{item.reason}</p>
@@ -213,7 +220,7 @@ export function CreativeHub({ restaurant, menuItems, entitlement, onChanged, set
         <aside className="campaign-control-card">
           <span className="creative-kicker"><Megaphone size={14}/> CAMPAIGN BUILDER</span>
           <h2>{selected?.title||'Izaberi preporuku'}</h2>
-          <p>{selected?.reason||'Autopilot kombinuje preporuku sa izabranim dizajnerskim sistemom.'}</p>
+          <p>{selected?.reason||'AI kombinuje preporuku sa izabranim dizajnerskim sistemom.'}</p>
           <div className="campaign-checklist"><span><Sparkles size={14}/> 5 usklađenih objava</span><span><CalendarClock size={14}/> termini automatski raspoređeni</span><span><Target size={14}/> Feed + Story + promo CTA</span><span><LayoutGrid size={14}/> logo i boje restorana</span></div>
           {missingPreviewPhotos.length>0&&<div className="missing-photo-card"><ImagePlus size={20}/><div><strong>{missingPreviewPhotos.length} {missingPreviewPhotos.length===1?'jelo nema':'jela nemaju'} fotografiju</strong><span>Možeš napraviti AI food fotografije pre generisanja paketa, da svaki vizual izgleda kao prava reklama.</span></div><button type="button" onClick={()=>void generateMissingPreviewPhotos()} disabled={working==='batch-images'||!status.ai_image_ready}>{working==='batch-images'?'AI generiše paket…':status.ai_image_ready?'AI napravi slike koje fale':'AI nije aktiviran'}</button></div>}
           {selected?.menu_item_id && selected.image_url && <button type="button" className="creative-secondary full" onClick={()=>void generateImage(selected.menu_item_id!,collection)} disabled={working.startsWith('image-')}><WandSparkles size={16}/>{working===`image-${selected.menu_item_id}`?'Generišem novu…':'Napravi novu AI varijantu glavne fotografije'}</button>}
