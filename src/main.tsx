@@ -17,6 +17,9 @@ import './schedule-demo.css'
 import './sales.css'
 import './sales-v2.css'
 import './account.css'
+import './creative-hub.css'
+import './menu-ai.css'
+import './mobile-final.css'
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
