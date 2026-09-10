@@ -3,7 +3,6 @@ import ReactDOM from 'react-dom/client'
 import App from './App'
 import { DemoCreative } from './components/DemoCreative'
 import { DemoOwner } from './components/DemoOwner'
-import { AppControlGate } from './components/AppControlGate'
 import './styles.css'
 import './premium.css'
 import './final.css'
@@ -45,6 +44,6 @@ const ownerPreview = params.get('owner') === 'demo'
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    {ownerPreview ? <PreviewShell kind="owner"/> : creativePreview ? <PreviewShell kind="creative"/> : <AppControlGate><App /></AppControlGate>}
+    {ownerPreview ? <PreviewShell kind="owner"/> : creativePreview ? <PreviewShell kind="creative"/> : <App />}
   </React.StrictMode>,
 )
