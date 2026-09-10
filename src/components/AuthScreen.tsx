@@ -1,5 +1,5 @@
 import { FormEvent, useState } from 'react'
-import { ChefHat, Eye } from 'lucide-react'
+import { ChefHat, Eye, Hash, MapPin, Sparkles } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 
 export function AuthScreen({ onDemo }: { onDemo: () => void }) {
@@ -25,11 +25,12 @@ export function AuthScreen({ onDemo }: { onDemo: () => void }) {
 
   return (
     <div className="auth-page">
-      <div className="auth-card">
+      <div className="auth-card auth-card-pro">
         <div className="auth-logo"><ChefHat size={28} /></div>
         <p className="eyebrow">MARKETING BEZ CIMANJA</p>
-        <h1>Restaurant Autopilot</h1>
+        <h1>Restaurant<br />Autopilot</h1>
         <p className="muted">Meni unutra. Sadržaj napolje. Svake nedelje.</p>
+        <div className="auth-benefits"><span><Sparkles size={13} /> sadržaj</span><span><MapPin size={13} /> local reach</span><span><Hash size={13} /> smart discovery</span></div>
         <form onSubmit={submit}>
           <label>Email<input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required placeholder="restoran@email.com" /></label>
           <label>Lozinka<input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6} placeholder="Najmanje 6 karaktera" /></label>
@@ -40,7 +41,7 @@ export function AuthScreen({ onDemo }: { onDemo: () => void }) {
           {mode === 'login' ? 'Nemaš nalog? Registruj restoran' : 'Već imaš nalog? Prijavi se'}
         </button>
         <div className="auth-divider"><span>ili</span></div>
-        <button className="secondary full" type="button" onClick={onDemo}><Eye size={17} /> Pogledaj demo bez registracije</button>
+        <button className="secondary full demo-login" type="button" onClick={onDemo}><Eye size={17} /> Pogledaj interaktivni demo</button>
       </div>
     </div>
   )
