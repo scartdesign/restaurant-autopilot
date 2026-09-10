@@ -1,5 +1,5 @@
 import { FormEvent, useMemo, useState } from 'react'
-import { CheckCircle2, ChefHat, Copy, Facebook, Hash, Instagram, MapPin, Pencil, RefreshCw, Save, Search, Sparkles, X, Zap } from 'lucide-react'
+import { ArrowUpRight, CalendarDays, CheckCircle2, ChefHat, Copy, Facebook, Hash, Image as ImageIcon, Instagram, MapPin, Pencil, RefreshCw, Save, Search, Sparkles, TrendingUp, UtensilsCrossed, WandSparkles, X, Zap } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import type { MenuItem, Post, Restaurant } from '../types'
 
@@ -13,11 +13,19 @@ export function Dashboard({ restaurant, menuItems, posts, onChanged, setNotice }
   const [generating, setGenerating] = useState(false)
   const [workingId, setWorkingId] = useState('')
   const [editing, setEditing] = useState<Post | null>(null)
-  const approvedCount = useMemo(() => posts.filter((post) => post.status === 'approved').length, [posts])
+  const activeItems = useMemo(() => menuItems.filter((item) => item.is_active), [menuItems])
+  const approvedCount = useMemo(() => posts.filter((post) => post.status === 'approved' || post.status === 'published').length, [posts])
   const averageDiscovery = useMemo(() => posts.length ? Math.round(posts.reduce((sum, post) => sum + (post.discovery_score || 0), 0) / posts.length) : 0, [posts])
+  const photoCoverage = useMemo(() => activeItems.length ? Math.round((activeItems.filter((item) => item.image_url).length / activeItems.length) * 100) : 0, [activeItems])
+  const orderedPosts = useMemo(() => [...posts].sort((a, b) => new Date(a.scheduled_for || 0).getTime() - new Date(b.scheduled_for || 0).getTime()), [posts])
+  const heroImage = useMemo(() => {
+    const itemPhoto = activeItems.find((item) => item.image_url)?.image_url
+    const postPhoto = posts.map((post) => resolvePostImage(post, menuItems)).find(Boolean)
+    return itemPhoto || postPhoto || null
+  }, [activeItems, posts, menuItems])
 
   async function generateWeek() {
-    if (!menuItems.some((item) => item.is_active)) {
+    if (!activeItems.length) {
       setNotice('Prvo dodaj bar jedno aktivno jelo u meni.')
       return
     }
@@ -29,7 +37,7 @@ export function Dashboard({ restaurant, menuItems, posts, onChanged, setNotice }
     if (error) setNotice(error.message)
     else if (data?.error) setNotice(data.error)
     else {
-      setNotice(`Smart Discovery je napravio ${data?.posts?.length || restaurant.posting_frequency} platformskih predloga za ovu nedelju.`)
+      setNotice(`Autopilot je napravio ${data?.posts?.length || restaurant.posting_frequency} predloga za ovu nedelju.`)
       await onChanged()
     }
     setGenerating(false)
@@ -51,7 +59,7 @@ export function Dashboard({ restaurant, menuItems, posts, onChanged, setNotice }
     if (error) setNotice(error.message)
     else if (data?.error) setNotice(data.error)
     else {
-      setNotice(action === 'regenerate' ? 'Napravljen je novi tekst i novi discovery set.' : 'Hashtagovi i search keywords su ponovo optimizovani.')
+      setNotice(action === 'regenerate' ? 'Napravljen je novi tekst i discovery set.' : 'Discovery je ponovo optimizovan.')
       await onChanged()
     }
     setWorkingId('')
@@ -59,43 +67,77 @@ export function Dashboard({ restaurant, menuItems, posts, onChanged, setNotice }
 
   return (
     <>
-      <header className="page-header dashboard-hero">
-        <div>
+      <section className={`wow-hero ${heroImage ? 'has-image' : ''}`} style={heroImage ? { backgroundImage: `linear-gradient(90deg, rgba(7,12,9,.96) 0%, rgba(7,12,9,.76) 45%, rgba(7,12,9,.16) 100%), url(${heroImage})` } : undefined}>
+        <div className="wow-hero-copy">
           <div className="hero-kicker"><span className="live-dot" /> AUTOPILOT ACTIVE</div>
-          <h1>{restaurant.name}</h1>
-          <p className="muted">Plan, platform-specific tekst, lokalni discovery i odobravanje — na jednom mestu.</p>
-          <div className="hero-meta">
-            {restaurant.city && <span><MapPin size={14} /> {restaurant.neighborhood ? `${restaurant.neighborhood}, ` : ''}{restaurant.city}</span>}
-            {restaurant.cuisine_type && <span><ChefHat size={14} /> {restaurant.cuisine_type}</span>}
-            <span><Hash size={14} /> {restaurant.hashtag_mode === 'local' ? 'Local focus' : restaurant.hashtag_mode === 'minimal' ? 'Minimal tags' : 'Smart Discovery'}</span>
+          <span className="wow-brand-label">{restaurant.name.toUpperCase()}</span>
+          <h1>{restaurant.description || `Sadržaj koji izgleda kao tvoj restoran.`}</h1>
+          <p>{restaurant.cuisine_type ? `${restaurant.cuisine_type} · ` : ''}{restaurant.neighborhood || restaurant.city || 'Tvoj grad'} · planirano, brendirano i spremno za objavu.</p>
+          <div className="wow-hero-actions">
+            <button className="wow-primary" onClick={generateWeek} disabled={generating}><Sparkles size={18} /> {generating ? 'Autopilot radi…' : 'Kreiraj novu nedelju'}</button>
+            <div className="wow-hero-meta"><span><MapPin size={14} /> {restaurant.neighborhood || restaurant.city || 'lokalni discovery'}</span><span><Hash size={14} /> Smart Discovery</span></div>
           </div>
         </div>
-        <button className="primary hero-action" onClick={generateWeek} disabled={generating}><Sparkles size={18} /> {generating ? 'Autopilot radi…' : 'Generiši ovu nedelju'}</button>
-      </header>
-
-      <section className="stats-grid stats-grid-pro">
-        <div className="stat-card stat-pro"><span>Aktivna jela</span><strong>{menuItems.filter((item) => item.is_active).length}</strong><small>gorivo za sadržaj</small></div>
-        <div className="stat-card stat-pro"><span>Predlozi sadržaja</span><strong>{posts.length}</strong><small>feed · story · promo</small></div>
-        <div className="stat-card stat-pro"><span>Odobreno</span><strong>{approvedCount}</strong><small>{posts.length ? `${Math.round((approvedCount / posts.length) * 100)}% spremno` : 'čeka generaciju'}</small></div>
-        <div className="stat-card stat-pro discovery-stat"><span>Discovery score</span><strong>{averageDiscovery || '—'}{averageDiscovery ? <em>/100</em> : null}</strong><small>lokalno + niša + search</small></div>
+        <div className="wow-score-card">
+          <div><TrendingUp size={19} /><span>Discovery score</span></div>
+          <strong>{averageDiscovery || '—'}{averageDiscovery ? <small>/100</small> : null}</strong>
+          <p>{posts.length ? 'prosek aktivnog sadržaja' : 'generiši prvu nedelju'}</p>
+        </div>
       </section>
 
-      <section className="discovery-ribbon">
+      <section className="wow-kpi-grid">
+        <Kpi icon={<UtensilsCrossed size={18} />} label="Aktivna jela" value={String(activeItems.length)} detail={`${photoCoverage}% sa fotografijom`} />
+        <Kpi icon={<CalendarDays size={18} />} label="Sadržaj" value={String(posts.length)} detail="feed · story · promo" />
+        <Kpi icon={<CheckCircle2 size={18} />} label="Spremno" value={String(approvedCount)} detail={posts.length ? `${Math.round((approvedCount / posts.length) * 100)}% od plana` : 'čeka generaciju'} />
+        <Kpi icon={<ImageIcon size={18} />} label="Photo coverage" value={`${photoCoverage}%`} detail="realne fotografije menija" />
+      </section>
+
+      <section className="wow-dashboard-grid">
+        <div className="wow-week panel">
+          <div className="wow-panel-head"><div><p className="eyebrow">NEDELJNI PLAN</p><h2>Sledeće objave</h2></div><span>{orderedPosts.length} stavki</span></div>
+          {orderedPosts.length ? (
+            <div className="wow-week-strip">
+              {orderedPosts.slice(0, 6).map((post) => {
+                const image = resolvePostImage(post, menuItems)
+                return <div className="wow-day" key={post.id}>
+                  <div className={`wow-day-image ${image ? 'has-photo' : ''}`} style={image ? { backgroundImage: `url(${image})` } : { background: `linear-gradient(145deg, ${restaurant.primary_color || '#17211b'}, #314137)` }}>
+                    <span>{post.post_type === 'story' ? 'STORY' : post.post_type === 'promotion' ? 'PROMO' : 'FEED'}</span>
+                    {post.status === 'approved' || post.status === 'published' ? <i><CheckCircle2 size={14} /></i> : null}
+                  </div>
+                  <strong>{post.scheduled_for ? new Date(post.scheduled_for).toLocaleDateString('sr-RS', { weekday: 'short', day: 'numeric' }) : 'Bez datuma'}</strong>
+                  <p>{post.title || 'Nova objava'}</p>
+                </div>
+              })}
+            </div>
+          ) : <div className="wow-week-empty"><Sparkles size={24} /><div><strong>Plan je prazan</strong><span>Jedan klik pravi celu nedelju sadržaja iz tvog menija.</span></div><button onClick={generateWeek}>Pokreni Autopilot <ArrowUpRight size={15} /></button></div>}
+        </div>
+
+        <aside className="wow-insight panel">
+          <div className="wow-insight-icon"><WandSparkles size={20} /></div>
+          <p className="eyebrow">CONTENT HEALTH</p>
+          <h2>{photoCoverage >= 70 ? 'Vizuelno si spreman.' : 'Fotografije su sledeći veliki dobitak.'}</h2>
+          <p>{photoCoverage >= 70 ? 'Većina aktivnih jela ima realne fotografije, što daje mnogo jače feed i story vizuale.' : `Trenutno ${photoCoverage}% aktivnih jela ima fotografiju. Dodaj realne fotografije da Visual Studio radi punom snagom.`}</p>
+          <div className="wow-health-bar"><i style={{ width: `${Math.max(6, photoCoverage)}%` }} /></div>
+          <small>{photoCoverage}% photo coverage</small>
+        </aside>
+      </section>
+
+      <section className="discovery-ribbon discovery-ribbon-wow">
         <div className="discovery-ribbon-icon"><Zap size={20} /></div>
-        <div><strong>Smart Discovery v2</strong><span>Ne jurimo 30 generičkih hashtagova. Svaka objava dobija fokusiran Instagram set, 2–3 Facebook taga, lokalne signale i prirodne search keywords.</span></div>
+        <div><strong>Smart Discovery</strong><span>Brend + grad/kraj + konkretno jelo + niša. Instagram i Facebook ne dobijaju isti spam blok.</span></div>
         <div className="platform-mini"><span><Instagram size={15} /> IG optimized</span><span><Facebook size={15} /> FB clean</span><span><Search size={15} /> Search ready</span></div>
       </section>
 
-      <section className="content-section">
+      <section className="content-section wow-content-section">
         <div className="section-title">
-          <div><p className="eyebrow">CONTENT PLAN</p><h2>Sadržaj ove nedelje</h2></div>
-          <span className="engine-badge"><Sparkles size={14} /> Smart Discovery v2</span>
+          <div><p className="eyebrow">CONTENT LIBRARY</p><h2>Sadržaj ove nedelje</h2></div>
+          <span className="engine-badge"><Sparkles size={14} /> Smart Discovery</span>
         </div>
         {posts.length === 0 ? (
-          <div className="empty-state"><Sparkles size={30} /><h3>Još nema sadržaja</h3><p>Dodaj kvalitetne fotografije i jela u meni, zatim pokreni nedelju.</p></div>
+          <div className="empty-state wow-empty"><Sparkles size={30} /><h3>Još nema sadržaja</h3><p>Dodaj kvalitetne fotografije i jela u meni, zatim pokreni nedelju.</p><button className="wow-primary" onClick={generateWeek}><Sparkles size={17} /> Generiši sada</button></div>
         ) : (
-          <div className="post-grid post-grid-pro">
-            {posts.map((post) => <PostCard key={post.id} post={post} restaurant={restaurant} working={workingId === post.id} onEdit={() => setEditing(post)} onRegenerate={() => runEngine(post, 'regenerate')} onOptimize={() => runEngine(post, 'optimize_discovery')} onStatus={(status) => changeStatus(post.id, status)} setNotice={setNotice} />)}
+          <div className="post-grid post-grid-pro wow-post-grid">
+            {posts.map((post) => <PostCard key={post.id} post={post} restaurant={restaurant} menuItems={menuItems} working={workingId === post.id} onEdit={() => setEditing(post)} onRegenerate={() => runEngine(post, 'regenerate')} onOptimize={() => runEngine(post, 'optimize_discovery')} onStatus={(status) => changeStatus(post.id, status)} setNotice={setNotice} />)}
           </div>
         )}
       </section>
@@ -105,9 +147,20 @@ export function Dashboard({ restaurant, menuItems, posts, onChanged, setNotice }
   )
 }
 
-function PostCard({ post, restaurant, working, onEdit, onRegenerate, onOptimize, onStatus, setNotice }: {
+function Kpi({ icon, label, value, detail }: { icon: React.ReactNode; label: string; value: string; detail: string }) {
+  return <div className="wow-kpi"><div className="wow-kpi-icon">{icon}</div><div><span>{label}</span><strong>{value}</strong><small>{detail}</small></div></div>
+}
+
+function resolvePostImage(post: Post, menuItems: MenuItem[]) {
+  const meta = typeof post.generation_meta?.image_url === 'string' ? post.generation_meta.image_url : null
+  if (meta) return meta
+  return menuItems.find((item) => item.id === post.menu_item_id)?.image_url || null
+}
+
+function PostCard({ post, restaurant, menuItems, working, onEdit, onRegenerate, onOptimize, onStatus, setNotice }: {
   post: Post
   restaurant: Restaurant
+  menuItems: MenuItem[]
   working: boolean
   onEdit: () => void
   onRegenerate: () => void
@@ -117,7 +170,7 @@ function PostCard({ post, restaurant, working, onEdit, onRegenerate, onOptimize,
 }) {
   const instagramTags = post.platform_content?.instagram?.hashtags || post.hashtags || []
   const facebookTags = post.platform_content?.facebook?.hashtags || []
-  const imageUrl = typeof post.generation_meta?.image_url === 'string' ? post.generation_meta.image_url : null
+  const imageUrl = resolvePostImage(post, menuItems)
 
   async function copyInstagram() {
     const caption = post.platform_content?.instagram?.caption || post.caption || ''
@@ -131,10 +184,10 @@ function PostCard({ post, restaurant, working, onEdit, onRegenerate, onOptimize,
   }
 
   return (
-    <article className="post-card post-card-pro">
-      <div className={`post-preview post-preview-pro ${imageUrl ? 'has-photo' : ''}`} style={imageUrl ? { backgroundImage: `linear-gradient(180deg, rgba(10,16,12,.06), rgba(10,16,12,.72)), url(${imageUrl})` } : restaurant.primary_color ? { background: `linear-gradient(145deg, ${restaurant.primary_color}, #27352b)` } : undefined}>
+    <article className="post-card post-card-pro wow-post-card">
+      <div className={`post-preview post-preview-pro wow-post-preview ${imageUrl ? 'has-photo' : ''}`} style={imageUrl ? { backgroundImage: `linear-gradient(180deg, rgba(10,16,12,.04), rgba(10,16,12,.78)), url(${imageUrl})` } : { background: `radial-gradient(circle at 80% 20%, ${restaurant.secondary_color || '#b9df72'}33, transparent 32%), linear-gradient(145deg, ${restaurant.primary_color || '#17211b'}, #27352b)` }}>
         <div className="preview-top"><span className="format-badge">{post.post_type === 'story' ? 'STORY 9:16' : post.post_type === 'promotion' ? 'PROMO 4:5' : 'FEED 4:5'}</span><span className="score-pill">{post.discovery_score || 0}<small>/100</small></span></div>
-        <div className="preview-brand"><div className="preview-logo"><ChefHat size={20} /></div><div><strong>{restaurant.name}</strong><small>{post.title || 'Autopilot content'}</small></div></div>
+        <div className="preview-brand">{restaurant.logo_url ? <img className="wow-card-logo" src={restaurant.logo_url} alt="" /> : <div className="preview-logo"><ChefHat size={20} /></div>}<div><strong>{restaurant.name}</strong><small>{post.title || 'Autopilot content'}</small></div></div>
       </div>
       <div className="post-body post-body-pro">
         <div className="post-meta">
@@ -155,7 +208,7 @@ function PostCard({ post, restaurant, working, onEdit, onRegenerate, onOptimize,
           <button className="icon-button" title="Izmeni" onClick={onEdit}><Pencil size={15} /></button>
           <button className="icon-button" title="Novi tekst" disabled={working} onClick={onRegenerate}><RefreshCw size={15} /></button>
           <button className="icon-button discovery-button" title="Optimizuj discovery" disabled={working} onClick={onOptimize}><Hash size={15} /></button>
-          {post.status !== 'approved'
+          {post.status !== 'approved' && post.status !== 'published'
             ? <button className="secondary action-grow" disabled={working} onClick={() => onStatus('approved')}><CheckCircle2 size={16} /> Odobri</button>
             : <button className="approved-button action-grow" onClick={() => onStatus('draft')}><CheckCircle2 size={16} /> Spremno</button>}
         </div>
