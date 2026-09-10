@@ -4,6 +4,7 @@ import type { Session } from '@supabase/supabase-js'
 import { supabase } from './lib/supabase'
 import type { Entitlement, MenuItem, Post, Restaurant } from './types'
 import { AuthScreen } from './components/AuthScreen'
+import { PasswordRecovery } from './components/PasswordRecovery'
 import { Onboarding } from './components/Onboarding'
 import { Dashboard } from './components/Dashboard'
 import { MenuManager } from './components/MenuManager'
@@ -39,13 +40,15 @@ function App() {
   const [activeTab, setActiveTab] = useState<Tab>('dashboard')
   const [demo, setDemo] = useState(false)
   const [addingRestaurant, setAddingRestaurant] = useState(false)
+  const [recoveryMode,setRecoveryMode]=useState(false)
   const adminSetupRequested = new URLSearchParams(window.location.search).get('superadmin') === 'setup'
 
   useEffect(() => {
     void loadAppControls()
     supabase.auth.getSession().then(({ data }) => setSession(data.session))
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+    const { data: listener } = supabase.auth.onAuthStateChange((event, nextSession) => {
       setSession(nextSession)
+      if (event === 'PASSWORD_RECOVERY') setRecoveryMode(true)
       if (!nextSession) resetLocalState()
     })
     return () => listener.subscription.unsubscribe()
@@ -63,7 +66,7 @@ function App() {
 
   function resetLocalState() {
     setRestaurants([]); setRestaurant(null); setMenuItems([]); setPosts([]); setEntitlement(null)
-    setIsSuperadmin(false); setHasAccess(false); setAccountReady(false); setActiveTab('dashboard'); setAddingRestaurant(false)
+    setIsSuperadmin(false); setHasAccess(false); setAccountReady(false); setActiveTab('dashboard'); setAddingRestaurant(false); setRecoveryMode(false)
   }
 
   async function boot(currentSession = session) {
@@ -136,6 +139,7 @@ function App() {
   async function accessChanged() { await loadAccountState(); await loadAppControls(); if (session) await loadRestaurants(session.user.id, restaurant?.id); setActiveTab('dashboard') }
   async function adminActivated() { window.history.replaceState({}, '', window.location.pathname); await loadAccountState(); await loadAppControls(); setActiveTab('admin') }
   async function signOut() { await supabase.auth.signOut() }
+  async function recoveryDone(){setRecoveryMode(false);await boot()}
 
   const canUseCampaigns = isSuperadmin || entitlement?.features?.campaigns === true
   const restaurantLimit = entitlement?.restaurants_limit ?? (isSuperadmin ? null : 1)
@@ -146,6 +150,7 @@ function App() {
 
   if (demo) return <DemoScreen onExit={() => setDemo(false)} />
   if (loading || (session && !accountReady)) return <div className="screen-center"><div className="loader" />Učitavanje Restaurant Autopilota…</div>
+  if (recoveryMode && session) return <PasswordRecovery onDone={recoveryDone}/>
   if (!session) return <AuthScreen onDemo={() => setDemo(true)} signupOpen={appControls.signup_open} />
   if (adminSetupRequested && !isSuperadmin) return <AdminSetup email={session.user.email || ''} onActivated={adminActivated} onCancel={() => { window.history.replaceState({}, '', window.location.pathname); void loadAccountState() }} />
   if (!isSuperadmin && appControls.maintenance_mode) return <MaintenanceScreen message={appControls.maintenance_message} version={appControls.app_version} onSignOut={signOut}/>
