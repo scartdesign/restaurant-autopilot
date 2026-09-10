@@ -134,6 +134,7 @@ export type CustomerSubscription = {
   custom_generation_limit: number | null
   notes: string | null
   created_at: string
+  updated_at?: string
   sales_plans?: SalesPlan | null
 }
 
@@ -150,6 +151,9 @@ export type SalesOrder = {
   customer_note: string | null
   admin_note: string | null
   paid_at: string | null
+  due_at?: string | null
+  payment_reference?: string | null
+  billing_snapshot?: Record<string, unknown>
   created_at: string
   sales_plans?: SalesPlan | null
 }
@@ -160,8 +164,15 @@ export type CustomerProfile = {
   full_name: string | null
   phone: string | null
   company: string | null
+  billing_company?: string | null
+  billing_tax_id?: string | null
+  billing_company_number?: string | null
+  billing_address?: string | null
+  billing_city?: string | null
+  billing_country?: string | null
   trial_claimed_at: string | null
   created_at: string
+  updated_at?: string
 }
 
 export type SalesSettings = {
@@ -177,6 +188,16 @@ export type SalesSettings = {
   allow_card: boolean
   allow_invoice: boolean
   trial_enabled: boolean
+  legal_name?: string | null
+  tax_id?: string | null
+  company_number?: string | null
+  address?: string | null
+  bank_name?: string | null
+  bank_account?: string | null
+  payment_model?: string | null
+  invoice_note?: string | null
+  order_due_days?: number
+  renewal_notice_days?: number
 }
 
 export type LicenseCodeRow = {
@@ -195,4 +216,47 @@ export type LicenseCodeRow = {
   note: string | null
   created_at: string
   sales_plans?: SalesPlan | null
+}
+
+export type Entitlement = {
+  active: boolean
+  is_superadmin?: boolean
+  subscription_id?: string
+  status?: string
+  starts_at?: string
+  expires_at?: string | null
+  plan_id?: string
+  plan_code?: string
+  plan_name?: string
+  billing_interval?: string
+  generation_limit?: number | null
+  generated_this_month?: number
+  restaurants_limit?: number | null
+  restaurants_used?: number
+  features?: Record<string, unknown>
+}
+
+export type NotificationOutbox = {
+  id: number
+  user_id: string | null
+  recipient_email: string | null
+  kind: 'order_created' | 'order_paid' | 'trial_started' | 'license_activated' | 'subscription_expiring' | 'subscription_expired' | 'admin_note'
+  subject: string
+  body: string
+  payload: Record<string, unknown>
+  delivery_status: 'queued' | 'sent' | 'failed' | 'dismissed'
+  visible_in_app: boolean
+  read_at: string | null
+  sent_at: string | null
+  created_at: string
+}
+
+export type AdminAuditLog = {
+  id: number
+  actor_user_id: string | null
+  action: string
+  entity_type: string
+  entity_id: string | null
+  details: Record<string, unknown>
+  created_at: string
 }
