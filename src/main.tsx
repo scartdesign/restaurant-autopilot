@@ -9,6 +9,7 @@ import './extras.css'
 import './publish.css'
 import './campaign.css'
 import './wow.css'
+import './design-cards.css'
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
