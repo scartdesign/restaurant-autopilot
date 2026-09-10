@@ -1,5 +1,5 @@
 import { ChangeEvent, FormEvent, useMemo, useState } from 'react'
-import { Download, FileSpreadsheet, Image as ImageIcon, Plus, Trash2, Upload } from 'lucide-react'
+import { Download, FileSpreadsheet, Image as ImageIcon, Plus, Sparkles, Trash2, Upload, WandSparkles } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import type { MenuItem, Restaurant } from '../types'
 
@@ -14,6 +14,7 @@ export function MenuManager({ restaurant, userId, items, onChanged, setNotice }:
   const [image, setImage] = useState<File | null>(null)
   const [working, setWorking] = useState(false)
   const [workingId, setWorkingId] = useState('')
+  const [aiWorkingId, setAiWorkingId] = useState('')
   const photoCoverage = useMemo(() => items.length ? Math.round((items.filter((item) => item.image_url).length / items.length) * 100) : 0, [items])
 
   async function uploadImage(file: File) {
@@ -30,7 +31,7 @@ export function MenuManager({ restaurant, userId, items, onChanged, setNotice }:
     setNotice('')
     try {
       const imageUrl = image ? await uploadImage(image) : null
-      const { error } = await supabase.from('menu_items').insert({
+      const { data, error } = await supabase.from('menu_items').insert({
         restaurant_id: restaurant.id,
         name: form.name,
         description: form.description || null,
@@ -38,16 +39,31 @@ export function MenuManager({ restaurant, userId, items, onChanged, setNotice }:
         price: form.price ? Number(form.price) : null,
         currency: form.currency,
         image_url: imageUrl,
-      })
+      }).select('id,name,image_url').single()
       if (error) throw error
       setForm({ name: '', description: '', category: '', price: '', currency: 'RSD' })
       setImage(null)
-      setNotice('Jelo je dodato u meni.')
+      setNotice(data?.image_url ? 'Jelo je dodato u meni.' : `Jelo „${data?.name || 'novo jelo'}“ je dodato. Ako nemaš fotografiju, klikni AI slika pored jela.`)
       await onChanged()
     } catch (error) {
       setNotice(error instanceof Error ? error.message : 'Greška pri dodavanju jela.')
     }
     setWorking(false)
+  }
+
+  async function generateAiImage(item: MenuItem, style = 'photoreal') {
+    setAiWorkingId(item.id)
+    setNotice(`AI generiše realističnu fotografiju za „${item.name}“…`)
+    const { data, error } = await supabase.functions.invoke('creative-engine', {
+      body: { action: 'generate_image', restaurantId: restaurant.id, menuItemId: item.id, style },
+    })
+    if (error) setNotice(error.message)
+    else if (data?.error) setNotice(data.error)
+    else {
+      setNotice(`AI fotografija za „${item.name}“ je napravljena i sačuvana u meniju.`)
+      await onChanged()
+    }
+    setAiWorkingId('')
   }
 
   async function importCsv(event: ChangeEvent<HTMLInputElement>) {
@@ -76,7 +92,7 @@ export function MenuManager({ restaurant, userId, items, onChanged, setNotice }:
       if (payload.some((row) => row.price !== null && Number.isNaN(row.price))) throw new Error('Jedna ili više cena nisu broj. Koristi npr. 890 ili 12.50.')
       const { error } = await supabase.from('menu_items').insert(payload)
       if (error) throw error
-      setNotice(`Uvezeno je ${payload.length} stavki. Dodaj fotografije najboljim jelima za jače vizuale.`)
+      setNotice(`Uvezeno je ${payload.length} stavki. Za jela bez fotografije sada možeš koristiti AI sliku direktno iz menija.`)
       await onChanged()
     } catch (error) {
       setNotice(error instanceof Error ? error.message : 'Greška pri uvozu menija.')
@@ -128,7 +144,7 @@ export function MenuManager({ restaurant, userId, items, onChanged, setNotice }:
   return (
     <>
       <header className="page-header menu-header-pro">
-        <div><p className="eyebrow">MENI</p><h1>Jela i proizvodi</h1><p className="muted">Fotografije i podaci iz menija su gorivo za tekst, discovery i gotove vizuale.</p></div>
+        <div><p className="eyebrow">MENI</p><h1>Jela i proizvodi</h1><p className="muted">Fotografije i podaci iz menija su gorivo za tekst, discovery i gotove vizuale. Nemaš fotografiju? Autopilot može da generiše realističnu AI food fotografiju.</p></div>
         <div className="menu-health"><span>Photo coverage</span><strong>{photoCoverage}%</strong><small>{items.filter((item) => item.image_url).length}/{items.length || 0} sa fotografijom</small></div>
       </header>
 
@@ -136,6 +152,8 @@ export function MenuManager({ restaurant, userId, items, onChanged, setNotice }:
         <div className="menu-import-copy"><FileSpreadsheet size={20} /><div><strong>Imaš veći meni?</strong><span>Uvezi do 500 jela odjednom iz CSV-a. Prihvatamo kolone naziv/opis/kategorija/cena/valuta.</span></div></div>
         <div className="menu-import-actions"><button type="button" className="secondary" onClick={downloadTemplate}><Download size={16} /> CSV šablon</button><label className="primary csv-upload"><Upload size={16} /> Uvezi CSV<input type="file" accept=".csv,text/csv" onChange={importCsv} /></label></div>
       </div>
+
+      <div className="menu-ai-tip"><Sparkles size={18}/><div><strong>AI Food Photo</strong><span>Za svako jelo bez slike možeš jednim klikom napraviti realističnu fotografiju hrane. Slika se automatski čuva i odmah postaje dostupna u Visual Studiju i kampanjama.</span></div></div>
 
       <div className="menu-layout">
         <form className="panel add-menu-form" onSubmit={addItem}>
@@ -147,7 +165,8 @@ export function MenuManager({ restaurant, userId, items, onChanged, setNotice }:
             <label>Valuta<select value={form.currency} onChange={(e) => setForm({ ...form, currency: e.target.value })}><option>RSD</option><option>EUR</option><option>BAM</option><option>MKD</option></select></label>
           </div>
           <label>Opis<textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Pelat, mozzarella, šunka, pečurke…" rows={4} /></label>
-          <label className="upload-box"><Upload size={18} /><span>{image ? image.name : 'Dodaj fotografiju jela'}</span><input className="file-input" type="file" accept="image/jpeg,image/png,image/webp" onChange={chooseImage} /></label>
+          <label className="upload-box"><Upload size={18} /><span>{image ? image.name : 'Dodaj fotografiju jela (opciono)'}</span><input className="file-input" type="file" accept="image/jpeg,image/png,image/webp" onChange={chooseImage} /></label>
+          {!image && <div className="form-ai-note"><WandSparkles size={15}/> Možeš dodati jelo bez fotografije i zatim kliknuti „AI slika“.</div>}
           <button className="primary full" disabled={working}>{working ? 'Radim…' : 'Dodaj u meni'}</button>
         </form>
 
@@ -157,10 +176,11 @@ export function MenuManager({ restaurant, userId, items, onChanged, setNotice }:
             {items.length === 0 ? <div className="empty-small">Još nema jela. Možeš ručno da dodaš prvo ili da uvezeš ceo CSV.</div> : items.map((item) => (
               <div className={`menu-row ${item.is_active ? '' : 'inactive'}`} key={item.id}>
                 {item.image_url ? <img className="food-thumb" src={item.image_url} alt="" /> : <div className="food-icon"><ImageIcon size={18} /></div>}
-                <div className="menu-copy"><strong>{item.name}</strong><small>{item.category || 'Bez kategorije'}{item.description ? ` · ${item.description}` : ''}</small></div>
+                <div className="menu-copy"><strong>{item.name}</strong><small>{item.category || 'Bez kategorije'}{item.description ? ` · ${item.description}` : ''}</small>{!item.image_url && <span className="no-photo-label">Nema slike · AI može da je napravi</span>}</div>
                 <div className="menu-right">
                   <div className="price">{item.price ? `${item.price} ${item.currency}` : '—'}</div>
                   <div className="row-actions">
+                    <button className={`mini-button ai-photo-button ${item.image_url ? 'has-photo' : ''}`} disabled={aiWorkingId === item.id} onClick={() => generateAiImage(item)} type="button"><WandSparkles size={13}/>{aiWorkingId === item.id ? 'AI radi…' : item.image_url ? 'AI nova' : 'AI slika'}</button>
                     <button className="mini-button" disabled={workingId === item.id} onClick={() => toggleItem(item)} type="button">{item.is_active ? 'Aktivno' : 'Pauzirano'}</button>
                     <button className="danger-icon" disabled={workingId === item.id} onClick={() => deleteItem(item)} type="button" title="Obriši"><Trash2 size={15} /></button>
                   </div>
