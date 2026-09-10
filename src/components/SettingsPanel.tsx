@@ -1,5 +1,5 @@
-import { FormEvent, useState } from 'react'
-import { Hash, MapPin, Palette, Save, Settings, Share2, Target } from 'lucide-react'
+import { ChangeEvent, FormEvent, useMemo, useState } from 'react'
+import { Hash, Image as ImageIcon, MapPin, Palette, Save, Settings, Share2, Target, Trash2, Upload } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import type { Restaurant } from '../types'
 
@@ -30,35 +30,87 @@ export function SettingsPanel({ restaurant, onSaved, setNotice }: {
     secondary_color: restaurant.secondary_color || '#b9df72',
   })
   const [working, setWorking] = useState(false)
+  const [logoFile, setLogoFile] = useState<File | null>(null)
+  const [logoPreview, setLogoPreview] = useState(restaurant.logo_url || '')
+
+  const setupScore = useMemo(() => [form.city, form.cuisine_type, form.instagram, form.description, form.target_audience, logoPreview].filter(Boolean).length, [form, logoPreview])
+
+  function chooseLogo(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0]
+    if (!file) return
+    if (!['image/png', 'image/jpeg', 'image/webp', 'image/svg+xml'].includes(file.type)) {
+      setNotice('Logo mora biti PNG, JPG, WEBP ili SVG.')
+      return
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setNotice('Logo može imati najviše 5 MB.')
+      return
+    }
+    setLogoFile(file)
+    setLogoPreview(URL.createObjectURL(file))
+  }
+
+  async function uploadLogo(file: File) {
+    const { data: authData, error: authError } = await supabase.auth.getUser()
+    if (authError || !authData.user) throw new Error('Nalog nije dostupan za upload logotipa.')
+    const ext = file.name.split('.').pop()?.toLowerCase() || 'png'
+    const path = `${authData.user.id}/${restaurant.id}/brand/logo-${Date.now()}.${ext}`
+    const { error: uploadError } = await supabase.storage.from('restaurant-assets').upload(path, file, { upsert: false, contentType: file.type || undefined })
+    if (uploadError) throw uploadError
+    return supabase.storage.from('restaurant-assets').getPublicUrl(path).data.publicUrl
+  }
+
+  async function removeLogo() {
+    setWorking(true)
+    const { error } = await supabase.from('restaurants').update({ logo_url: null }).eq('id', restaurant.id)
+    if (error) setNotice(error.message)
+    else {
+      setLogoFile(null)
+      setLogoPreview('')
+      setNotice('Logo je uklonjen iz brenda.')
+      await onSaved()
+    }
+    setWorking(false)
+  }
 
   async function submit(event: FormEvent) {
     event.preventDefault()
     setWorking(true)
-    const { error } = await supabase.from('restaurants').update({
-      name: form.name,
-      city: form.city || null,
-      neighborhood: form.neighborhood || null,
-      country: form.country || 'Serbia',
-      cuisine_type: form.cuisine_type || null,
-      phone: form.phone || null,
-      website: form.website || null,
-      instagram: form.instagram || null,
-      facebook: form.facebook || null,
-      reservation_url: form.reservation_url || null,
-      description: form.description || null,
-      target_audience: form.target_audience || null,
-      social_goal: form.social_goal,
-      hashtag_mode: form.hashtag_mode,
-      brand_style: form.brand_style,
-      tone: form.tone,
-      posting_frequency: Number(form.posting_frequency),
-      primary_color: form.primary_color,
-      secondary_color: form.secondary_color,
-    }).eq('id', restaurant.id)
-    if (error) setNotice(error.message)
-    else {
-      setNotice('Podešavanja su sačuvana. Sledeća generacija koristi novu strategiju.')
+    setNotice('')
+    try {
+      const uploadedLogo = logoFile ? await uploadLogo(logoFile) : undefined
+      const payload: Record<string, unknown> = {
+        name: form.name,
+        city: form.city || null,
+        neighborhood: form.neighborhood || null,
+        country: form.country || 'Serbia',
+        cuisine_type: form.cuisine_type || null,
+        phone: form.phone || null,
+        website: form.website || null,
+        instagram: form.instagram || null,
+        facebook: form.facebook || null,
+        reservation_url: form.reservation_url || null,
+        description: form.description || null,
+        target_audience: form.target_audience || null,
+        social_goal: form.social_goal,
+        hashtag_mode: form.hashtag_mode,
+        brand_style: form.brand_style,
+        tone: form.tone,
+        posting_frequency: Number(form.posting_frequency),
+        primary_color: form.primary_color,
+        secondary_color: form.secondary_color,
+      }
+      if (uploadedLogo) payload.logo_url = uploadedLogo
+      const { error } = await supabase.from('restaurants').update(payload).eq('id', restaurant.id)
+      if (error) throw error
+      if (uploadedLogo) {
+        setLogoPreview(uploadedLogo)
+        setLogoFile(null)
+      }
+      setNotice('Podešavanja su sačuvana. Sadržaj i Visual Studio sada koriste novi brend profil.')
       await onSaved()
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : 'Greška pri čuvanju podešavanja.')
     }
     setWorking(false)
   }
@@ -66,8 +118,8 @@ export function SettingsPanel({ restaurant, onSaved, setNotice }: {
   return (
     <>
       <header className="page-header settings-header">
-        <div><p className="eyebrow">AUTOPILOT SETUP</p><h1>Podešavanja</h1><p className="muted">Što preciznije podesimo restoran, to su objave, lokalni reach i pozivi na akciju bolji.</p></div>
-        <div className="setup-score"><span>Discovery setup</span><strong>{[form.city, form.cuisine_type, form.instagram, form.description, form.target_audience].filter(Boolean).length}/5</strong></div>
+        <div><p className="eyebrow">AUTOPILOT SETUP</p><h1>Podešavanja</h1><p className="muted">Što preciznije podesimo restoran, to su objave, lokalni reach i gotovi vizuali bolji.</p></div>
+        <div className="setup-score"><span>Setup score</span><strong>{setupScore}/6</strong></div>
       </header>
 
       <form className="settings-pro" onSubmit={submit}>
@@ -113,10 +165,16 @@ export function SettingsPanel({ restaurant, onSaved, setNotice }: {
         </section>
 
         <section className="settings-section panel">
-          <div className="settings-section-head"><div className="settings-icon"><Palette size={19} /></div><div><h2>Vizuelni identitet</h2><p>Ove smernice koriste preview i brief za svaki format.</p></div></div>
-          <div className="grid-form settings-grid no-top">
-            <label>Stil brenda<select value={form.brand_style} onChange={(e) => setForm({ ...form, brand_style: e.target.value as Restaurant['brand_style'] })}><option value="modern">Moderan</option><option value="premium">Premium</option><option value="traditional">Tradicionalan</option><option value="fast_food">Fast food</option><option value="casual">Casual</option></select></label>
-            <div className="color-pair"><label>Primarna<input type="color" value={form.primary_color} onChange={(e) => setForm({ ...form, primary_color: e.target.value })} /></label><label>Akcent<input type="color" value={form.secondary_color} onChange={(e) => setForm({ ...form, secondary_color: e.target.value })} /></label></div>
+          <div className="settings-section-head"><div className="settings-icon"><Palette size={19} /></div><div><h2>Vizuelni identitet</h2><p>Logo i boje direktno ulaze u Visual Studio i svaki export.</p></div></div>
+          <div className="brand-identity-grid">
+            <div className="brand-logo-control">
+              <div className="brand-logo-preview">{logoPreview ? <img src={logoPreview} alt="Logo preview" /> : <ImageIcon size={28} />}</div>
+              <div className="brand-logo-copy"><strong>Logo restorana</strong><span>Najbolje PNG/SVG sa transparentnom pozadinom. Koristi se u gotovim feed i story vizualima.</span><div className="brand-logo-actions"><label className="mini-upload"><Upload size={15} /> {logoPreview ? 'Promeni logo' : 'Dodaj logo'}<input type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" onChange={chooseLogo} /></label>{restaurant.logo_url && <button type="button" className="mini-remove" onClick={removeLogo} disabled={working}><Trash2 size={14} /> Ukloni</button>}</div></div>
+            </div>
+            <div className="visual-fields">
+              <label>Stil brenda<select value={form.brand_style} onChange={(e) => setForm({ ...form, brand_style: e.target.value as Restaurant['brand_style'] })}><option value="modern">Moderan</option><option value="premium">Premium</option><option value="traditional">Tradicionalan</option><option value="fast_food">Fast food</option><option value="casual">Casual</option></select></label>
+              <div className="color-pair"><label>Primarna<input type="color" value={form.primary_color} onChange={(e) => setForm({ ...form, primary_color: e.target.value })} /></label><label>Akcent<input type="color" value={form.secondary_color} onChange={(e) => setForm({ ...form, secondary_color: e.target.value })} /></label></div>
+            </div>
           </div>
         </section>
 
