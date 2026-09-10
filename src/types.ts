@@ -27,11 +27,11 @@ export type Restaurant = {
   posting_frequency: number
   reservation_url: string | null
   onboarding_completed: boolean
-  default_logo_visible: boolean
-  default_logo_position: LogoPosition
-  default_logo_size: LogoSize
-  default_logo_badge: LogoBadge
-  default_overlay_strength: number
+  default_logo_visible?: boolean
+  default_logo_position?: LogoPosition
+  default_logo_size?: LogoSize
+  default_logo_badge?: LogoBadge
+  default_overlay_strength?: number
 }
 
 export type MenuItem = {
