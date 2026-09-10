@@ -19,6 +19,7 @@ import './sales-v2.css'
 import './account.css'
 import './creative-hub.css'
 import './menu-ai.css'
+import './ai-provider.css'
 import './mobile-final.css'
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
