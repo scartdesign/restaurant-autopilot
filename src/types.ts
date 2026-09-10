@@ -121,6 +121,22 @@ export type SalesPlan = {
   sort_order: number
 }
 
+export type PromoCode = {
+  id: string
+  code: string
+  description: string | null
+  discount_type: 'percent' | 'fixed'
+  discount_value: number
+  plan_id: string | null
+  max_uses: number | null
+  use_count: number
+  starts_at: string | null
+  expires_at: string | null
+  active: boolean
+  created_at: string
+  sales_plans?: SalesPlan | null
+}
+
 export type CustomerSubscription = {
   id: string
   user_id: string
@@ -147,6 +163,9 @@ export type SalesOrder = {
   status: 'pending' | 'paid' | 'cancelled' | 'refunded'
   payment_method: 'bank_transfer' | 'paypal' | 'card' | 'cash' | 'manual' | 'invoice' | 'license_code'
   amount: number
+  original_amount?: number
+  discount_amount?: number
+  promo_code_id?: string | null
   currency: string
   customer_note: string | null
   admin_note: string | null
