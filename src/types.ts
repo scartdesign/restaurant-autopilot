@@ -103,3 +103,96 @@ export type Post = {
   discovery_score: number
   seo_keywords: string[]
 }
+
+export type SalesPlan = {
+  id: string
+  code: string
+  name: string
+  description: string | null
+  billing_interval: 'monthly' | 'yearly' | 'lifetime' | 'custom'
+  price: number
+  currency: string
+  trial_days: number
+  max_restaurants: number
+  monthly_generation_limit: number
+  features: Record<string, unknown>
+  active: boolean
+  public: boolean
+  sort_order: number
+}
+
+export type CustomerSubscription = {
+  id: string
+  user_id: string
+  plan_id: string | null
+  status: 'pending' | 'trialing' | 'active' | 'past_due' | 'cancelled' | 'expired' | 'suspended'
+  starts_at: string
+  expires_at: string | null
+  auto_renew: boolean
+  payment_method: string | null
+  external_reference: string | null
+  custom_generation_limit: number | null
+  notes: string | null
+  created_at: string
+  sales_plans?: SalesPlan | null
+}
+
+export type SalesOrder = {
+  id: string
+  order_number: string
+  user_id: string
+  plan_id: string | null
+  subscription_id: string | null
+  status: 'pending' | 'paid' | 'cancelled' | 'refunded'
+  payment_method: 'bank_transfer' | 'paypal' | 'card' | 'cash' | 'manual' | 'invoice' | 'license_code'
+  amount: number
+  currency: string
+  customer_note: string | null
+  admin_note: string | null
+  paid_at: string | null
+  created_at: string
+  sales_plans?: SalesPlan | null
+}
+
+export type CustomerProfile = {
+  user_id: string
+  email: string
+  full_name: string | null
+  phone: string | null
+  company: string | null
+  trial_claimed_at: string | null
+  created_at: string
+}
+
+export type SalesSettings = {
+  id: number
+  company_name: string
+  sales_email: string | null
+  support_email: string | null
+  bank_instructions: string | null
+  paypal_url: string | null
+  terms_url: string | null
+  allow_bank_transfer: boolean
+  allow_paypal: boolean
+  allow_card: boolean
+  allow_invoice: boolean
+  trial_enabled: boolean
+}
+
+export type LicenseCodeRow = {
+  id: string
+  code_last4: string
+  plan_id: string
+  duration_days: number | null
+  assigned_email: string | null
+  max_uses: number
+  use_count: number
+  status: 'active' | 'depleted' | 'revoked'
+  expires_at: string | null
+  sale_amount: number | null
+  currency: string
+  payment_method: string
+  note: string | null
+  created_at: string
+  sales_plans?: SalesPlan | null
+}
