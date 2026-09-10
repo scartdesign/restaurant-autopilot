@@ -1,5 +1,5 @@
 import { FormEvent, useState } from 'react'
-import { ArrowRight, CalendarDays, Camera, ChefHat, CheckCircle2, Eye, Hash, MapPin, Sparkles } from 'lucide-react'
+import { ArrowRight, CalendarDays, Camera, ChefHat, CheckCircle2, Eye, Hash, KeyRound, MapPin, Sparkles } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 
 const LOGIN_FOOD = 'https://images.unsplash.com/photo-1574071318508-1cdbab80d002?auto=format&fit=crop&w=1800&q=88'
@@ -10,6 +10,7 @@ export function AuthScreen({ onDemo, signupOpen=true }: { onDemo: () => void; si
   const [password, setPassword] = useState('')
   const [message, setMessage] = useState('')
   const [working, setWorking] = useState(false)
+  const [recoveryWorking,setRecoveryWorking]=useState(false)
 
   async function submit(event: FormEvent) {
     event.preventDefault()
@@ -24,6 +25,15 @@ export function AuthScreen({ onDemo, signupOpen=true }: { onDemo: () => void; si
     setWorking(false)
   }
 
+  async function sendRecovery(){
+    if(!email.trim()){setMessage('Prvo upiši email naloga.');return}
+    setRecoveryWorking(true);setMessage('')
+    const redirectTo=`${window.location.origin}${window.location.pathname}`
+    const{error}=await supabase.auth.resetPasswordForEmail(email.trim(),{redirectTo})
+    if(error)setMessage(error.message);else setMessage('Poslali smo link za novu lozinku na tvoj email.')
+    setRecoveryWorking(false)
+  }
+
   return (
     <div className="auth-page auth-page-wow">
       <section className="auth-showcase" style={{ backgroundImage: `linear-gradient(180deg, rgba(8,13,10,.08), rgba(8,13,10,.88)), url(${LOGIN_FOOD})` }}>
@@ -36,7 +46,8 @@ export function AuthScreen({ onDemo, signupOpen=true }: { onDemo: () => void; si
         <div className="auth-card auth-card-pro auth-card-wow">
           <div className="auth-logo"><ChefHat size={28} /></div><p className="eyebrow">MARKETING BEZ CIMANJA</p><h1>{mode === 'login' ? <>Dobrodošao<br />nazad.</> : <>Pokreni svoj<br />Autopilot.</>}</h1><p className="muted">{mode === 'login' ? 'Uđi u komandni centar svog restorana.' : signupOpen?'Napravi nalog i pripremi prvi sadržaj za nekoliko minuta.':'Registracije su trenutno zatvorene od strane OWNER-a.'}</p>
           <div className="auth-benefits"><span><Sparkles size={13} /> sadržaj</span><span><MapPin size={13} /> local reach</span><span><Hash size={13} /> discovery</span></div>
-          <form onSubmit={submit}><label>Email<input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required placeholder="restoran@email.com" /></label><label>Lozinka<input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6} placeholder="Najmanje 6 karaktera" /></label><button className="primary full auth-submit" disabled={working||(mode==='signup'&&!signupOpen)}>{working ? 'Sačekaj…' : mode === 'login' ? 'Prijavi se' : signupOpen?'Napravi nalog':'Registracije zatvorene'} <ArrowRight size={17} /></button></form>
+          <form onSubmit={submit}><label>Email<input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required placeholder="restoran@email.com" autoComplete="email" /></label><label>Lozinka<input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={mode==='signup'?8:6} placeholder={mode==='signup'?'Najmanje 8 karaktera':'Tvoja lozinka'} autoComplete={mode==='login'?'current-password':'new-password'} /></label><button className="primary full auth-submit" disabled={working||(mode==='signup'&&!signupOpen)}>{working ? 'Sačekaj…' : mode === 'login' ? 'Prijavi se' : signupOpen?'Napravi nalog':'Registracije zatvorene'} <ArrowRight size={17} /></button></form>
+          {mode==='login'&&<button className="auth-recovery-link" type="button" onClick={sendRecovery} disabled={recoveryWorking}><KeyRound size={14}/>{recoveryWorking?'Šaljem link…':'Zaboravljena lozinka?'}</button>}
           {message && <p className="form-message">{message}</p>}
           {signupOpen?<button className="text-button" onClick={() => setMode(mode === 'login' ? 'signup' : 'login')}>{mode === 'login' ? 'Nemaš nalog? Registruj restoran' : 'Već imaš nalog? Prijavi se'}</button>:mode==='signup'?<button className="text-button" onClick={()=>setMode('login')}>Vrati se na prijavu</button>:<div className="signup-closed-note">Novi nalozi se trenutno aktiviraju direktno preko prodaje.</div>}
           <div className="auth-divider"><span>ili</span></div><button className="secondary full demo-login" type="button" onClick={onDemo}><Eye size={17} /> Pogledaj interaktivni demo</button>
