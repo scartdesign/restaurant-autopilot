@@ -1,9 +1,10 @@
 import { useState } from 'react'
-import { ArrowLeft, CalendarDays, CheckCircle2, ChefHat, Facebook, Hash, Image as ImageIcon, Instagram, MapPin, Megaphone, Search, Send, Settings, Sparkles, TrendingUp, UtensilsCrossed, Zap } from 'lucide-react'
+import { ArrowLeft, CalendarDays, CheckCircle2, ChefHat, Facebook, Hash, Image as ImageIcon, Instagram, MapPin, Megaphone, Palette, Search, Send, Settings, Sparkles, TrendingUp, UtensilsCrossed, Zap } from 'lucide-react'
 import { VisualStudio } from './VisualStudio'
+import { BrandKit } from './BrandKit'
 import type { MenuItem, Post, Restaurant } from '../types'
 
-type DemoTab = 'content' | 'studio' | 'publish' | 'menu' | 'promotions' | 'settings'
+type DemoTab = 'content' | 'studio' | 'brand' | 'publish' | 'menu' | 'promotions' | 'settings'
 
 const food = {
   pizza: 'https://images.unsplash.com/photo-1574071318508-1cdbab80d002?auto=format&fit=crop&w=1500&q=88',
@@ -12,6 +13,8 @@ const food = {
   salad: 'https://images.unsplash.com/photo-1540420773420-3366772f4999?auto=format&fit=crop&w=1200&q=88',
   lasagna: 'https://images.unsplash.com/photo-1574894709920-11b28e7367e3?auto=format&fit=crop&w=1200&q=88',
 }
+
+const demoLogo = `data:image/svg+xml;charset=utf-8,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"><rect width="200" height="200" rx="42" fill="#ffffff"/><circle cx="100" cy="100" r="72" fill="#173a2b"/><path d="M58 113c21-46 63-58 88-28-14 0-25 8-31 22 17-7 31-3 39 8-28 28-72 29-96-2Z" fill="#e7c35f"/><text x="100" y="78" text-anchor="middle" font-family="Georgia,serif" font-size="32" font-weight="700" fill="#fff">BN</text></svg>')}`
 
 const demoPosts = [
   { type: 'FEED', day: 'pon, 14. sep', title: 'Pizza Capricciosa', caption: 'Veče zaslužuje nešto posebno. Capricciosa iz peći, sa mozzarellom, šunkom i pečurkama.', status: 'approved', score: 94, image: food.pizza, ig: ['#BellaNapoli','#BeogradFood','#GdeJestiBeograd','#PizzaLovers','#ItalianFood'], fb: ['#BellaNapoli','#BeogradFood','#Pizza'], keywords: ['pizza Beograd','italijanski restoran Beograd'] },
@@ -29,7 +32,8 @@ const demoMenuCards = [
 ]
 
 const demoRestaurant: Restaurant = {
-  id: 'demo-restaurant', owner_id: 'demo', name: 'Bella Napoli', city: 'Beograd', neighborhood: 'Vračar', country: 'Serbia', phone: '+381 11 555 2026', website: 'https://example.com', instagram: '@bellanapoli', facebook: 'Bella Napoli Beograd', cuisine_type: 'Italijanska', brand_style: 'premium', primary_color: '#142019', secondary_color: '#b9df72', logo_url: null, description: 'Prava italijanska priča u tvom gradu.', target_audience: 'Parovi, porodice i ljubitelji italijanske kuhinje', social_goal: 'reservations', hashtag_mode: 'smart', language: 'sr', tone: 'premium', posting_frequency: 5, reservation_url: 'https://example.com/reservations', onboarding_completed: true,
+  id: 'demo-restaurant', owner_id: 'demo', name: 'Bella Napoli', city: 'Beograd', neighborhood: 'Vračar', country: 'Serbia', phone: '+381 11 555 2026', website: 'https://example.com', instagram: '@bellanapoli', facebook: 'Bella Napoli Beograd', cuisine_type: 'Italijanska', brand_style: 'premium', primary_color: '#173a2b', secondary_color: '#e7c35f', logo_url: demoLogo, description: 'Prava italijanska priča u tvom gradu.', target_audience: 'Parovi, porodice i ljubitelji italijanske kuhinje', social_goal: 'reservations', hashtag_mode: 'smart', language: 'sr', tone: 'premium', posting_frequency: 5, reservation_url: 'https://example.com/reservations', onboarding_completed: true,
+  default_logo_visible: true, default_logo_position: 'top-right', default_logo_size: 'm', default_logo_badge: 'white', default_overlay_strength: .64,
 }
 
 const demoMenu: MenuItem[] = [
@@ -56,11 +60,12 @@ export function DemoScreen({ onExit }: { onExit: () => void }) {
       <aside className="sidebar sidebar-pro">
         <div>
           <div className="brand-mark"><div className="brand-icon"><ChefHat size={21} /></div><span>Restaurant<br /><strong>Autopilot</strong></span></div>
-          <div className="restaurant-chip"><div className="avatar">B</div><div><strong>Bella Napoli</strong><small>Vračar · Beograd</small></div></div>
+          <div className="restaurant-chip"><img className="sidebar-logo" src={demoLogo} alt="" /><div><strong>Bella Napoli</strong><small>Vračar · Beograd</small></div></div>
           <div className="autopilot-status"><span className="live-dot" /> AUTOPILOT ACTIVE</div>
           <nav>
             <button className={tab === 'content' ? 'nav-active' : ''} onClick={() => setTab('content')}><CalendarDays size={18} /> Sadržaj</button>
-            <button className={tab === 'studio' ? 'nav-active' : ''} onClick={() => setTab('studio')}><ImageIcon size={18} /> Visual Studio <span className="nav-beta">BETA</span></button>
+            <button className={tab === 'studio' ? 'nav-active' : ''} onClick={() => setTab('studio')}><ImageIcon size={18} /> Visual Studio</button>
+            <button className={tab === 'brand' ? 'nav-active brand-nav' : 'brand-nav'} onClick={() => setTab('brand')}><Palette size={18} /> Brend <span className="nav-beta">LOGO</span></button>
             <button className={tab === 'publish' ? 'nav-active' : ''} onClick={() => setTab('publish')}><Send size={18} /> Publish Center</button>
             <button className={tab === 'menu' ? 'nav-active' : ''} onClick={() => setTab('menu')}><UtensilsCrossed size={18} /> Meni</button>
             <button className={tab === 'promotions' ? 'nav-active' : ''} onClick={() => setTab('promotions')}><Megaphone size={18} /> Akcije</button>
@@ -71,9 +76,10 @@ export function DemoScreen({ onExit }: { onExit: () => void }) {
       </aside>
 
       <main className="main-area">
-        <div className="demo-banner"><Sparkles size={14} /> LIVE MVP DEMO · sve što vidiš je interaktivni frontend, a pravi nalog koristi Supabase podatke.</div>
+        <div className="demo-banner"><Sparkles size={14} /> LIVE MVP DEMO · Brand Kit, Visual Studio i ostali moduli su interaktivni.</div>
         {tab === 'content' && <DemoContent approved={approved} setApproved={setApproved} notify={notify} />}
         {tab === 'studio' && <VisualStudio restaurant={demoRestaurant} posts={demoVisualPosts} menuItems={demoMenu} setNotice={notify} />}
+        {tab === 'brand' && <BrandKit restaurant={demoRestaurant} menuItems={demoMenu} onSaved={async () => {}} setNotice={notify} demo />}
         {tab === 'publish' && <DemoPublish notify={notify} />}
         {tab === 'menu' && <DemoMenu />}
         {tab === 'promotions' && <DemoPromotions notify={notify} />}
@@ -97,7 +103,7 @@ function DemoContent({ approved, setApproved, notify }: { approved: string[]; se
 
     <section className="discovery-ribbon discovery-ribbon-wow"><div className="discovery-ribbon-icon"><Zap size={20} /></div><div><strong>Smart Discovery</strong><span>Instagram dobija fokusiran set, Facebook čist lokalni set, a search keywords prate konkretno jelo i lokaciju.</span></div><div className="platform-mini"><span><Instagram size={15} /> IG optimized</span><span><Facebook size={15} /> FB clean</span><span><Search size={15} /> Search ready</span></div></section>
 
-    <section className="content-section wow-content-section"><div className="section-title"><div><p className="eyebrow">CONTENT LIBRARY</p><h2>Spremne objave</h2></div><span className="engine-badge"><Sparkles size={14} /> Real photo workflow</span></div><div className="post-grid post-grid-pro wow-post-grid">{demoPosts.map((post) => <article className="post-card post-card-pro wow-post-card" key={post.title}><div className="post-preview post-preview-pro wow-post-preview has-photo" style={{ backgroundImage: `linear-gradient(180deg, rgba(7,12,9,.03), rgba(7,12,9,.76)), url(${post.image})` }}><div className="preview-top"><span className="format-badge">{post.type}</span><span className="score-pill">{post.score}<small>/100</small></span></div><div className="preview-brand"><div className="preview-logo"><ChefHat size={20} /></div><div><strong>Bella Napoli</strong><small>{post.title}</small></div></div></div><div className="post-body post-body-pro"><div className="post-meta">{post.day}<span className={`status ${approved.includes(post.title) ? 'approved' : 'draft'}`}>{approved.includes(post.title) ? 'approved' : 'draft'}</span></div><h3>{post.title}</h3><p className="caption-preview">{post.caption}</p><div className="platform-discovery"><div className="platform-row"><div className="platform-label ig"><Instagram size={14} /> Instagram</div><div className="tag-cloud">{post.ig.map(tag => <span key={tag}>{tag}</span>)}</div></div><div className="platform-row"><div className="platform-label fb"><Facebook size={14} /> Facebook</div><div className="tag-cloud fb-tags">{post.fb.map(tag => <span key={tag}>{tag}</span>)}</div></div><div className="keyword-line"><Search size={13} /><span>{post.keywords.join(' · ')}</span></div></div>{approved.includes(post.title) ? <button className="approved-button full" onClick={() => setApproved(approved.filter(x => x !== post.title))}><CheckCircle2 size={16} /> Spremno</button> : <button className="secondary full" onClick={() => { setApproved([...approved, post.title]); notify('Objava je odobrena.') }}><CheckCircle2 size={16} /> Odobri objavu</button>}</div></article>)}</div></section>
+    <section className="content-section wow-content-section"><div className="section-title"><div><p className="eyebrow">CONTENT LIBRARY</p><h2>Spremne objave</h2></div><span className="engine-badge"><Sparkles size={14} /> Real photo workflow</span></div><div className="post-grid post-grid-pro wow-post-grid">{demoPosts.map((post) => <article className="post-card post-card-pro wow-post-card" key={post.title}><div className="post-preview post-preview-pro wow-post-preview has-photo" style={{ backgroundImage: `linear-gradient(180deg, rgba(7,12,9,.03), rgba(7,12,9,.76)), url(${post.image})` }}><div className="preview-top"><span className="format-badge">{post.type}</span><span className="score-pill">{post.score}<small>/100</small></span></div><div className="preview-brand"><img className="wow-card-logo" src={demoLogo} alt="" /><div><strong>Bella Napoli</strong><small>{post.title}</small></div></div><div className="wow-card-art-copy"><span className="wow-card-price">{post.type === 'PROMO' ? '-20%' : post.title === 'Pizza Capricciosa' ? '890 RSD' : 'CHEF PICK'}</span><h3>{post.title}</h3><span className="wow-card-cta">Rezerviši sto →</span></div></div><div className="post-body post-body-pro"><div className="post-meta">{post.day}<span className={`status ${approved.includes(post.title) ? 'approved' : 'draft'}`}>{approved.includes(post.title) ? 'approved' : 'draft'}</span></div><h3>{post.title}</h3><p className="caption-preview">{post.caption}</p><div className="platform-discovery"><div className="platform-row"><div className="platform-label ig"><Instagram size={14} /> Instagram</div><div className="tag-cloud">{post.ig.map(tag => <span key={tag}>{tag}</span>)}</div></div><div className="platform-row"><div className="platform-label fb"><Facebook size={14} /> Facebook</div><div className="tag-cloud fb-tags">{post.fb.map(tag => <span key={tag}>{tag}</span>)}</div></div><div className="keyword-line"><Search size={13} /><span>{post.keywords.join(' · ')}</span></div></div>{approved.includes(post.title) ? <button className="approved-button full" onClick={() => setApproved(approved.filter(x => x !== post.title))}><CheckCircle2 size={16} /> Spremno</button> : <button className="secondary full" onClick={() => { setApproved([...approved, post.title]); notify('Objava je odobrena.') }}><CheckCircle2 size={16} /> Odobri objavu</button>}</div></article>)}</div></section>
   </>
 }
 
@@ -116,5 +122,5 @@ function DemoPublish({ notify }: { notify: (value: string) => void }) {
 }
 
 function DemoSettings() {
-  return <><header className="page-header wow-simple-header"><div><p className="eyebrow">AUTOPILOT SETUP</p><h1>Brend pod kontrolom.</h1><p className="muted">Lokacija, ton, boje, cilj i discovery strategija.</p></div><div className="setup-score"><span>Setup score</span><strong>100%</strong></div></header><div className="settings-demo-grid"><div className="panel demo-setting"><MapPin size={20} /><div><strong>Lokalni discovery</strong><span>Vračar · Beograd · Serbia</span><small>#BeogradFood · #GdeJestiBeograd · #VracarFood</small></div></div><div className="panel demo-setting"><Hash size={20} /><div><strong>Hashtag strategija</strong><span>Smart — relevantnost pre spama</span><small>Brend + lokalno + jelo/niša + širi relevantan signal</small></div></div><div className="panel demo-setting"><Instagram size={20} /><div><strong>Instagram</strong><span>@bellanapoli</span><small>platform-specific copy + discovery</small></div></div><div className="panel demo-setting"><Facebook size={20} /><div><strong>Facebook</strong><span>Bella Napoli Beograd</span><small>čist lokalni tekst i CTA</small></div></div></div></>
+  return <><header className="page-header wow-simple-header"><div><p className="eyebrow">AUTOPILOT SETUP</p><h1>Podešavanja marketinga.</h1><p className="muted">Lokacija, ton, cilj i discovery strategija. Logo i boje su sada jasno izdvojeni u Brend.</p></div><div className="setup-score"><span>Setup score</span><strong>100%</strong></div></header><div className="settings-demo-grid"><div className="panel demo-setting"><MapPin size={20} /><div><strong>Lokalni discovery</strong><span>Vračar · Beograd · Serbia</span><small>#BeogradFood · #GdeJestiBeograd · #VracarFood</small></div></div><div className="panel demo-setting"><Hash size={20} /><div><strong>Hashtag strategija</strong><span>Smart — relevantnost pre spama</span><small>Brend + lokalno + jelo/niša + širi relevantan signal</small></div></div><div className="panel demo-setting"><Instagram size={20} /><div><strong>Instagram</strong><span>@bellanapoli</span><small>platform-specific copy + discovery</small></div></div><div className="panel demo-setting"><Facebook size={20} /><div><strong>Facebook</strong><span>Bella Napoli Beograd</span><small>čist lokalni tekst i CTA</small></div></div></div></>
 }
