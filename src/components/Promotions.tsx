@@ -1,7 +1,7 @@
-import { FormEvent, useState } from 'react'
-import { Bike, Clock3, Facebook, Hash, Heart, Instagram, Megaphone, Search, Sparkles, Utensils, Zap } from 'lucide-react'
+import { FormEvent, useMemo, useState } from 'react'
+import { Bike, Clock3, Facebook, Hash, Heart, Image as ImageIcon, Instagram, Megaphone, Search, Sparkles, Utensils, Zap } from 'lucide-react'
 import { supabase } from '../lib/supabase'
-import type { Restaurant } from '../types'
+import type { MenuItem, Restaurant } from '../types'
 
 const presets = [
   { key: 'lunch', label: 'Lunch meni', icon: Utensils, title: 'Lunch meni', discountText: 'Specijalna ponuda za ručak', description: 'Radnim danima od 12h do 16h. Istakni 2–3 najjača jela i brz servis.' },
@@ -11,14 +11,17 @@ const presets = [
   { key: 'date', label: 'Večera za dvoje', icon: Heart, title: 'Veče za dvoje', discountText: 'Posebna ponuda za dvoje', description: 'Večernji termin, premium atmosfera i jasan poziv na rezervaciju.' },
 ] as const
 
-export function Promotions({ restaurant, onChanged, setNotice }: {
+export function Promotions({ restaurant, menuItems, onChanged, setNotice }: {
   restaurant: Restaurant
+  menuItems: MenuItem[]
   onChanged: () => Promise<void>
   setNotice: (value: string) => void
 }) {
-  const [form, setForm] = useState({ title: '', discountText: '', description: '', startsAt: '', endsAt: '' })
+  const visualItems = useMemo(() => menuItems.filter((item) => item.is_active && item.image_url), [menuItems])
+  const [form, setForm] = useState({ title: '', discountText: '', description: '', startsAt: '', endsAt: '', menuItemId: visualItems[0]?.id || '' })
   const [working, setWorking] = useState(false)
   const [selectedPreset, setSelectedPreset] = useState('')
+  const selectedItem = visualItems.find((item) => item.id === form.menuItemId) || visualItems[0]
 
   function applyPreset(preset: typeof presets[number]) {
     setSelectedPreset(preset.key)
@@ -34,6 +37,7 @@ export function Promotions({ restaurant, onChanged, setNotice }: {
       body: {
         action: 'promotion',
         restaurantId: restaurant.id,
+        menuItemId: form.menuItemId || undefined,
         title: form.title,
         discountText: form.discountText,
         description: form.description,
@@ -44,8 +48,8 @@ export function Promotions({ restaurant, onChanged, setNotice }: {
     if (error) setNotice(error.message)
     else if (data?.error) setNotice(data.error)
     else {
-      setNotice('Kampanja je napravljena: feed + story + Instagram/Facebook discovery verzije čekaju odobrenje.')
-      setForm({ title: '', discountText: '', description: '', startsAt: '', endsAt: '' })
+      setNotice('Kampanja je napravljena: dizajnirani feed + story, IG/FB tekst i discovery čekaju pregled.')
+      setForm({ title: '', discountText: '', description: '', startsAt: '', endsAt: '', menuItemId: visualItems[0]?.id || '' })
       setSelectedPreset('')
       await onChanged()
     }
@@ -55,7 +59,7 @@ export function Promotions({ restaurant, onChanged, setNotice }: {
   return (
     <>
       <header className="page-header">
-        <div><p className="eyebrow">CAMPAIGN AUTOPILOT</p><h1>Napravi akciju</h1><p className="muted">Jedan unos pretvaramo u feed, story, CTA i platform-specific discovery.</p></div>
+        <div><p className="eyebrow">CAMPAIGN AUTOPILOT</p><h1>Napravi akciju</h1><p className="muted">Jedan unos pretvaramo u dizajnirani feed, story, CTA i platform-specific discovery.</p></div>
         <span className="engine-badge"><Zap size={14} /> Smart campaign</span>
       </header>
 
@@ -66,10 +70,21 @@ export function Promotions({ restaurant, onChanged, setNotice }: {
 
       <div className="promo-layout promo-layout-pro">
         <form className="panel promo-form promo-form-pro" onSubmit={submit}>
-          <div className="promo-form-title"><div className="settings-icon"><Megaphone size={19} /></div><div><h2>Nova kampanja</h2><p>Upiši ono što stvarno nudiš. Autopilot radi ostalo.</p></div></div>
+          <div className="promo-form-title"><div className="settings-icon"><Megaphone size={19} /></div><div><h2>Nova kampanja</h2><p>Upiši stvarnu ponudu i izaberi fotografiju koja je prodaje.</p></div></div>
           <label>Naziv akcije<input required value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="Vikend pasta" /></label>
           <label>Glavna poruka<input value={form.discountText} onChange={(e) => setForm({ ...form, discountText: e.target.value })} placeholder="20% popusta na sve paste" /></label>
           <label>Detalji<textarea rows={4} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Petak i subota od 18h. Važi u restoranu." /></label>
+
+          <div className="campaign-photo-picker">
+            <div className="campaign-photo-preview">{selectedItem?.image_url ? <img src={selectedItem.image_url} alt="" /> : <ImageIcon size={27} />}</div>
+            <label>Fotografija kampanje
+              <select value={form.menuItemId} onChange={(e) => setForm({ ...form, menuItemId: e.target.value })}>
+                {visualItems.length ? visualItems.map((item) => <option key={item.id} value={item.id}>{item.name}</option>) : <option value="">Nema jela sa fotografijom</option>}
+              </select>
+              <small>{visualItems.length ? 'Ova realna fotografija ide u oba dizajna.' : 'Dodaj fotografiju u Meni za ozbiljan promo vizual.'}</small>
+            </label>
+          </div>
+
           <div className="grid-form compact-grid">
             <label>Početak<input type="datetime-local" value={form.startsAt} onChange={(e) => setForm({ ...form, startsAt: e.target.value })} /></label>
             <label>Kraj<input type="datetime-local" value={form.endsAt} onChange={(e) => setForm({ ...form, endsAt: e.target.value })} /></label>
@@ -79,11 +94,11 @@ export function Promotions({ restaurant, onChanged, setNotice }: {
         </form>
         <aside className="promo-explainer promo-explainer-pro">
           <p className="eyebrow">AUTOPILOT OUTPUT</p>
-          <h2>Od jedne akcije do sadržaja spremnog za objavu.</h2>
-          <p>Instagram i Facebook ne treba da dobiju isti blok teksta i 15 istih hashtagova. Zato Autopilot pravi odvojene verzije i fokusira lokalne signale koji restoranu stvarno znače.</p>
+          <h2>Od jedne akcije do sadržaja koji možeš stvarno da objaviš.</h2>
+          <p>Feed dobija prodajni 4:5 layout, Story jači vertikalni poster, a fotografija ostaje ista realna fotografija iz restorana. Tekst i discovery su odvojeni po mrežama.</p>
           <div className="campaign-stack">
-            <div><span>01</span><strong>Feed 4:5</strong><small>1080 × 1350 · headline · CTA</small></div>
-            <div><span>02</span><strong>Story 9:16</strong><small>1080 × 1920 · kratka poruka</small></div>
+            <div><span>01</span><strong>Feed 4:5 · Bold</strong><small>1080 × 1350 · fotografija · headline · CTA</small></div>
+            <div><span>02</span><strong>Story 9:16 · Poster</strong><small>1080 × 1920 · kratka poruka · jak CTA</small></div>
             <div><span>03</span><strong>Discovery</strong><small>IG fokusiran set · FB 2–3 taga · search keywords</small></div>
           </div>
         </aside>
