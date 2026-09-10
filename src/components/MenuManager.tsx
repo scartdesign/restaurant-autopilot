@@ -54,8 +54,8 @@ export function MenuManager({ restaurant, userId, items, onChanged, setNotice }:
   async function generateAiImage(item: MenuItem, style = 'photoreal') {
     setAiWorkingId(item.id)
     setNotice(`AI generiše realističnu fotografiju za „${item.name}“…`)
-    const { data, error } = await supabase.functions.invoke('creative-engine', {
-      body: { action: 'generate_image', restaurantId: restaurant.id, menuItemId: item.id, style },
+    const { data, error } = await supabase.functions.invoke('creative-image', {
+      body: { action: 'generate', restaurantId: restaurant.id, menuItemId: item.id, style },
     })
     if (error) setNotice(error.message)
     else if (data?.error) setNotice(data.error)
