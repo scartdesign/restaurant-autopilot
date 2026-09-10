@@ -1,15 +1,22 @@
-import { useEffect, useMemo, useState } from 'react'
-import { BadgeCheck, Banknote, CalendarDays, CheckCircle2, Clock3, Copy, CreditCard, FileText, KeyRound, LogOut, ShieldCheck, Sparkles, Zap } from 'lucide-react'
+import { FormEvent, useEffect, useMemo, useState } from 'react'
+import { BadgeCheck, Banknote, Bell, Building2, CalendarDays, CheckCircle2, Clock3, Copy, CreditCard, FileText, KeyRound, LogOut, Mail, MapPin, Pencil, Save, ShieldCheck, Sparkles, UserRound, Zap } from 'lucide-react'
 import { supabase } from '../lib/supabase'
-import type { CustomerSubscription, SalesOrder, SalesPlan, SalesSettings } from '../types'
+import type { CustomerProfile, CustomerSubscription, Entitlement, NotificationOutbox, SalesOrder, SalesPlan, SalesSettings } from '../types'
 
 type Method = 'bank_transfer' | 'paypal' | 'card' | 'invoice'
+type ProfileForm = { full_name: string; phone: string; company: string; tax_id: string; company_number: string; address: string; city: string; country: string }
+
+const emptyProfile: ProfileForm = { full_name: '', phone: '', company: '', tax_id: '', company_number: '', address: '', city: '', country: 'Serbia' }
 
 export function BillingPage({ email, onAccessChanged, onSignOut }: { email: string; onAccessChanged: () => Promise<void>; onSignOut: () => Promise<void> }) {
   const [plans, setPlans] = useState<SalesPlan[]>([])
   const [subscriptions, setSubscriptions] = useState<CustomerSubscription[]>([])
   const [orders, setOrders] = useState<SalesOrder[]>([])
   const [settings, setSettings] = useState<SalesSettings | null>(null)
+  const [profile, setProfile] = useState<CustomerProfile | null>(null)
+  const [profileForm, setProfileForm] = useState<ProfileForm>(emptyProfile)
+  const [entitlement, setEntitlement] = useState<Entitlement | null>(null)
+  const [notifications, setNotifications] = useState<NotificationOutbox[]>([])
   const [interval, setInterval] = useState<'monthly' | 'yearly'>('monthly')
   const [license, setLicense] = useState('')
   const [selectedPlan, setSelectedPlan] = useState<SalesPlan | null>(null)
@@ -17,33 +24,47 @@ export function BillingPage({ email, onAccessChanged, onSignOut }: { email: stri
   const [note, setNote] = useState('')
   const [working, setWorking] = useState(false)
   const [message, setMessage] = useState('')
+  const [createdOrder, setCreatedOrder] = useState<SalesOrder | null>(null)
+  const [showProfile, setShowProfile] = useState(false)
 
   useEffect(() => { void load() }, [])
 
   const visiblePlans = useMemo(() => plans.filter((plan) => plan.billing_interval === interval), [plans, interval])
   const current = useMemo(() => subscriptions.find((sub) => ['active', 'trialing'].includes(sub.status) && (!sub.expires_at || new Date(sub.expires_at).getTime() > Date.now())), [subscriptions])
+  const pendingOrders = useMemo(() => orders.filter((order) => order.status === 'pending'), [orders])
+  const usagePercent = entitlement?.generation_limit && entitlement.generation_limit > 0 ? Math.min(100, Math.round(((entitlement.generated_this_month || 0) / entitlement.generation_limit) * 100)) : 0
+  const daysLeft = current?.expires_at ? Math.max(0, Math.ceil((new Date(current.expires_at).getTime() - Date.now()) / 86400000)) : null
 
   async function load() {
-    const [{ data: planData }, { data: subData }, { data: orderData }, { data: settingsData }] = await Promise.all([
+    await supabase.rpc('sync_account_notifications').catch(() => undefined)
+    const [{ data: planData }, { data: subData }, { data: orderData }, { data: settingsData }, { data: profileData }, { data: entitlementData }, { data: notificationData }] = await Promise.all([
       supabase.from('sales_plans').select('*').eq('active', true).eq('public', true).order('sort_order'),
       supabase.from('customer_subscriptions').select('*, sales_plans(*)').order('created_at', { ascending: false }),
-      supabase.from('sales_orders').select('*, sales_plans(*)').order('created_at', { ascending: false }).limit(12),
+      supabase.from('sales_orders').select('*, sales_plans(*)').order('created_at', { ascending: false }).limit(20),
       supabase.from('sales_settings').select('*').eq('id', 1).maybeSingle(),
+      supabase.from('customer_profiles').select('*').maybeSingle(),
+      supabase.rpc('current_entitlement'),
+      supabase.from('notification_outbox').select('*').eq('visible_in_app', true).order('created_at', { ascending: false }).limit(12),
     ])
     setPlans((planData || []) as SalesPlan[])
     setSubscriptions((subData || []) as CustomerSubscription[])
     setOrders((orderData || []) as SalesOrder[])
     setSettings((settingsData || null) as SalesSettings | null)
+    const nextProfile = (profileData || null) as CustomerProfile | null
+    setProfile(nextProfile)
+    setProfileForm(nextProfile ? {
+      full_name: nextProfile.full_name || '', phone: nextProfile.phone || '', company: nextProfile.billing_company || nextProfile.company || '', tax_id: nextProfile.billing_tax_id || '',
+      company_number: nextProfile.billing_company_number || '', address: nextProfile.billing_address || '', city: nextProfile.billing_city || '', country: nextProfile.billing_country || 'Serbia',
+    } : emptyProfile)
+    setEntitlement((entitlementData || null) as Entitlement | null)
+    setNotifications((notificationData || []) as NotificationOutbox[])
   }
 
   async function startTrial() {
     setWorking(true); setMessage('')
     const { error } = await supabase.rpc('request_trial')
-    if (error) setMessage(error.message)
-    else {
-      setMessage('Probni period je aktiviran. Autopilot je otključan.')
-      await load(); await onAccessChanged()
-    }
+    if (error) setMessage(humanError(error.message))
+    else { setMessage('Probni period je aktiviran. Autopilot je otključan.'); await load(); await onAccessChanged() }
     setWorking(false)
   }
 
@@ -51,55 +72,105 @@ export function BillingPage({ email, onAccessChanged, onSignOut }: { email: stri
     if (!license.trim()) { setMessage('Unesi aktivacioni kod.'); return }
     setWorking(true); setMessage('')
     const { error } = await supabase.rpc('redeem_license_code', { p_code: license.trim() })
-    if (error) setMessage(error.message)
-    else {
-      setLicense(''); setMessage('Licenca je aktivirana. Dobro došao u Restaurant Autopilot.')
-      await load(); await onAccessChanged()
-    }
+    if (error) setMessage(humanError(error.message))
+    else { setLicense(''); setMessage('Licenca je aktivirana. Paket je odmah otključan.'); await load(); await onAccessChanged() }
+    setWorking(false)
+  }
+
+  async function saveProfile(event?: FormEvent) {
+    event?.preventDefault()
+    setWorking(true); setMessage('')
+    const { error } = await supabase.rpc('save_billing_profile', {
+      p_full_name: profileForm.full_name || null, p_phone: profileForm.phone || null, p_company: profileForm.company || null, p_tax_id: profileForm.tax_id || null,
+      p_company_number: profileForm.company_number || null, p_address: profileForm.address || null, p_city: profileForm.city || null, p_country: profileForm.country || 'Serbia',
+    })
+    if (error) setMessage(humanError(error.message))
+    else { setMessage('Podaci za kupovinu i fakturu su sačuvani.'); setShowProfile(false); await load() }
     setWorking(false)
   }
 
   async function createOrder() {
     if (!selectedPlan) return
+    if ((method === 'invoice' || method === 'bank_transfer') && !profileForm.full_name.trim()) {
+      setShowProfile(true); setMessage('Pre narudžbine upiši ime / kontakt za uplatu.'); return
+    }
     setWorking(true); setMessage('')
+    await saveProfile()
     const { data, error } = await supabase.rpc('create_sales_order', { p_plan_id: selectedPlan.id, p_payment_method: method, p_customer_note: note || null })
-    if (error) setMessage(error.message)
+    if (error) setMessage(humanError(error.message))
     else {
       const order = data as SalesOrder
-      setMessage(`Zahtev ${order.order_number} je kreiran. Aktivacija sledi nakon potvrde uplate.`)
-      setSelectedPlan(null); setNote(''); await load()
+      setCreatedOrder(order)
+      setMessage(`Narudžbina ${order.order_number} je kreirana.`)
+      setNote(''); await load()
       if (method === 'paypal' && settings?.paypal_url) window.open(settings.paypal_url, '_blank', 'noopener,noreferrer')
     }
     setWorking(false)
   }
 
-  function copy(value: string) {
-    navigator.clipboard.writeText(value).then(() => setMessage('Kopirano.')).catch(() => setMessage('Kopiranje nije dozvoljeno u browseru.'))
+  async function markNotificationRead(row: NotificationOutbox) {
+    if (row.read_at) return
+    await supabase.from('notification_outbox').update({ read_at: new Date().toISOString() }).eq('id', row.id)
+    setNotifications((list) => list.map((item) => item.id === row.id ? { ...item, read_at: new Date().toISOString() } : item))
   }
+
+  function copy(value: string) { navigator.clipboard.writeText(value).then(() => setMessage('Kopirano.')).catch(() => setMessage('Kopiranje nije dozvoljeno u browseru.')) }
 
   const methods: { key: Method; label: string; enabled: boolean; icon: typeof Banknote }[] = [
     { key: 'bank_transfer', label: 'Uplata na račun', enabled: settings?.allow_bank_transfer ?? true, icon: Banknote },
     { key: 'invoice', label: 'Predračun / faktura', enabled: settings?.allow_invoice ?? true, icon: FileText },
-    { key: 'paypal', label: 'PayPal', enabled: settings?.allow_paypal ?? false, icon: CreditCard },
-    { key: 'card', label: 'Kartica', enabled: settings?.allow_card ?? false, icon: CreditCard },
+    { key: 'paypal', label: 'PayPal', enabled: Boolean(settings?.allow_paypal && settings?.paypal_url), icon: CreditCard },
+    { key: 'card', label: 'Kartica', enabled: Boolean(settings?.allow_card), icon: CreditCard },
   ]
 
-  if (current) return <div className="billing-page"><div className="billing-topbar"><div><strong>Restaurant Autopilot</strong><span>{email}</span></div><button className="secondary" onClick={onSignOut}><LogOut size={15}/> Odjavi se</button></div><div className="access-success"><div className="access-success-icon"><BadgeCheck size={34}/></div><p className="eyebrow">PRISTUP AKTIVAN</p><h1>{current.sales_plans?.name || 'Aktivan paket'}</h1><p>{current.status === 'trialing' ? 'Probni period je aktivan.' : 'Tvoj paket je aktivan i Autopilot je spreman.'}</p><div className="access-meta"><span><ShieldCheck size={15}/> {current.status}</span><span><CalendarDays size={15}/> {current.expires_at ? `važi do ${new Date(current.expires_at).toLocaleDateString('sr-RS')}` : 'bez isteka'}</span></div><button className="primary" onClick={onAccessChanged}><Sparkles size={17}/> Uđi u Autopilot</button></div></div>
+  const bankText = [settings?.legal_name || settings?.company_name, settings?.bank_name, settings?.bank_account ? `Račun: ${settings.bank_account}` : '', settings?.payment_model ? `Model: ${settings.payment_model}` : '', settings?.bank_instructions].filter(Boolean).join('\n')
 
-  return <div className="billing-page">
-    <div className="billing-topbar"><div><strong>Restaurant Autopilot</strong><span>{email}</span></div><button className="secondary" onClick={onSignOut}><LogOut size={15}/> Odjavi se</button></div>
-    <section className="billing-hero"><div><span className="billing-kicker"><Zap size={14}/> DESIGN · DISCOVERY · PUBLISH</span><h1>Izaberi paket i pokreni Autopilot.</h1><p>Jedan nalog, profesionalni vizuali, sadržaj, hashtag/discovery sistem i raspored objava.</p></div><div className="license-activate"><div><KeyRound size={19}/><strong>Imaš licencu?</strong></div><div className="license-row"><input value={license} onChange={(e) => setLicense(e.target.value.toUpperCase())} placeholder="RA-XXXX-XXXX-XXXX-XXXX"/><button onClick={redeem} disabled={working}>Aktiviraj</button></div></div></section>
+  return <div className="billing-page billing-v2">
+    <div className="billing-topbar"><div><strong>Restaurant Autopilot</strong><span>{email}</span></div><div className="billing-top-actions">{current && <button className="primary" onClick={onAccessChanged}><Sparkles size={15}/> Uđi u Autopilot</button>}<button className="secondary" onClick={onSignOut}><LogOut size={15}/> Odjavi se</button></div></div>
+
+    {current ? <section className="account-hero">
+      <div className="account-plan-mark"><BadgeCheck size={30}/></div>
+      <div className="account-plan-copy"><p className="eyebrow">PAKET AKTIVAN</p><h1>{current.sales_plans?.name || entitlement?.plan_name || 'Restaurant Autopilot'}</h1><p>{current.status === 'trialing' ? 'Probni period radi sa pravim funkcijama.' : 'Licenca je aktivna. Ovde kontrolišeš potrošnju i produženje.'}</p><div className="access-meta"><span><ShieldCheck size={14}/> {current.status}</span><span><CalendarDays size={14}/> {current.expires_at ? `do ${date(current.expires_at)}` : 'bez isteka'}</span>{daysLeft !== null && <span className={daysLeft <= 7 ? 'expiry-hot' : ''}><Clock3 size={14}/> {daysLeft} dana preostalo</span>}</div></div>
+      <div className="usage-card"><span>Mesečna potrošnja</span><strong>{entitlement?.generated_this_month || 0}<small> / {entitlement?.generation_limit ?? '∞'}</small></strong><div className="usage-track"><i style={{ width: `${usagePercent}%` }}/></div><small>{entitlement?.restaurants_used || 0}/{entitlement?.restaurants_limit ?? '∞'} lokacija</small></div>
+    </section> : <section className="billing-hero"><div><span className="billing-kicker"><Zap size={14}/> DESIGN · DISCOVERY · PUBLISH</span><h1>Izaberi paket i pokreni Autopilot.</h1><p>Pravi poslovni nalog: vizuali, sadržaj, discovery i raspored objava.</p></div><div className="license-activate"><div><KeyRound size={19}/><strong>Imaš licencu?</strong></div><div className="license-row"><input value={license} onChange={(e) => setLicense(e.target.value.toUpperCase())} placeholder="RA-XXXX-XXXX-XXXX-XXXX"/><button onClick={redeem} disabled={working}>Aktiviraj</button></div></div></section>}
+
+    {current && <section className="renew-strip"><div><KeyRound size={18}/><div><strong>Aktivacioni kod za produženje</strong><span>Nova licenca može produžiti ili promeniti tvoj paket.</span></div></div><div className="renew-code"><input value={license} onChange={(e) => setLicense(e.target.value.toUpperCase())} placeholder="RA-XXXX-XXXX-XXXX-XXXX"/><button onClick={redeem} disabled={working}>Aktiviraj</button></div></section>}
 
     {message && <div className="billing-message">{message}</div>}
 
-    <div className="billing-toggle"><button className={interval === 'monthly' ? 'active' : ''} onClick={() => setInterval('monthly')}>Mesečno</button><button className={interval === 'yearly' ? 'active' : ''} onClick={() => setInterval('yearly')}>Godišnje <span>2 meseca gratis</span></button></div>
+    <section className="billing-section-head"><div><p className="eyebrow">PAKETI</p><h2>{current ? 'Produži ili promeni paket' : 'Izaberi plan'}</h2></div><div className="billing-toggle"><button className={interval === 'monthly' ? 'active' : ''} onClick={() => setInterval('monthly')}>Mesečno</button><button className={interval === 'yearly' ? 'active' : ''} onClick={() => setInterval('yearly')}>Godišnje <span>2 meseca gratis</span></button></div></section>
 
-    <section className="pricing-grid">{visiblePlans.map((plan, index) => <article className={`pricing-card ${index === 1 ? 'featured' : ''}`} key={plan.id}>{index === 1 && <div className="popular-badge">NAJPOPULARNIJI</div>}<p className="eyebrow">{plan.name.toUpperCase()}</p><h2>{plan.price}<small> {plan.currency}</small></h2><span className="billing-period">/{plan.billing_interval === 'yearly' ? 'god' : 'mes'}</span><p>{plan.description}</p><div className="plan-features"><span><CheckCircle2 size={14}/> do {plan.max_restaurants} {plan.max_restaurants === 1 ? 'restorana' : 'restorana'}</span><span><CheckCircle2 size={14}/> do {plan.monthly_generation_limit} generisanih objava mesečno</span><span><CheckCircle2 size={14}/> Brand Kit + Visual Studio</span><span><CheckCircle2 size={14}/> Publish Center + discovery</span></div><button className={index === 1 ? 'primary full' : 'secondary full'} onClick={() => setSelectedPlan(plan)}>Izaberi {plan.name}</button></article>)}</section>
+    <section className="pricing-grid">{visiblePlans.map((plan, index) => <article className={`pricing-card ${index === 1 ? 'featured' : ''}`} key={plan.id}>{index === 1 && <div className="popular-badge">NAJPOPULARNIJI</div>}<p className="eyebrow">{plan.name.toUpperCase()}</p><h2>{plan.price}<small> {plan.currency}</small></h2><span className="billing-period">/{plan.billing_interval === 'yearly' ? 'god' : 'mes'}</span><p>{plan.description}</p><div className="plan-features"><span><CheckCircle2 size={14}/> {plan.max_restaurants} {plan.max_restaurants === 1 ? 'restoran' : 'restorana'}</span><span><CheckCircle2 size={14}/> {plan.monthly_generation_limit} generisanih objava mesečno</span><span><CheckCircle2 size={14}/> Brand Kit + Visual Studio</span><span><CheckCircle2 size={14}/> Publish Center + Smart Discovery</span>{Boolean(plan.features?.campaigns) && <span><CheckCircle2 size={14}/> Campaign Autopilot</span>}</div><button className={index === 1 ? 'primary full' : 'secondary full'} onClick={() => { setSelectedPlan(plan); setCreatedOrder(null); setMethod(methods.find((m) => m.enabled)?.key || 'bank_transfer') }}>{current ? `Produži · ${plan.name}` : `Izaberi ${plan.name}`}</button></article>)}</section>
 
-    {settings?.trial_enabled && <section className="trial-strip"><div><Clock3 size={20}/><div><strong>Želiš prvo da probaš?</strong><span>Jednokratni probni period otključava pravi nalog bez kartice.</span></div></div><button className="secondary" onClick={startTrial} disabled={working}>Aktiviraj probni period</button></section>}
+    {!current && settings?.trial_enabled && <section className="trial-strip"><div><Clock3 size={20}/><div><strong>Želiš prvo da probaš?</strong><span>Jednokratni probni period otključava pravi nalog bez kartice.</span></div></div><button className="secondary" onClick={startTrial} disabled={working}>Aktiviraj probni period</button></section>}
 
-    {orders.length > 0 && <section className="customer-orders"><div className="section-title"><div><p className="eyebrow">MOJE NARUDŽBINE</p><h2>Status uplata</h2></div></div>{orders.map((order) => <div className="customer-order-row" key={order.id}><div><strong>{order.order_number}</strong><span>{order.sales_plans?.name || 'Paket'} · {new Date(order.created_at).toLocaleDateString('sr-RS')}</span></div><b>{order.amount} {order.currency}</b><span className={`status ${order.status}`}>{order.status}</span><button className="icon-button" title="Kopiraj broj" onClick={() => copy(order.order_number)}><Copy size={14}/></button></div>)}</section>}
+    <section className="billing-management-grid">
+      <div className="customer-orders"><div className="section-title"><div><p className="eyebrow">PRODAJNI NALOG</p><h2>Podaci za račun / fakturu</h2></div><button className="secondary" onClick={() => setShowProfile((v) => !v)}><Pencil size={14}/> {showProfile ? 'Zatvori' : 'Izmeni'}</button></div>{showProfile ? <ProfileEditor form={profileForm} setForm={setProfileForm} onSave={saveProfile} working={working}/> : <div className="profile-summary"><span><UserRound size={15}/><b>{profile?.full_name || 'Ime nije uneseno'}</b></span><span><Building2 size={15}/>{profile?.billing_company || profile?.company || 'Privatno lice / firma nije unesena'}</span><span><Mail size={15}/>{email}</span><span><MapPin size={15}/>{[profile?.billing_address, profile?.billing_city, profile?.billing_country].filter(Boolean).join(', ') || 'Adresa nije unesena'}</span></div>}</div>
 
-    {selectedPlan && <div className="modal-backdrop" onMouseDown={() => setSelectedPlan(null)}><div className="modal-card sales-checkout" onMouseDown={(e) => e.stopPropagation()}><p className="eyebrow">KUPOVINA / AKTIVACIJA</p><h2>{selectedPlan.name} · {selectedPlan.price} {selectedPlan.currency}</h2><p className="muted">Izaberi način prodaje. Superadmin vidi zahtev i aktivira paket nakon potvrde.</p><div className="payment-methods">{methods.filter((m) => m.enabled).map((entry) => { const Icon = entry.icon; return <button key={entry.key} className={method === entry.key ? 'active' : ''} onClick={() => setMethod(entry.key)}><Icon size={18}/><span>{entry.label}</span></button> })}</div>{method === 'bank_transfer' && <div className="payment-help"><strong>Uplata na račun</strong><p>{settings?.bank_instructions || 'Nakon kreiranja zahteva dobićeš broj narudžbine. Podaci za uplatu se mogu podesiti iz Superadmin panela.'}</p></div>}{method === 'invoice' && <div className="payment-help"><strong>Predračun / faktura</strong><p>Upiši naziv firme, PIB ili napomenu u polje ispod. Administrator potvrđuje zahtev.</p></div>}{method === 'paypal' && <div className="payment-help"><strong>PayPal</strong><p>{settings?.paypal_url ? 'Posle kreiranja narudžbine otvoriće se PayPal stranica.' : 'PayPal link još nije podešen u Superadmin panelu.'}</p></div>}<label>Napomena<textarea rows={3} value={note} onChange={(e) => setNote(e.target.value)} placeholder="Firma, PIB, kontakt ili napomena..."/></label><div className="modal-actions"><button className="secondary" onClick={() => setSelectedPlan(null)}>Otkaži</button><button className="primary" onClick={createOrder} disabled={working}><ShieldCheck size={16}/>{working ? 'Kreiram…' : 'Kreiraj zahtev'}</button></div></div></div>}
+      <div className="customer-orders notification-panel"><div className="section-title"><div><p className="eyebrow">OBAVEŠTENJA</p><h2>Status naloga</h2></div><Bell size={18}/></div>{notifications.length ? notifications.slice(0,5).map((row) => <button className={`notification-row ${row.read_at ? '' : 'unread'}`} key={row.id} onClick={() => void markNotificationRead(row)}><span><b>{row.subject}</b><small>{row.body}</small></span><time>{date(row.created_at)}</time></button>) : <div className="admin-empty">Nema novih obaveštenja.</div>}</div>
+    </section>
+
+    {orders.length > 0 && <section className="customer-orders order-history"><div className="section-title"><div><p className="eyebrow">MOJE NARUDŽBINE</p><h2>Uplate i licence</h2></div><span className="order-pending-chip">{pendingOrders.length} čeka</span></div>{orders.map((order) => <div className="customer-order-row customer-order-row-v2" key={order.id}><div><strong>{order.order_number}</strong><span>{order.sales_plans?.name || 'Paket'} · {date(order.created_at)} · {paymentLabel(order.payment_method)}</span></div><b>{order.amount} {order.currency}</b><div className="order-reference"><span>Poziv / ref.</span><strong>{order.payment_reference || order.order_number}</strong></div><span className={`status ${order.status}`}>{order.status}</span><button className="icon-button" title="Kopiraj referencu" onClick={() => copy(order.payment_reference || order.order_number)}><Copy size={14}/></button></div>)}</section>}
+
+    {selectedPlan && <div className="modal-backdrop" onMouseDown={() => { if (!createdOrder) setSelectedPlan(null) }}><div className="modal-card sales-checkout sales-checkout-v2" onMouseDown={(e) => e.stopPropagation()}>{createdOrder ? <OrderCreated order={createdOrder} settings={settings} bankText={bankText} copy={copy} close={() => { setSelectedPlan(null); setCreatedOrder(null) }}/> : <><p className="eyebrow">KUPOVINA / PRODUŽENJE</p><h2>{selectedPlan.name} · {selectedPlan.price} {selectedPlan.currency}</h2><p className="muted">Narudžbina ulazi direktno u Superadmin. Pristup se aktivira čim uplata bude potvrđena.</p><div className="payment-methods">{methods.filter((m) => m.enabled).map((entry) => { const Icon = entry.icon; return <button type="button" key={entry.key} className={method === entry.key ? 'active' : ''} onClick={() => setMethod(entry.key)}><Icon size={18}/><span>{entry.label}</span></button> })}</div>{method === 'bank_transfer' && <div className="payment-help"><strong>Uplata na račun</strong><p>{bankText || 'Podatke za račun Superadmin treba da unese u Prodajna podešavanja. Narudžbina će ipak dobiti jedinstven poziv na broj.'}</p></div>}{method === 'invoice' && <div className="payment-help"><strong>Predračun / faktura</strong><p>Podaci iz tvog prodajnog profila biće sačuvani uz narudžbinu. Po potrebi ih izmeni pre slanja.</p></div>}{method === 'paypal' && <div className="payment-help"><strong>PayPal</strong><p>Posle kreiranja narudžbine otvara se podešeni PayPal payment link. Superadmin potvrđuje uplatu.</p></div>}{method === 'card' && <div className="payment-help"><strong>Kartično plaćanje</strong><p>Kartica se prikazuje samo kada je gateway uključen iz Superadmina.</p></div>}<button type="button" className="billing-inline-profile" onClick={() => setShowProfile(true)}><UserRound size={15}/><span>{profileForm.full_name || 'Dodaj podatke kupca'} · {profileForm.company || 'privatno lice'}</span><Pencil size={13}/></button><label>Napomena<textarea rows={3} value={note} onChange={(e) => setNote(e.target.value)} placeholder="PIB, kontakt, posebna napomena..."/></label><div className="modal-actions"><button className="secondary" onClick={() => setSelectedPlan(null)}>Otkaži</button><button className="primary" onClick={createOrder} disabled={working}><ShieldCheck size={16}/>{working ? 'Kreiram…' : 'Potvrdi narudžbinu'}</button></div></>}</div></div>}
   </div>
+}
+
+function ProfileEditor({ form, setForm, onSave, working }: { form: ProfileForm; setForm: (value: ProfileForm) => void; onSave: (event?: FormEvent) => Promise<void>; working: boolean }) {
+  return <form className="billing-profile-form" onSubmit={onSave}><div className="billing-profile-grid"><label>Ime i prezime<input value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })} placeholder="Kontakt osoba"/></label><label>Telefon<input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="+381..."/></label><label>Firma<input value={form.company} onChange={(e) => setForm({ ...form, company: e.target.value })} placeholder="Naziv firme / restorana"/></label><label>PIB<input value={form.tax_id} onChange={(e) => setForm({ ...form, tax_id: e.target.value })} placeholder="PIB"/></label><label>Matični broj<input value={form.company_number} onChange={(e) => setForm({ ...form, company_number: e.target.value })} placeholder="MB"/></label><label>Adresa<input value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} placeholder="Ulica i broj"/></label><label>Grad<input value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} placeholder="Grad"/></label><label>Država<input value={form.country} onChange={(e) => setForm({ ...form, country: e.target.value })}/></label></div><button className="primary" disabled={working}><Save size={15}/> Sačuvaj podatke</button></form>
+}
+
+function OrderCreated({ order, settings, bankText, copy, close }: { order: SalesOrder; settings: SalesSettings | null; bankText: string; copy: (value: string) => void; close: () => void }) {
+  const reference = order.payment_reference || order.order_number
+  return <div className="order-created"><div className="order-created-icon"><CheckCircle2 size={28}/></div><p className="eyebrow">NARUDŽBINA KREIRANA</p><h2>{order.order_number}</h2><p>Sačuvaj referencu ispod. Superadmin vidi zahtev odmah.</p><div className="payment-ticket"><div><span>Iznos</span><strong>{order.amount} {order.currency}</strong></div><div><span>Poziv / referenca</span><strong>{reference}</strong><button onClick={() => copy(reference)}><Copy size={13}/> kopiraj</button></div>{order.due_at && <div><span>Rok</span><strong>{date(order.due_at)}</strong></div>}</div>{order.payment_method === 'bank_transfer' && <div className="payment-help payment-help-final"><strong>Podaci za uplatu</strong><p>{bankText || 'Kontaktiraj prodaju za podatke za uplatu.'}</p></div>}{order.payment_method === 'invoice' && <div className="payment-help payment-help-final"><strong>Predračun / faktura</strong><p>{settings?.invoice_note || 'Zahtev za predračun je evidentiran. Administrator ga obrađuje iz Superadmin panela.'}</p></div>}<button className="primary full" onClick={close}>Završi</button></div>
+}
+
+function date(value: string) { return new Date(value).toLocaleDateString('sr-RS', { day: '2-digit', month: '2-digit', year: 'numeric' }) }
+function paymentLabel(value: SalesOrder['payment_method']) { return ({ bank_transfer: 'uplata na račun', invoice: 'faktura', paypal: 'PayPal', card: 'kartica', cash: 'keš', manual: 'ručno', license_code: 'licenca' } as Record<string,string>)[value] || value }
+function humanError(value: string) {
+  if (value.includes('already been used')) return 'Ovaj aktivacioni kod je već iskorišćen.'
+  if (value.includes('assigned to another email')) return 'Licenca je vezana za drugi email.'
+  if (value.includes('Trial has already been used')) return 'Probni period je već iskorišćen na ovom nalogu.'
+  if (value.includes('skoro kreiran')) return 'Već postoji skoro kreirana narudžbina za isti paket i način plaćanja.'
+  return value
 }
