@@ -37,17 +37,36 @@ export function Dashboard({ restaurant, menuItems, posts, onChanged, setNotice }
     if (error) setNotice(error.message)
     else if (data?.error) setNotice(data.error)
     else {
-      setNotice(`Autopilot je napravio ${data?.posts?.length || restaurant.posting_frequency} predloga za ovu nedelju.`)
+      setNotice(`Autopilot je napravio ${data?.posts?.length || restaurant.posting_frequency} dizajniranih predloga za ovu nedelju.`)
       await onChanged()
     }
     setGenerating(false)
   }
 
-  async function changeStatus(id: string, status: Post['status']) {
-    setWorkingId(id)
-    const { error } = await supabase.from('posts').update({ status }).eq('id', id)
+  async function changeStatus(post: Post, status: Post['status']) {
+    setWorkingId(post.id)
+    if (status === 'approved') {
+      const { data, error } = await supabase.functions.invoke('content-engine', {
+        body: { action: 'quality_check', restaurantId: restaurant.id, postId: post.id },
+      })
+      if (error) {
+        setNotice(error.message)
+        setWorkingId('')
+        return
+      }
+      if (data?.score < 70) {
+        const missing = Object.entries(data?.checks || {}).filter(([, ok]) => !ok).map(([key]) => key.replaceAll('_', ' ')).join(', ')
+        setNotice(`Objava nije spremna za odobrenje (${data.score}/100). Sredi: ${missing || 'kvalitet sadržaja'}.`)
+        setWorkingId('')
+        return
+      }
+    }
+    const { error } = await supabase.from('posts').update({ status }).eq('id', post.id)
     if (error) setNotice(error.message)
-    else await onChanged()
+    else {
+      if (status === 'approved') setNotice('Objava je prošla proveru kvaliteta i odobrena je.')
+      await onChanged()
+    }
     setWorkingId('')
   }
 
@@ -59,7 +78,7 @@ export function Dashboard({ restaurant, menuItems, posts, onChanged, setNotice }
     if (error) setNotice(error.message)
     else if (data?.error) setNotice(data.error)
     else {
-      setNotice(action === 'regenerate' ? 'Napravljen je novi tekst i discovery set.' : 'Discovery je ponovo optimizovan.')
+      setNotice(action === 'regenerate' ? 'Napravljen je novi tekst; sačuvani vizuelni stil ostaje.' : 'Discovery je ponovo optimizovan.')
       await onChanged()
     }
     setWorkingId('')
@@ -71,7 +90,7 @@ export function Dashboard({ restaurant, menuItems, posts, onChanged, setNotice }
         <div className="wow-hero-copy">
           <div className="hero-kicker"><span className="live-dot" /> AUTOPILOT ACTIVE</div>
           <span className="wow-brand-label">{restaurant.name.toUpperCase()}</span>
-          <h1>{restaurant.description || `Sadržaj koji izgleda kao tvoj restoran.`}</h1>
+          <h1>{restaurant.description || 'Sadržaj koji izgleda kao tvoj restoran.'}</h1>
           <p>{restaurant.cuisine_type ? `${restaurant.cuisine_type} · ` : ''}{restaurant.neighborhood || restaurant.city || 'Tvoj grad'} · planirano, brendirano i spremno za objavu.</p>
           <div className="wow-hero-actions">
             <button className="wow-primary" onClick={generateWeek} disabled={generating}><Sparkles size={18} /> {generating ? 'Autopilot radi…' : 'Kreiraj novu nedelju'}</button>
@@ -131,13 +150,13 @@ export function Dashboard({ restaurant, menuItems, posts, onChanged, setNotice }
       <section className="content-section wow-content-section">
         <div className="section-title">
           <div><p className="eyebrow">CONTENT LIBRARY</p><h2>Sadržaj ove nedelje</h2></div>
-          <span className="engine-badge"><Sparkles size={14} /> Smart Discovery</span>
+          <span className="engine-badge"><Sparkles size={14} /> Design + Discovery</span>
         </div>
         {posts.length === 0 ? (
           <div className="empty-state wow-empty"><Sparkles size={30} /><h3>Još nema sadržaja</h3><p>Dodaj kvalitetne fotografije i jela u meni, zatim pokreni nedelju.</p><button className="wow-primary" onClick={generateWeek}><Sparkles size={17} /> Generiši sada</button></div>
         ) : (
           <div className="post-grid post-grid-pro wow-post-grid">
-            {posts.map((post) => <PostCard key={post.id} post={post} restaurant={restaurant} menuItems={menuItems} working={workingId === post.id} onEdit={() => setEditing(post)} onRegenerate={() => runEngine(post, 'regenerate')} onOptimize={() => runEngine(post, 'optimize_discovery')} onStatus={(status) => changeStatus(post.id, status)} setNotice={setNotice} />)}
+            {posts.map((post) => <PostCard key={post.id} post={post} restaurant={restaurant} menuItems={menuItems} working={workingId === post.id} onEdit={() => setEditing(post)} onRegenerate={() => runEngine(post, 'regenerate')} onOptimize={() => runEngine(post, 'optimize_discovery')} onStatus={(status) => changeStatus(post, status)} setNotice={setNotice} />)}
           </div>
         )}
       </section>
@@ -152,6 +171,8 @@ function Kpi({ icon, label, value, detail }: { icon: React.ReactNode; label: str
 }
 
 function resolvePostImage(post: Post, menuItems: MenuItem[]) {
+  const visualImage = post.generation_meta?.visual_design?.image_url
+  if (typeof visualImage === 'string' && visualImage) return visualImage
   const meta = typeof post.generation_meta?.image_url === 'string' ? post.generation_meta.image_url : null
   if (meta) return meta
   return menuItems.find((item) => item.id === post.menu_item_id)?.image_url || null
@@ -171,6 +192,13 @@ function PostCard({ post, restaurant, menuItems, working, onEdit, onRegenerate, 
   const instagramTags = post.platform_content?.instagram?.hashtags || post.hashtags || []
   const facebookTags = post.platform_content?.facebook?.hashtags || []
   const imageUrl = resolvePostImage(post, menuItems)
+  const item = menuItems.find((entry) => entry.id === post.menu_item_id)
+  const design = post.generation_meta?.visual_design
+  const template = design?.template || (post.post_type === 'promotion' ? 'bold' : 'editorial')
+  const visualHeadline = design?.headline || post.title || 'Nova objava'
+  const visualCta = design?.cta || post.cta || 'Svrati danas'
+  const price = item?.price ? `${item.price} ${item.currency || 'RSD'}` : ''
+  const photoPosition = design?.photo_position === 'left' ? 'left center' : design?.photo_position === 'right' ? 'right center' : 'center center'
 
   async function copyInstagram() {
     const caption = post.platform_content?.instagram?.caption || post.caption || ''
@@ -185,16 +213,22 @@ function PostCard({ post, restaurant, menuItems, working, onEdit, onRegenerate, 
 
   return (
     <article className="post-card post-card-pro wow-post-card">
-      <div className={`post-preview post-preview-pro wow-post-preview ${imageUrl ? 'has-photo' : ''}`} style={imageUrl ? { backgroundImage: `linear-gradient(180deg, rgba(10,16,12,.04), rgba(10,16,12,.78)), url(${imageUrl})` } : { background: `radial-gradient(circle at 80% 20%, ${restaurant.secondary_color || '#b9df72'}33, transparent 32%), linear-gradient(145deg, ${restaurant.primary_color || '#17211b'}, #27352b)` }}>
+      <div className={`post-preview post-preview-pro wow-post-preview card-template-${template} ${imageUrl ? 'has-photo' : ''}`} style={imageUrl ? { backgroundImage: `url(${imageUrl})`, backgroundPosition: photoPosition } : { background: `radial-gradient(circle at 80% 20%, ${restaurant.secondary_color || '#b9df72'}33, transparent 32%), linear-gradient(145deg, ${restaurant.primary_color || '#17211b'}, #27352b)` }}>
+        <div className="wow-preview-shade" />
         <div className="preview-top"><span className="format-badge">{post.post_type === 'story' ? 'STORY 9:16' : post.post_type === 'promotion' ? 'PROMO 4:5' : 'FEED 4:5'}</span><span className="score-pill">{post.discovery_score || 0}<small>/100</small></span></div>
-        <div className="preview-brand">{restaurant.logo_url ? <img className="wow-card-logo" src={restaurant.logo_url} alt="" /> : <div className="preview-logo"><ChefHat size={20} /></div>}<div><strong>{restaurant.name}</strong><small>{post.title || 'Autopilot content'}</small></div></div>
+        <div className="wow-card-art-copy">
+          {price && <span className="wow-card-price">{price}</span>}
+          <h3>{visualHeadline}</h3>
+          <span className="wow-card-cta">{visualCta} →</span>
+        </div>
+        <div className="preview-brand">{restaurant.logo_url ? <img className="wow-card-logo" src={restaurant.logo_url} alt="" /> : <div className="preview-logo"><ChefHat size={20} /></div>}<div><strong>{restaurant.name}</strong><small>{restaurant.neighborhood || restaurant.city || restaurant.cuisine_type}</small></div></div>
       </div>
       <div className="post-body post-body-pro">
         <div className="post-meta">
           {post.scheduled_for ? new Date(post.scheduled_for).toLocaleDateString('sr-RS', { weekday: 'long', day: 'numeric', month: 'short' }) : 'Bez termina'}
           <span className={`status ${post.status}`}>{post.status}</span>
         </div>
-        <h3>{post.title}</h3>
+        <div className="post-title-line"><h3>{post.title}</h3><span className="visual-template-chip">{template}</span></div>
         <p className="caption-preview">{post.caption}</p>
 
         <div className="platform-discovery">
@@ -209,7 +243,7 @@ function PostCard({ post, restaurant, menuItems, working, onEdit, onRegenerate, 
           <button className="icon-button" title="Novi tekst" disabled={working} onClick={onRegenerate}><RefreshCw size={15} /></button>
           <button className="icon-button discovery-button" title="Optimizuj discovery" disabled={working} onClick={onOptimize}><Hash size={15} /></button>
           {post.status !== 'approved' && post.status !== 'published'
-            ? <button className="secondary action-grow" disabled={working} onClick={() => onStatus('approved')}><CheckCircle2 size={16} /> Odobri</button>
+            ? <button className="secondary action-grow" disabled={working} onClick={() => onStatus('approved')}><CheckCircle2 size={16} /> Proveri + odobri</button>
             : <button className="approved-button action-grow" onClick={() => onStatus('draft')}><CheckCircle2 size={16} /> Spremno</button>}
         </div>
       </div>
@@ -250,6 +284,16 @@ function PostEditor({ post, onClose, onSaved, setNotice }: {
       instagram: { ...(post.platform_content?.instagram || {}), caption: form.instagram_caption, hashtags: instagramHashtags },
       facebook: { ...(post.platform_content?.facebook || {}), caption: form.facebook_caption, hashtags: facebookHashtags },
     }
+    const oldVisual = post.generation_meta?.visual_design
+    const generationMeta = oldVisual ? {
+      ...post.generation_meta,
+      visual_design: {
+        ...oldVisual,
+        headline: form.title || oldVisual.headline,
+        subline: shorten(form.caption, oldVisual.format === 'story' ? 96 : 118),
+        cta: form.cta || oldVisual.cta,
+      },
+    } : post.generation_meta
     const { error } = await supabase.from('posts').update({
       title: form.title || null,
       caption: form.caption || null,
@@ -258,11 +302,12 @@ function PostEditor({ post, onClose, onSaved, setNotice }: {
       platform_content: platformContent,
       visual_brief: form.visual_brief || null,
       scheduled_for: form.scheduled_for ? new Date(form.scheduled_for).toISOString() : null,
+      generation_meta: generationMeta,
       status: 'draft',
     }).eq('id', post.id)
     if (error) setNotice(error.message)
     else {
-      setNotice('Objava i platformske verzije su sačuvane.')
+      setNotice('Objava, platformske verzije i vizuelni tekst su sinhronizovani.')
       await onSaved()
     }
     setWorking(false)
@@ -286,4 +331,9 @@ function PostEditor({ post, onClose, onSaved, setNotice }: {
       </form>
     </div>
   )
+}
+
+function shorten(value: string, max: number) {
+  const clean = value.replace(/\s+/g, ' ').trim()
+  return clean.length <= max ? clean : `${clean.slice(0, max - 1).trim()}…`
 }
