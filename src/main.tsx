@@ -8,6 +8,7 @@ import './studio.css'
 import './extras.css'
 import './publish.css'
 import './campaign.css'
+import './wow.css'
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
