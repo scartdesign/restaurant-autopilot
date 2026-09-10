@@ -15,7 +15,7 @@ import { VisualStudio } from './components/VisualStudio'
 import { PublishCenter } from './components/PublishCenter'
 import { BrandKit } from './components/BrandKit'
 import { BillingPage } from './components/BillingPage'
-import { OwnerControl } from './components/OwnerControl'
+import { OwnerControlPlus } from './components/OwnerControlPlus'
 import { AdminSetup } from './components/AdminSetup'
 import { CreativeHub } from './components/CreativeHub'
 
@@ -159,7 +159,7 @@ function App() {
   if (addingRestaurant) return <Onboarding additional userId={session.user.id} onCancel={() => setAddingRestaurant(false)} onCreated={async () => { setAddingRestaurant(false); await loadAccountState(); await loadRestaurants(session.user.id); setActiveTab('dashboard') }} />
 
   if (!restaurant) {
-    if (isSuperadmin && activeTab === 'admin') return <div className="standalone-admin"><OwnerControl setNotice={setNotice} onCloseApp={async()=>{await loadAppControls();setActiveTab('dashboard')}} />{notice && <div className="notice floating-notice"><span>{notice}</span><button onClick={() => setNotice('')}><X size={15}/></button></div>}</div>
+    if (isSuperadmin && activeTab === 'admin') return <div className="standalone-admin"><OwnerControlPlus setNotice={setNotice} onCloseApp={async()=>{await loadAppControls();setActiveTab('dashboard')}} />{notice && <div className="notice floating-notice"><span>{notice}</span><button onClick={() => setNotice('')}><X size={15}/></button></div>}</div>
     return <Onboarding userId={session.user.id} onCreated={async () => { await loadAccountState(); await loadRestaurants(session.user.id); setActiveTab('dashboard') }} />
   }
 
@@ -196,7 +196,7 @@ function App() {
       {activeTab==='promotions'&&canUseCampaigns&&<Promotions restaurant={restaurant} menuItems={menuItems} onChanged={refreshContent} setNotice={setNotice}/>} 
       {activeTab==='billing'&&<BillingPage email={session.user.email||''} onAccessChanged={accessChanged} onSignOut={signOut}/>} 
       {activeTab==='settings'&&<SettingsPanel restaurant={restaurant} onSaved={refreshRestaurant} setNotice={setNotice}/>} 
-      {activeTab==='admin'&&isSuperadmin&&<OwnerControl setNotice={setNotice} onCloseApp={async()=>{await loadAppControls();setActiveTab('dashboard')}}/>} 
+      {activeTab==='admin'&&isSuperadmin&&<OwnerControlPlus setNotice={setNotice} onCloseApp={async()=>{await loadAppControls();setActiveTab('dashboard')}}/>} 
     </main>
   </div>
 }
