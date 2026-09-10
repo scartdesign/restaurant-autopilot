@@ -15,6 +15,7 @@ import './brand-kit.css'
 import './onboarding-brand.css'
 import './schedule-demo.css'
 import './sales.css'
+import './sales-v2.css'
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
