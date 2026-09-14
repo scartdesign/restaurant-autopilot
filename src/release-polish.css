@@ -71,3 +71,22 @@ label{font-size:13px!important;gap:8px!important}
   .owner-metrics{grid-template-columns:1fr 1fr!important}.owner-control-v3 .admin-metric{min-height:82px!important;padding:14px!important}.owner-control-v3 .admin-metric strong{font-size:22px!important}
   .owner-plan-fields{grid-template-columns:1fr!important}.owner-ai-usage{grid-template-columns:1fr 1fr!important}
 }
+
+/* Readability release pass 2 — no micro-text in customer/OWNER workflows. */
+.sidebar nav button{font-size:14px!important}.sidebar .restaurant-chip small,.sidebar .sidebar-plan-mini,.sidebar .autopilot-status{font-size:11px!important}
+.owner-control-v3 .admin-topbar p,.owner-control-v3 .admin-metric small,.owner-control-v3 .admin-table-head,.owner-control-v3 .admin-table-row small,.owner-plan-head span,.owner-plan-head b,.owner-plan-card>p,.owner-plan-fields label,.owner-big-toggle small,.owner-ai-status small,.outbox-row span,.outbox-row p,.audit-row span,.audit-row code,.audit-row time{font-size:12px!important}
+.owner-control-v3 .status,.owner-plan-head button,.owner-big-toggle>b,.owner-ai-usage span{font-size:11px!important}
+.owner-health small,.owner-health p{font-size:12px!important}.owner-health strong{font-size:17px!important}
+.launch-task-copy span,.support-ticket-head>div>span,.owner-support-row>div:nth-child(2)>span,.owner-support-row small{font-size:12px!important}
+.launch-task-copy p,.support-ticket p,.support-reply span,.health-card section p,.health-external-grid span{font-size:13px!important}
+.launch-bottom-grid article>small,.support-ticket>small,.health-card section span{font-size:12px!important}
+.support-status{font-size:12px!important;padding:7px 10px!important}
+.health-card section strong{font-size:15px!important}
+.owner-plus-switch button{min-height:46px!important;font-size:13px!important;padding:0 15px!important}
+.email-admin-page label,.owner-support-page label{font-size:13px!important}
+.email-log-row span,.email-log-row small{font-size:12px!important}
+@media(max-width:900px){
+  .sidebar nav button{font-size:12px!important;min-width:98px!important;flex-basis:98px!important}
+  .owner-control-v3 .admin-table-row small,.owner-control-v3 .admin-table-head{font-size:12px!important}
+  .launch-task-copy p,.support-ticket p{font-size:13px!important}
+}
