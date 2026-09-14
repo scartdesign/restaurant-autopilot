@@ -21,8 +21,6 @@ import { CreativeHub } from './components/CreativeHub'
 import { LaunchCenter } from './components/LaunchCenter'
 import { SupportCenter } from './components/SupportCenter'
 import { NotificationsCenter } from './components/NotificationsCenter'
-import { LaunchCenter } from './components/LaunchCenter'
-import { SupportCenter } from './components/SupportCenter'
 
 type Tab = 'launch' | 'dashboard' | 'creative' | 'studio' | 'brand' | 'publish' | 'menu' | 'promotions' | 'settings' | 'support' | 'notifications' | 'billing' | 'admin'
 type AppControlsLite = { maintenance_mode:boolean; maintenance_message:string|null; sales_open:boolean; signup_open:boolean; announcement_enabled:boolean; announcement_text:string|null; announcement_tone:'info'|'success'|'warning'; app_version:string }
