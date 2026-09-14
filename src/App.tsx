@@ -20,6 +20,8 @@ import { AdminSetup } from './components/AdminSetup'
 import { CreativeHub } from './components/CreativeHub'
 import { LaunchCenter } from './components/LaunchCenter'
 import { SupportCenter } from './components/SupportCenter'
+import { LaunchCenter } from './components/LaunchCenter'
+import { SupportCenter } from './components/SupportCenter'
 
 type Tab = 'launch' | 'dashboard' | 'creative' | 'studio' | 'brand' | 'publish' | 'menu' | 'promotions' | 'settings' | 'support' | 'billing' | 'admin'
 type AppControlsLite = { maintenance_mode:boolean; maintenance_message:string|null; sales_open:boolean; signup_open:boolean; announcement_enabled:boolean; announcement_text:string|null; announcement_tone:'info'|'success'|'warning'; app_version:string }
@@ -183,6 +185,7 @@ function App() {
         <button className={`${activeTab==='promotions'?'nav-active ':''}${canUseCampaigns?'':'locked-nav'}`} onClick={()=>void openTab('promotions')}><Megaphone size={18}/> Akcije {!canUseCampaigns&&<span className="nav-beta"><LockKeyhole size={9}/> PRO</span>}</button>
         <button className={activeTab==='billing'?'nav-active billing-nav':'billing-nav'} onClick={()=>void openTab('billing')}><BadgeEuro size={18}/> Paket / licenca</button>
         <button className={activeTab==='settings'?'nav-active':''} onClick={()=>void openTab('settings')}><Settings size={18}/> Podešavanja</button>
+        <button className={activeTab==='support'?'nav-active support-nav':'support-nav'} onClick={()=>void openTab('support')}><LifeBuoy size={18}/> Podrška</button>
         <button className={activeTab==='support'?'nav-active support-nav':''} onClick={()=>void openTab('support')}><LifeBuoy size={18}/> Podrška</button>
         {isSuperadmin&&<button className={activeTab==='admin'?'nav-active admin-nav':'admin-nav'} onClick={()=>void openTab('admin')}><ShieldCheck size={18}/> Superadmin <span className="nav-beta">OWNER</span></button>}
       </nav>
@@ -192,6 +195,7 @@ function App() {
       {appControls.announcement_enabled&&appControls.announcement_text&&<div className={`global-announcement ${appControls.announcement_tone}`}><Megaphone size={15}/><span>{appControls.announcement_text}</span></div>}
       {notice&&<div className="notice"><span>{notice}</span><button onClick={()=>setNotice('')}><X size={15}/></button></div>}
       {activeTab==='launch'&&<LaunchCenter restaurant={restaurant} menuItems={menuItems} posts={posts} onNavigate={(tab)=>void openTab(tab as Tab)}/>} 
+      {activeTab==='launch'&&<LaunchCenter restaurant={restaurant} menuItems={menuItems} posts={posts} onNavigate={(tab)=>void openTab(tab)}/>} 
       {activeTab==='dashboard'&&<Dashboard restaurant={restaurant} menuItems={menuItems} posts={posts} onChanged={refreshContent} setNotice={setNotice}/>} 
       {activeTab==='creative'&&<CreativeHub restaurant={restaurant} menuItems={menuItems} entitlement={isSuperadmin?{active:true,is_superadmin:true,features:{campaign_pack:true}}:entitlement} onChanged={refreshContent} setNotice={setNotice}/>} 
       {activeTab==='studio'&&<VisualStudio restaurant={restaurant} menuItems={menuItems} posts={posts} setNotice={setNotice}/>} 
@@ -201,6 +205,7 @@ function App() {
       {activeTab==='promotions'&&canUseCampaigns&&<Promotions restaurant={restaurant} menuItems={menuItems} onChanged={refreshContent} setNotice={setNotice}/>} 
       {activeTab==='billing'&&<BillingPage email={session.user.email||''} onAccessChanged={accessChanged} onSignOut={signOut}/>} 
       {activeTab==='settings'&&<SettingsPanel restaurant={restaurant} onSaved={refreshRestaurant} setNotice={setNotice}/>} 
+      {activeTab==='support'&&<SupportCenter restaurant={restaurant} setNotice={setNotice}/>} 
       {activeTab==='support'&&<SupportCenter restaurant={restaurant} setNotice={setNotice}/>}  
       {activeTab==='admin'&&isSuperadmin&&<OwnerControlPlus setNotice={setNotice} onCloseApp={async()=>{await loadAppControls();setActiveTab('dashboard')}}/>} 
     </main>
