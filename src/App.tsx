@@ -39,7 +39,7 @@ function App() {
   const [isSuperadmin, setIsSuperadmin] = useState(false)
   const [hasAccess, setHasAccess] = useState(false)
   const [notice, setNotice] = useState('')
-  const [activeTab, setActiveTab] = useState<Tab>('dashboard')
+  const [activeTab, setActiveTab] = useState<Tab>('launch')
   const [demo, setDemo] = useState(false)
   const [addingRestaurant, setAddingRestaurant] = useState(false)
   const [recoveryMode,setRecoveryMode]=useState(false)
@@ -68,7 +68,7 @@ function App() {
 
   function resetLocalState() {
     setRestaurants([]); setRestaurant(null); setMenuItems([]); setPosts([]); setEntitlement(null)
-    setIsSuperadmin(false); setHasAccess(false); setAccountReady(false); setActiveTab('dashboard'); setAddingRestaurant(false); setRecoveryMode(false)
+    setIsSuperadmin(false); setHasAccess(false); setAccountReady(false); setActiveTab('launch'); setAddingRestaurant(false); setRecoveryMode(false)
   }
 
   async function boot(currentSession = session) {
@@ -88,7 +88,7 @@ function App() {
     if (error) setNotice(error.message)
     const admin = Boolean(adminData)
     setIsSuperadmin(admin); setHasAccess(Boolean(accessData) || admin); setEntitlement((entitlementData || null) as Entitlement | null)
-    if (admin) setActiveTab(current => current === 'dashboard' && !restaurant ? 'admin' : current)
+    if (admin) setActiveTab(current => (current === 'dashboard' || current === 'launch') && !restaurant ? 'admin' : current)
   }
 
   async function loadRestaurants(ownerId = session?.user.id, preferredId?: string) {
@@ -111,7 +111,7 @@ function App() {
     if (!next || next.id === restaurant?.id) return
     setRestaurant(next); localStorage.setItem(ACTIVE_RESTAURANT_KEY, next.id); setLoading(true)
     await Promise.all([loadMenu(next.id), loadPosts(next.id)])
-    setActiveTab('dashboard'); setLoading(false)
+    setActiveTab('launch'); setLoading(false)
   }
 
   async function loadMenu(restaurantId: string) {
@@ -138,7 +138,7 @@ function App() {
     setActiveTab(tab)
   }
 
-  async function accessChanged() { await loadAccountState(); await loadAppControls(); if (session) await loadRestaurants(session.user.id, restaurant?.id); setActiveTab('dashboard') }
+  async function accessChanged() { await loadAccountState(); await loadAppControls(); if (session) await loadRestaurants(session.user.id, restaurant?.id); setActiveTab('launch') }
   async function adminActivated() { window.history.replaceState({}, '', window.location.pathname); await loadAccountState(); await loadAppControls(); setActiveTab('admin') }
   async function signOut() { await supabase.auth.signOut() }
   async function recoveryDone(){setRecoveryMode(false);await boot()}
@@ -158,7 +158,7 @@ function App() {
   if (!isSuperadmin && appControls.maintenance_mode) return <MaintenanceScreen message={appControls.maintenance_message} version={appControls.app_version} onSignOut={signOut}/>
   if (!isSuperadmin && !hasAccess) return <BillingPage email={session.user.email || ''} onAccessChanged={accessChanged} onSignOut={signOut} />
 
-  if (addingRestaurant) return <Onboarding additional userId={session.user.id} onCancel={() => setAddingRestaurant(false)} onCreated={async () => { setAddingRestaurant(false); await loadAccountState(); await loadRestaurants(session.user.id); setActiveTab('dashboard') }} />
+  if (addingRestaurant) return <Onboarding additional userId={session.user.id} onCancel={() => setAddingRestaurant(false)} onCreated={async () => { setAddingRestaurant(false); await loadAccountState(); await loadRestaurants(session.user.id); setActiveTab('launch') }} />
 
   if (!restaurant) {
     if (isSuperadmin && activeTab === 'admin') return <div className="standalone-admin"><OwnerControlPlus setNotice={setNotice} onCloseApp={async()=>{await loadAppControls();setActiveTab('dashboard')}} />{notice && <div className="notice floating-notice"><span>{notice}</span><button onClick={() => setNotice('')}><X size={15}/></button></div>}</div>
