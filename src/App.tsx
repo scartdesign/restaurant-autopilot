@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { BadgeEuro, Building2, CalendarDays, ChefHat, Image as ImageIcon, LockKeyhole, LogOut, Megaphone, Palette, Plus, Send, Settings, ShieldCheck, Sparkles, UtensilsCrossed, X } from 'lucide-react'
+import { BadgeEuro, Building2, CalendarDays, ChefHat, Image as ImageIcon, LifeBuoy, LockKeyhole, LogOut, Megaphone, Palette, Plus, Rocket, Send, Settings, ShieldCheck, Sparkles, UtensilsCrossed, X } from 'lucide-react'
 import type { Session } from '@supabase/supabase-js'
 import { supabase } from './lib/supabase'
 import type { Entitlement, MenuItem, Post, Restaurant } from './types'
@@ -18,8 +18,10 @@ import { BillingPage } from './components/BillingPage'
 import { OwnerControlPlus } from './components/OwnerControlPlus'
 import { AdminSetup } from './components/AdminSetup'
 import { CreativeHub } from './components/CreativeHub'
+import { LaunchCenter } from './components/LaunchCenter'
+import { SupportCenter } from './components/SupportCenter'
 
-type Tab = 'dashboard' | 'creative' | 'studio' | 'brand' | 'publish' | 'menu' | 'promotions' | 'settings' | 'billing' | 'admin'
+type Tab = 'launch' | 'dashboard' | 'creative' | 'studio' | 'brand' | 'publish' | 'menu' | 'promotions' | 'settings' | 'support' | 'billing' | 'admin'
 type AppControlsLite = { maintenance_mode:boolean; maintenance_message:string|null; sales_open:boolean; signup_open:boolean; announcement_enabled:boolean; announcement_text:string|null; announcement_tone:'info'|'success'|'warning'; app_version:string }
 const ACTIVE_RESTAURANT_KEY = 'restaurant-autopilot-active-restaurant'
 const defaultControls:AppControlsLite={maintenance_mode:false,maintenance_message:null,sales_open:true,signup_open:true,announcement_enabled:false,announcement_text:null,announcement_tone:'info',app_version:'1.0'}
@@ -129,8 +131,8 @@ function App() {
       setActiveTab('billing'); return
     }
     if (restaurant) {
-      if (tab === 'dashboard' || tab === 'creative' || tab === 'publish' || tab === 'studio') await loadPosts(restaurant.id)
-      if (tab === 'creative' || tab === 'menu' || tab === 'promotions' || tab === 'studio' || tab === 'brand') await loadMenu(restaurant.id)
+      if (tab === 'launch' || tab === 'dashboard' || tab === 'creative' || tab === 'publish' || tab === 'studio') await loadPosts(restaurant.id)
+      if (tab === 'launch' || tab === 'creative' || tab === 'menu' || tab === 'promotions' || tab === 'studio' || tab === 'brand') await loadMenu(restaurant.id)
       if (tab === 'creative') await loadAccountState()
     }
     setActiveTab(tab)
@@ -171,6 +173,7 @@ function App() {
       <div className={`autopilot-status ${isSuperadmin?'owner-status':''}`}><span className="live-dot"/> {isSuperadmin?'OWNER · SUPERADMIN':`${planName.toUpperCase()} · AKTIVAN`}</div>
       {!isSuperadmin && <div className="sidebar-plan-mini"><span>{restaurants.length}/{restaurantLimit || '∞'} lokacija</span>{generationUsage&&<span>{generationUsage} objava</span>}{remainingRestaurants===0&&restaurantLimit!==null?<small>Za više lokacija promeni paket.</small>:null}</div>}
       <nav>
+        <button className={activeTab==='launch'?'nav-active launch-nav':''} onClick={()=>void openTab('launch')}><Rocket size={18}/> Start <span className="nav-beta">100%</span></button>
         <button className={activeTab==='dashboard'?'nav-active':''} onClick={()=>void openTab('dashboard')}><CalendarDays size={18}/> Sadržaj</button>
         <button className={activeTab==='creative'?'nav-active creative-nav':''} onClick={()=>void openTab('creative')}><Sparkles size={18}/> Creative AI <span className="nav-beta">NEW</span></button>
         <button className={activeTab==='studio'?'nav-active':''} onClick={()=>void openTab('studio')}><ImageIcon size={18}/> Visual Studio</button>
@@ -180,6 +183,7 @@ function App() {
         <button className={`${activeTab==='promotions'?'nav-active ':''}${canUseCampaigns?'':'locked-nav'}`} onClick={()=>void openTab('promotions')}><Megaphone size={18}/> Akcije {!canUseCampaigns&&<span className="nav-beta"><LockKeyhole size={9}/> PRO</span>}</button>
         <button className={activeTab==='billing'?'nav-active billing-nav':'billing-nav'} onClick={()=>void openTab('billing')}><BadgeEuro size={18}/> Paket / licenca</button>
         <button className={activeTab==='settings'?'nav-active':''} onClick={()=>void openTab('settings')}><Settings size={18}/> Podešavanja</button>
+        <button className={activeTab==='support'?'nav-active support-nav':''} onClick={()=>void openTab('support')}><LifeBuoy size={18}/> Podrška</button>
         {isSuperadmin&&<button className={activeTab==='admin'?'nav-active admin-nav':'admin-nav'} onClick={()=>void openTab('admin')}><ShieldCheck size={18}/> Superadmin <span className="nav-beta">OWNER</span></button>}
       </nav>
     </div><button className="logout" onClick={signOut}><LogOut size={18}/> Odjavi se</button></aside>
@@ -187,6 +191,7 @@ function App() {
     <main className={`main-area ${activeTab==='admin'?'admin-main-area':''}`}>
       {appControls.announcement_enabled&&appControls.announcement_text&&<div className={`global-announcement ${appControls.announcement_tone}`}><Megaphone size={15}/><span>{appControls.announcement_text}</span></div>}
       {notice&&<div className="notice"><span>{notice}</span><button onClick={()=>setNotice('')}><X size={15}/></button></div>}
+      {activeTab==='launch'&&<LaunchCenter restaurant={restaurant} menuItems={menuItems} posts={posts} onNavigate={(tab)=>void openTab(tab as Tab)}/>} 
       {activeTab==='dashboard'&&<Dashboard restaurant={restaurant} menuItems={menuItems} posts={posts} onChanged={refreshContent} setNotice={setNotice}/>} 
       {activeTab==='creative'&&<CreativeHub restaurant={restaurant} menuItems={menuItems} entitlement={isSuperadmin?{active:true,is_superadmin:true,features:{campaign_pack:true}}:entitlement} onChanged={refreshContent} setNotice={setNotice}/>} 
       {activeTab==='studio'&&<VisualStudio restaurant={restaurant} menuItems={menuItems} posts={posts} setNotice={setNotice}/>} 
@@ -196,6 +201,7 @@ function App() {
       {activeTab==='promotions'&&canUseCampaigns&&<Promotions restaurant={restaurant} menuItems={menuItems} onChanged={refreshContent} setNotice={setNotice}/>} 
       {activeTab==='billing'&&<BillingPage email={session.user.email||''} onAccessChanged={accessChanged} onSignOut={signOut}/>} 
       {activeTab==='settings'&&<SettingsPanel restaurant={restaurant} onSaved={refreshRestaurant} setNotice={setNotice}/>} 
+      {activeTab==='support'&&<SupportCenter restaurant={restaurant} setNotice={setNotice}/>}  
       {activeTab==='admin'&&isSuperadmin&&<OwnerControlPlus setNotice={setNotice} onCloseApp={async()=>{await loadAppControls();setActiveTab('dashboard')}}/>} 
     </main>
   </div>
