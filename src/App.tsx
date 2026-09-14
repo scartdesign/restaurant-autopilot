@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { BadgeEuro, Building2, CalendarDays, ChefHat, Image as ImageIcon, LifeBuoy, LockKeyhole, LogOut, Megaphone, Palette, Plus, Rocket, Send, Settings, ShieldCheck, Sparkles, UtensilsCrossed, X } from 'lucide-react'
+import { BadgeEuro, Bell, Building2, CalendarDays, ChefHat, Image as ImageIcon, LifeBuoy, LockKeyhole, LogOut, Megaphone, Palette, Plus, Rocket, Send, Settings, ShieldCheck, Sparkles, UtensilsCrossed, X } from 'lucide-react'
 import type { Session } from '@supabase/supabase-js'
 import { supabase } from './lib/supabase'
 import type { Entitlement, MenuItem, Post, Restaurant } from './types'
@@ -20,10 +20,11 @@ import { AdminSetup } from './components/AdminSetup'
 import { CreativeHub } from './components/CreativeHub'
 import { LaunchCenter } from './components/LaunchCenter'
 import { SupportCenter } from './components/SupportCenter'
+import { NotificationsCenter } from './components/NotificationsCenter'
 import { LaunchCenter } from './components/LaunchCenter'
 import { SupportCenter } from './components/SupportCenter'
 
-type Tab = 'launch' | 'dashboard' | 'creative' | 'studio' | 'brand' | 'publish' | 'menu' | 'promotions' | 'settings' | 'support' | 'billing' | 'admin'
+type Tab = 'launch' | 'dashboard' | 'creative' | 'studio' | 'brand' | 'publish' | 'menu' | 'promotions' | 'settings' | 'support' | 'notifications' | 'billing' | 'admin'
 type AppControlsLite = { maintenance_mode:boolean; maintenance_message:string|null; sales_open:boolean; signup_open:boolean; announcement_enabled:boolean; announcement_text:string|null; announcement_tone:'info'|'success'|'warning'; app_version:string }
 const ACTIVE_RESTAURANT_KEY = 'restaurant-autopilot-active-restaurant'
 const defaultControls:AppControlsLite={maintenance_mode:false,maintenance_message:null,sales_open:true,signup_open:true,announcement_enabled:false,announcement_text:null,announcement_tone:'info',app_version:'1.0'}
@@ -186,6 +187,7 @@ function App() {
         <button className={activeTab==='billing'?'nav-active billing-nav':'billing-nav'} onClick={()=>void openTab('billing')}><BadgeEuro size={18}/> Paket / licenca</button>
         <button className={activeTab==='settings'?'nav-active':''} onClick={()=>void openTab('settings')}><Settings size={18}/> Podešavanja</button>
         <button className={activeTab==='support'?'nav-active support-nav':'support-nav'} onClick={()=>void openTab('support')}><LifeBuoy size={18}/> Podrška</button>
+        <button className={activeTab==='notifications'?'nav-active':''} onClick={()=>void openTab('notifications')}><Bell size={18}/> Obaveštenja</button>
         <button className={activeTab==='support'?'nav-active support-nav':''} onClick={()=>void openTab('support')}><LifeBuoy size={18}/> Podrška</button>
         {isSuperadmin&&<button className={activeTab==='admin'?'nav-active admin-nav':'admin-nav'} onClick={()=>void openTab('admin')}><ShieldCheck size={18}/> Superadmin <span className="nav-beta">OWNER</span></button>}
       </nav>
@@ -206,6 +208,7 @@ function App() {
       {activeTab==='billing'&&<BillingPage email={session.user.email||''} onAccessChanged={accessChanged} onSignOut={signOut}/>} 
       {activeTab==='settings'&&<SettingsPanel restaurant={restaurant} onSaved={refreshRestaurant} setNotice={setNotice}/>} 
       {activeTab==='support'&&<SupportCenter restaurant={restaurant} setNotice={setNotice}/>} 
+      {activeTab==='notifications'&&<NotificationsCenter setNotice={setNotice}/>} 
       {activeTab==='support'&&<SupportCenter restaurant={restaurant} setNotice={setNotice}/>}  
       {activeTab==='admin'&&isSuperadmin&&<OwnerControlPlus setNotice={setNotice} onCloseApp={async()=>{await loadAppControls();setActiveTab('dashboard')}}/>} 
     </main>
