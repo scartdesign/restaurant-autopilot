@@ -162,7 +162,7 @@ function App() {
 
   if (!restaurant) {
     if (isSuperadmin && activeTab === 'admin') return <div className="standalone-admin"><OwnerControlPlus setNotice={setNotice} onCloseApp={async()=>{await loadAppControls();setActiveTab('dashboard')}} />{notice && <div className="notice floating-notice"><span>{notice}</span><button onClick={() => setNotice('')}><X size={15}/></button></div>}</div>
-    return <Onboarding userId={session.user.id} onCreated={async () => { await loadAccountState(); await loadRestaurants(session.user.id); setActiveTab('dashboard') }} />
+    return <Onboarding userId={session.user.id} onCreated={async () => { await loadAccountState(); await loadRestaurants(session.user.id); setActiveTab('launch') }} />
   }
 
   return <div className="app-shell">
