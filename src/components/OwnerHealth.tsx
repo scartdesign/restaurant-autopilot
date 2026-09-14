@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Activity, AlertTriangle, BadgeEuro, CheckCircle2, CreditCard, Image, Mail, RefreshCw, Send, ShieldCheck, Users } from 'lucide-react'
+import { Activity, AlertTriangle, BadgeEuro, CheckCircle2, CreditCard, Image, Mail, RefreshCw, Send, ShieldCheck } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 
 type State={
@@ -32,7 +32,7 @@ export function OwnerHealth({setNotice}:{setNotice:(v:string)=>void}){
     const [ai,email,settings,controls,subs,orders,support,failed]=await Promise.all([
       supabase.rpc('admin_ai_provider_status'),
       supabase.rpc('admin_email_provider_status'),
-      supabase.from('sales_settings').select('legal_name,tax_id,bank_account,email_from,allow_card,allow_paypal').eq('id',1).maybeSingle(),
+      supabase.from('sales_settings').select('legal_name,tax_id,bank_account,email_from,allow_card,allow_paypal,terms_url,privacy_url').eq('id',1).maybeSingle(),
       supabase.from('app_controls').select('app_version,maintenance_mode,sales_open,ai_images_enabled').eq('id',1).maybeSingle(),
       supabase.from('customer_subscriptions').select('id',{count:'exact',head:true}).in('status',['active','trialing']),
       supabase.from('sales_orders').select('id',{count:'exact',head:true}).eq('status','pending'),
@@ -47,7 +47,7 @@ export function OwnerHealth({setNotice}:{setNotice:(v:string)=>void}){
       email:Boolean(e.configured),
       emailFrom:Boolean(s?.email_from),
       bank:Boolean(s?.bank_account),
-      legal:Boolean(s?.legal_name&&s?.tax_id),
+      legal:Boolean(s?.legal_name&&s?.tax_id&&s?.terms_url&&s?.privacy_url),
       salesOpen:c?.sales_open!==false,
       maintenance:Boolean(c?.maintenance_mode),
       aiImages:c?.ai_images_enabled!==false,
@@ -65,7 +65,7 @@ export function OwnerHealth({setNotice}:{setNotice:(v:string)=>void}){
   const checks=useMemo(()=>[
     {label:'AI provider',ok:state.ai,detail:state.ai?'OpenAI provider je podešen':'Dodaj OpenAI ključ u Creative AI OWNER delu',icon:Image},
     {label:'Transactional email',ok:state.email&&state.emailFrom,detail:state.email&&state.emailFrom?'Provider + sender su spremni':'Podesi Resend i verifikovani sender u Email Centeru',icon:Mail},
-    {label:'Firma / naplata',ok:state.legal&&state.bank,detail:state.legal&&state.bank?'Pravni i bankarski podaci su uneti':'Dopuni pravni naziv, PIB i račun',icon:BadgeEuro},
+    {label:'Firma / naplata',ok:state.legal&&state.bank,detail:state.legal&&state.bank?'Pravni, bankarski i legal linkovi su uneti':'Dopuni pravni naziv, PIB, račun, uslove i privatnost',icon:BadgeEuro},
     {label:'Prodaja',ok:state.salesOpen,detail:state.salesOpen?'Kupovina paketa je otvorena':'Prodaja je trenutno zatvorena',icon:CreditCard},
     {label:'AI slike',ok:state.aiImages,detail:state.aiImages?'AI slike su dozvoljene sistemski':'AI slike su globalno ugašene',icon:Image},
   ],[state])
