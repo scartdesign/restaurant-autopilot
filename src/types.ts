@@ -173,6 +173,10 @@ export type SalesOrder = {
   due_at?: string | null
   payment_reference?: string | null
   billing_snapshot?: Record<string, unknown>
+  accepted_terms_at?: string | null
+  accepted_terms_url?: string | null
+  accepted_privacy_at?: string | null
+  accepted_privacy_url?: string | null
   created_at: string
   sales_plans?: SalesPlan | null
 }
@@ -202,6 +206,7 @@ export type SalesSettings = {
   bank_instructions: string | null
   paypal_url: string | null
   terms_url: string | null
+  privacy_url?: string | null
   allow_bank_transfer: boolean
   allow_paypal: boolean
   allow_card: boolean
