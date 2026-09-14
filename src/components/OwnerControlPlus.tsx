@@ -7,9 +7,15 @@ import { OwnerSupport } from './OwnerSupport'
 import { OwnerHealth } from './OwnerHealth'
 
 export function OwnerControlPlus({onCloseApp,setNotice}:{onCloseApp?:()=>void;setNotice:(v:string)=>void}){
-  const[section,setSection]=useState<'control'|'health'|'promos'|'email'|'support'>('control')
+  const[section,setSection]=useState<'control'|'promos'|'email'|'support'|'health'>('control')
   return <div className="owner-plus-shell">
-    <div className="owner-plus-switch"><button className={section==='control'?'active':''} onClick={()=>setSection('control')}><ShieldCheck size={16}/> OWNER Control</button><button className={section==='health'?'active':''} onClick={()=>setSection('health')}><Activity size={16}/> System Health</button><button className={section==='promos'?'active':''} onClick={()=>setSection('promos')}><BadgePercent size={16}/> Promo kodovi</button><button className={section==='email'?'active':''} onClick={()=>setSection('email')}><Mail size={16}/> Email Center</button><button className={section==='support'?'active':''} onClick={()=>setSection('support')}><Headphones size={16}/> Support Inbox</button></div>
-    {section==='control'?<OwnerControl onCloseApp={onCloseApp} setNotice={setNotice}/>:section==='health'?<OwnerHealth setNotice={setNotice}/>:section==='promos'?<PromoCodesAdmin setNotice={setNotice}/>:section==='email'?<EmailAdmin setNotice={setNotice}/>:<OwnerSupport setNotice={setNotice}/>}   
+    <div className="owner-plus-switch">
+      <button className={section==='control'?'active':''} onClick={()=>setSection('control')}><ShieldCheck size={16}/> OWNER Control</button>
+      <button className={section==='promos'?'active':''} onClick={()=>setSection('promos')}><BadgePercent size={16}/> Promo kodovi</button>
+      <button className={section==='email'?'active':''} onClick={()=>setSection('email')}><Mail size={16}/> Email Center</button>
+      <button className={section==='support'?'active':''} onClick={()=>setSection('support')}><Headphones size={16}/> Support Inbox</button>
+      <button className={section==='health'?'active':''} onClick={()=>setSection('health')}><Activity size={16}/> System Health</button>
+    </div>
+    {section==='control'?<OwnerControl onCloseApp={onCloseApp} setNotice={setNotice}/>:section==='promos'?<PromoCodesAdmin setNotice={setNotice}/>:section==='email'?<EmailAdmin setNotice={setNotice}/>:section==='support'?<OwnerSupport setNotice={setNotice}/>:<OwnerHealth setNotice={setNotice}/>}
   </div>
 }
