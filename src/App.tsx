@@ -244,7 +244,7 @@ function App() {
       {activeTab==='billing'&&<BillingPage email={session.user.email||''} onAccessChanged={accessChanged} onSignOut={signOut}/>} 
       {activeTab==='settings'&&<SettingsPanel restaurant={restaurant} onSaved={refreshRestaurant} setNotice={setNotice}/>} 
       {activeTab==='support'&&<SupportCenter restaurant={restaurant} setNotice={setNotice}/>} 
-      {activeTab==='notifications'&&<NotificationsCenter setNotice={setNotice} onUnreadChanged={setUnreadNotifications}/>} 
+      {activeTab==='notifications'&&<NotificationsCenter setNotice={setNotice} onUnreadChanged={setUnreadNotifications} onNavigate={(target)=>void openTab(target)}/>} 
       {activeTab==='admin'&&isSuperadmin&&<OwnerControlPlus setNotice={setNotice} onCloseApp={async()=>{await loadAppControls();setActiveTab('dashboard')}}/>} 
     </main>
   </div>
