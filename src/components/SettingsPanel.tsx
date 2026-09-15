@@ -5,6 +5,7 @@ import type { LogoBadge, LogoPosition, LogoSize, Restaurant } from '../types'
 import { AccountDataTools } from './AccountDataTools'
 import { AccountSecurity } from './AccountSecurity'
 import { OpeningHoursEditor, normalizeOpeningHours } from './OpeningHoursEditor'
+import { optimizeImage } from '../lib/image'
 
 export function SettingsPanel({ restaurant, onSaved, setNotice }: {
   restaurant: Restaurant
@@ -61,11 +62,12 @@ export function SettingsPanel({ restaurant, onSaved, setNotice }: {
   }
 
   async function uploadLogo(file: File) {
+    const optimized = file.type==='image/svg+xml' ? file : await optimizeImage(file,{maxSide:1400,quality:.92})
     const { data: authData, error: authError } = await supabase.auth.getUser()
     if (authError || !authData.user) throw new Error('Nalog nije dostupan za upload logotipa.')
-    const ext = file.name.split('.').pop()?.toLowerCase() || 'png'
+    const ext = optimized.name.split('.').pop()?.toLowerCase() || 'webp'
     const path = `${authData.user.id}/${restaurant.id}/brand/logo-${Date.now()}.${ext}`
-    const { error: uploadError } = await supabase.storage.from('restaurant-assets').upload(path, file, { upsert: false, contentType: file.type || undefined })
+    const { error: uploadError } = await supabase.storage.from('restaurant-assets').upload(path, optimized, { upsert: false, contentType: optimized.type || undefined })
     if (uploadError) throw uploadError
     return supabase.storage.from('restaurant-assets').getPublicUrl(path).data.publicUrl
   }
