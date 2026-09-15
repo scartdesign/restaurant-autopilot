@@ -27,6 +27,9 @@ type CreativeStatus = {
   photo_coverage?:number
   ai_text_ready?:boolean
   advisor_engine?:string
+  ai_text_used?:number
+  ai_text_limit?:number|null
+  quota_exhausted?:boolean
 }
 
 type Collection = 'premium-grid'|'dark-luxe'|'bright-sale'|'clean-menu'|'family'|'lunch'
@@ -50,7 +53,7 @@ export function CreativeHub({ restaurant, menuItems, entitlement, onChanged, set
   const [suggestions,setSuggestions] = useState<Suggestion[]>([])
   const [selectedId,setSelectedId] = useState('')
   const [collection,setCollection] = useState<Collection>('premium-grid')
-  const [status,setStatus] = useState<CreativeStatus>({ai_image_ready:false,ai_images_used:0,ai_images_limit:0,campaign_pack:false,ai_text_ready:false,advisor_engine:'rules-fallback'})
+  const [status,setStatus] = useState<CreativeStatus>({ai_image_ready:false,ai_images_used:0,ai_images_limit:0,campaign_pack:false,ai_text_ready:false,advisor_engine:'rules-fallback',ai_text_used:0,ai_text_limit:0,quota_exhausted:false})
   const [loading,setLoading] = useState(true)
   const [working,setWorking] = useState('')
   const [providerKey,setProviderKey] = useState('')
@@ -99,6 +102,9 @@ export function CreativeHub({ restaurant, menuItems, entitlement, onChanged, set
         photo_coverage:Number(advisorResult.data?.photo_coverage||0),
         ai_text_ready:Boolean(advisorResult.data?.ai_text_ready),
         advisor_engine:String(advisorResult.data?.engine||'rules-fallback'),
+        ai_text_used:Number(advisorResult.data?.ai_text_used??current.ai_text_used??0),
+        ai_text_limit:advisorResult.data?.ai_text_limit==null?null:Number(advisorResult.data.ai_text_limit),
+        quota_exhausted:Boolean(advisorResult.data?.quota_exhausted),
       }))
       if(advisorResult.data?.ai_error) setNotice('AI Advisor je trenutno koristio sigurni fallback; predlozi su i dalje dostupni.')
     }
@@ -175,6 +181,7 @@ export function CreativeHub({ restaurant, menuItems, entitlement, onChanged, set
 
   const heroItem = previewItems[0]
   const aiLimitText = status.ai_images_limit==null ? `${status.ai_images_used} / ∞` : `${status.ai_images_used} / ${status.ai_images_limit}`
+  const textLimitText = status.ai_text_limit==null ? `${status.ai_text_used||0} / ∞` : `${status.ai_text_used||0} / ${status.ai_text_limit}`
   const advisorLabel = status.advisor_engine==='gpt-5.6-luna'?'GPT-5.6 Luna':'Smart fallback'
 
   return <div className="creative-hub">
@@ -183,11 +190,12 @@ export function CreativeHub({ restaurant, menuItems, entitlement, onChanged, set
         <span className="creative-kicker"><Sparkles size={15}/> CREATIVE AUTOPILOT</span>
         <h1>Ne pitaj se više šta da reklamiraš.</h1>
         <p>AI analizira tvoj meni, cilj, publiku i lokalni kontekst, pa predlaže jelo, kampanju, CTA i vreme — a ako nema fotografije, pravi realističan food vizual.</p>
-        <div className="creative-hero-actions"><button className="creative-primary" onClick={()=>void loadAdvisor()} disabled={loading}><RefreshCw size={16}/>{loading?'AI analizira…':'Novi AI predlozi'}</button><span><Sparkles size={15}/> Strateg · {advisorLabel}</span><span><ImagePlus size={15}/> AI slike {aiLimitText}</span><span><LayoutGrid size={15}/> {campaignFeature?'Campaign Pack aktivan':'Campaign Pack · PRO'}</span></div>
+        <div className="creative-hero-actions"><button className="creative-primary" onClick={()=>void loadAdvisor()} disabled={loading}><RefreshCw size={16}/>{loading?'AI analizira…':'Novi AI predlozi'}</button><span><Sparkles size={15}/> Strateg · {advisorLabel}</span><span className={status.quota_exhausted?'quota-hot':''}><Zap size={15}/> AI tekst {textLimitText}</span><span><ImagePlus size={15}/> AI slike {aiLimitText}</span><span><LayoutGrid size={15}/> {campaignFeature?'Campaign Pack aktivan':'Campaign Pack · PRO'}</span></div>
       </div>
       <div className="creative-pulse"><i/><strong>{status.photo_coverage??0}%</strong><span>photo ready</span></div>
     </header>
 
+    {status.quota_exhausted&&<div className="creative-quota-warning"><Zap size={16}/><div><strong>AI tekst limit je potrošen za ovaj mesec.</strong><span>Smart fallback ostaje aktivan, pa predlozi i dalje rade bez dodatnog AI troška.</span></div></div>}
     {isOwner&&<section className={`ai-provider-owner ${status.ai_image_ready?'ready':''}`}>
       <div className="ai-provider-icon">{status.ai_image_ready?<ShieldCheck size={21}/>:<KeyRound size={21}/>}</div>
       <div className="ai-provider-copy"><strong>{status.ai_image_ready?'OpenAI · fotografije + strateg spremni':'OWNER · Aktiviraj AI Engine'}</strong><span>{status.ai_image_ready?'Jedan server-side ključ pokreće Creative Advisor i AI Food Image. Možeš ga zameniti bez prikazivanja postojećeg ključa.':'Unesi OpenAI API ključ jednom. Čuva se šifrovano u Supabase Vault-u i nikad se ne prikazuje kupcima.'}</span></div>
