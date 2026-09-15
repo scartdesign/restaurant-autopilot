@@ -144,15 +144,15 @@ export function Dashboard({ restaurant, menuItems, posts, onChanged, setNotice }
         </div>
         <div className="wow-score-card">
           <div><TrendingUp size={19} /><span>{nextScheduled ? 'Sledeća objava' : 'Discovery score'}</span></div>
-          <strong>{nextScheduled?.scheduled_for ? formatTime(nextScheduled.scheduled_for) : (averageDiscovery || '—')}{!nextScheduled && averageDiscovery ? <small>/100</small> : null}</strong>
-          <p>{nextScheduled?.scheduled_for ? `${formatWeekday(nextScheduled.scheduled_for)} · ${nextScheduled.title || 'Objava'}` : posts.length ? 'prosek aktivnog sadržaja' : 'generiši prvu nedelju'}</p>
+          <strong>{nextScheduled?.scheduled_for ? formatTime(nextScheduled.scheduled_for, restaurant.timezone) : (averageDiscovery || '—')}{!nextScheduled && averageDiscovery ? <small>/100</small> : null}</strong>
+          <p>{nextScheduled?.scheduled_for ? `${formatWeekday(nextScheduled.scheduled_for, restaurant.timezone)} · ${nextScheduled.title || 'Objava'}` : posts.length ? 'prosek aktivnog sadržaja' : 'generiši prvu nedelju'}</p>
         </div>
       </section>
 
       <section className="wow-kpi-grid">
         <Kpi icon={<UtensilsCrossed size={18} />} label="Aktivna jela" value={String(activeItems.length)} detail={`${photoCoverage}% sa fotografijom`} />
         <Kpi icon={<CalendarDays size={18} />} label="Sadržaj" value={String(posts.length)} detail="feed · story · promo" />
-        <Kpi icon={<Clock3 size={18} />} label="Sledeći termin" value={nextScheduled?.scheduled_for ? formatTime(nextScheduled.scheduled_for) : '—'} detail={nextScheduled?.scheduled_for ? formatDateShort(nextScheduled.scheduled_for) : 'čeka generaciju'} />
+        <Kpi icon={<Clock3 size={18} />} label="Sledeći termin" value={nextScheduled?.scheduled_for ? formatTime(nextScheduled.scheduled_for, restaurant.timezone) : '—'} detail={nextScheduled?.scheduled_for ? formatDateShort(nextScheduled.scheduled_for, restaurant.timezone) : 'čeka generaciju'} />
         <Kpi icon={<CheckCircle2 size={18} />} label="Spremno" value={String(approvedCount)} detail={posts.length ? `${Math.round((approvedCount / posts.length) * 100)}% od plana` : 'čeka generaciju'} />
       </section>
 
@@ -168,8 +168,8 @@ export function Dashboard({ restaurant, menuItems, posts, onChanged, setNotice }
                     <span>{post.post_type === 'story' ? 'STORY' : post.post_type === 'promotion' ? 'PROMO' : 'FEED'}</span>
                     {post.status === 'approved' || post.status === 'published' ? <i><CheckCircle2 size={14} /></i> : null}
                   </div>
-                  <strong>{post.scheduled_for ? formatDateShort(post.scheduled_for) : 'Bez datuma'}</strong>
-                  {post.scheduled_for && <span className="demo-time-pill"><Clock3 size={11} /> {formatTime(post.scheduled_for)}</span>}
+                  <strong>{post.scheduled_for ? formatDateShort(post.scheduled_for, restaurant.timezone) : 'Bez datuma'}</strong>
+                  {post.scheduled_for && <span className="demo-time-pill"><Clock3 size={11} /> {formatTime(post.scheduled_for, restaurant.timezone)}</span>}
                   <p>{post.title || 'Nova objava'}</p>
                 </div>
               })}
@@ -207,7 +207,7 @@ export function Dashboard({ restaurant, menuItems, posts, onChanged, setNotice }
         )}
       </section>
 
-      {editing && <PostEditor post={editing} onClose={() => setEditing(null)} onSaved={async () => { setEditing(null); await onChanged() }} setNotice={setNotice} />}
+      {editing && <PostEditor post={editing} timezone={restaurant.timezone} onClose={() => setEditing(null)} onSaved={async () => { setEditing(null); await onChanged() }} setNotice={setNotice} />}
     </>
   )
 }
@@ -262,7 +262,7 @@ function PostCard({ post, restaurant, menuItems, working, onEdit, onAiCopy, onOp
         <div className="preview-brand">{restaurant.logo_url ? <img className="wow-card-logo" src={restaurant.logo_url} alt="" /> : <div className="preview-logo"><ChefHat size={20} /></div>}<div><strong>{restaurant.name}</strong><small>{restaurant.neighborhood || restaurant.city || restaurant.cuisine_type}</small></div></div>
       </div>
       <div className="post-body post-body-pro">
-        <div className="post-meta"><span>{post.scheduled_for ? formatDateLong(post.scheduled_for) : 'Bez termina'}{post.scheduled_for && <> · <b className="post-time-strong"><Clock3 size={11} /> {formatTime(post.scheduled_for)}</b></>}</span><span className={`status ${post.status}`}>{post.status}</span></div>
+        <div className="post-meta"><span>{post.scheduled_for ? formatDateLong(post.scheduled_for, restaurant.timezone) : 'Bez termina'}{post.scheduled_for && <> · <b className="post-time-strong"><Clock3 size={11} /> {formatTime(post.scheduled_for, restaurant.timezone)}</b></>}</span><span className={`status ${post.status}`}>{post.status}</span></div>
         <div className="post-title-line"><h3>{post.title}</h3><span className="visual-template-chip">{template}</span></div>
         <p className="caption-preview">{post.caption}</p>
         <div className="platform-discovery"><div className="platform-row"><div className="platform-label ig"><Instagram size={14} /> Instagram</div><div className="tag-cloud">{instagramTags.slice(0, 8).map((tag) => <span key={tag}>{tag}</span>)}</div></div><div className="platform-row"><div className="platform-label fb"><Facebook size={14} /> Facebook</div><div className="tag-cloud fb-tags">{facebookTags.slice(0, 3).map((tag) => <span key={tag}>{tag}</span>)}</div></div>{post.seo_keywords?.length > 0 && <div className="keyword-line"><Search size={13} /><span>{post.seo_keywords.slice(0, 4).join(' · ')}</span></div>}</div>
@@ -272,8 +272,8 @@ function PostCard({ post, restaurant, menuItems, working, onEdit, onAiCopy, onOp
   )
 }
 
-function PostEditor({ post, onClose, onSaved, setNotice }: { post: Post; onClose: () => void; onSaved: () => Promise<void>; setNotice: (value: string) => void }) {
-  const [form, setForm] = useState({ title: post.title || '', caption: post.caption || '', cta: post.cta || '', instagram_caption: post.platform_content?.instagram?.caption || post.caption || '', instagram_hashtags: (post.platform_content?.instagram?.hashtags || post.hashtags || []).join(' '), facebook_caption: post.platform_content?.facebook?.caption || post.caption || '', facebook_hashtags: (post.platform_content?.facebook?.hashtags || []).join(' '), visual_brief: post.visual_brief || '', scheduled_for: post.scheduled_for ? toLocalDateTimeValue(post.scheduled_for) : '' })
+function PostEditor({ post, timezone, onClose, onSaved, setNotice }: { post: Post; timezone: string; onClose: () => void; onSaved: () => Promise<void>; setNotice: (value: string) => void }) {
+  const [form, setForm] = useState({ title: post.title || '', caption: post.caption || '', cta: post.cta || '', instagram_caption: post.platform_content?.instagram?.caption || post.caption || '', instagram_hashtags: (post.platform_content?.instagram?.hashtags || post.hashtags || []).join(' '), facebook_caption: post.platform_content?.facebook?.caption || post.caption || '', facebook_hashtags: (post.platform_content?.facebook?.hashtags || []).join(' '), visual_brief: post.visual_brief || '', scheduled_for: post.scheduled_for ? toZonedDateTimeValue(post.scheduled_for, timezone) : '' })
   const [working, setWorking] = useState(false)
   function tags(value: string) { return value.split(/\s+/).map((v) => v.trim()).filter(Boolean).map((v) => v.startsWith('#') ? v : `#${v}`) }
   async function save(event: FormEvent) {
@@ -282,16 +282,39 @@ function PostEditor({ post, onClose, onSaved, setNotice }: { post: Post; onClose
     const platformContent = { ...(post.platform_content || {}), instagram: { ...(post.platform_content?.instagram || {}), caption: form.instagram_caption, hashtags: instagramHashtags }, facebook: { ...(post.platform_content?.facebook || {}), caption: form.facebook_caption, hashtags: facebookHashtags } }
     const oldVisual = post.generation_meta?.visual_design
     const generationMeta = oldVisual ? { ...post.generation_meta, visual_design: { ...oldVisual, headline: form.title || oldVisual.headline, subline: shorten(form.caption, oldVisual.format === 'story' ? 96 : 118), cta: form.cta || oldVisual.cta } } : post.generation_meta
-    const { error } = await supabase.from('posts').update({ title: form.title || null, caption: form.caption || null, cta: form.cta || null, hashtags: instagramHashtags, platform_content: platformContent, visual_brief: form.visual_brief || null, scheduled_for: form.scheduled_for ? new Date(form.scheduled_for).toISOString() : null, generation_meta: generationMeta, status: 'draft' }).eq('id', post.id)
+    const { error } = await supabase.from('posts').update({ title: form.title || null, caption: form.caption || null, cta: form.cta || null, hashtags: instagramHashtags, platform_content: platformContent, visual_brief: form.visual_brief || null, scheduled_for: form.scheduled_for ? zonedInputToIso(form.scheduled_for, timezone) : null, generation_meta: generationMeta, status: 'draft' }).eq('id', post.id)
     if (error) setNotice(error.message); else { setNotice('Objava, termin, platformske verzije i vizuelni tekst su sinhronizovani.'); await onSaved() }
     setWorking(false)
   }
-  return <div className="modal-backdrop" onMouseDown={onClose}><form className="modal-card modal-card-wide" onSubmit={save} onMouseDown={(event) => event.stopPropagation()}><div className="modal-head"><div><p className="eyebrow">UREDI OBJAVU</p><h2>{post.post_type.toUpperCase()}</h2></div><button type="button" className="icon-button" onClick={onClose}><X size={18} /></button></div><div className="editor-base-grid"><label>Naslov<input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} /></label><label>CTA<input value={form.cta} onChange={(e) => setForm({ ...form, cta: e.target.value })} /></label></div><label>Glavni tekst<textarea rows={4} value={form.caption} onChange={(e) => setForm({ ...form, caption: e.target.value })} /></label><div className="platform-editor-grid"><section className="platform-editor-card instagram-card"><div className="platform-editor-head"><Instagram size={17} /><strong>Instagram</strong><span>discovery + search</span></div><label>Caption<textarea rows={5} value={form.instagram_caption} onChange={(e) => setForm({ ...form, instagram_caption: e.target.value })} /></label><label>Hashtagovi<input value={form.instagram_hashtags} onChange={(e) => setForm({ ...form, instagram_hashtags: e.target.value })} /></label></section><section className="platform-editor-card facebook-card"><div className="platform-editor-head"><Facebook size={17} /><strong>Facebook</strong><span>čisto i lokalno</span></div><label>Tekst<textarea rows={5} value={form.facebook_caption} onChange={(e) => setForm({ ...form, facebook_caption: e.target.value })} /></label><label>Hashtagovi · max 3<input value={form.facebook_hashtags} onChange={(e) => setForm({ ...form, facebook_hashtags: e.target.value })} /></label></section></div><div className="grid-form compact-grid"><label>Datum i vreme objave<input type="datetime-local" value={form.scheduled_for} onChange={(e) => setForm({ ...form, scheduled_for: e.target.value })} /></label><label>Discovery score<input value={`${post.discovery_score || 0}/100`} disabled /></label></div><label>Brief za vizual<textarea rows={3} value={form.visual_brief} onChange={(e) => setForm({ ...form, visual_brief: e.target.value })} /></label><div className="modal-actions"><button type="button" className="secondary" onClick={onClose}>Otkaži</button><button className="primary" disabled={working}><Save size={17} /> {working ? 'Čuvam…' : 'Sačuvaj sve verzije'}</button></div></form></div>
+  return <div className="modal-backdrop" onMouseDown={onClose}><form className="modal-card modal-card-wide" onSubmit={save} onMouseDown={(event) => event.stopPropagation()}><div className="modal-head"><div><p className="eyebrow">UREDI OBJAVU</p><h2>{post.post_type.toUpperCase()}</h2></div><button type="button" className="icon-button" onClick={onClose}><X size={18} /></button></div><div className="editor-base-grid"><label>Naslov<input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} /></label><label>CTA<input value={form.cta} onChange={(e) => setForm({ ...form, cta: e.target.value })} /></label></div><label>Glavni tekst<textarea rows={4} value={form.caption} onChange={(e) => setForm({ ...form, caption: e.target.value })} /></label><div className="platform-editor-grid"><section className="platform-editor-card instagram-card"><div className="platform-editor-head"><Instagram size={17} /><strong>Instagram</strong><span>discovery + search</span></div><label>Caption<textarea rows={5} value={form.instagram_caption} onChange={(e) => setForm({ ...form, instagram_caption: e.target.value })} /></label><label>Hashtagovi<input value={form.instagram_hashtags} onChange={(e) => setForm({ ...form, instagram_hashtags: e.target.value })} /></label></section><section className="platform-editor-card facebook-card"><div className="platform-editor-head"><Facebook size={17} /><strong>Facebook</strong><span>čisto i lokalno</span></div><label>Tekst<textarea rows={5} value={form.facebook_caption} onChange={(e) => setForm({ ...form, facebook_caption: e.target.value })} /></label><label>Hashtagovi · max 3<input value={form.facebook_hashtags} onChange={(e) => setForm({ ...form, facebook_hashtags: e.target.value })} /></label></section></div><div className="grid-form compact-grid"><label>Datum i vreme objave <small>({timezone})</small><input type="datetime-local" value={form.scheduled_for} onChange={(e) => setForm({ ...form, scheduled_for: e.target.value })} /></label><label>Discovery score<input value={`${post.discovery_score || 0}/100`} disabled /></label></div><label>Brief za vizual<textarea rows={3} value={form.visual_brief} onChange={(e) => setForm({ ...form, visual_brief: e.target.value })} /></label><div className="modal-actions"><button type="button" className="secondary" onClick={onClose}>Otkaži</button><button className="primary" disabled={working}><Save size={17} /> {working ? 'Čuvam…' : 'Sačuvaj sve verzije'}</button></div></form></div>
 }
 
-function toLocalDateTimeValue(value: string) { const d = new Date(value); const pad = (n: number) => String(n).padStart(2, '0'); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}` }
-function formatTime(value: string) { return new Date(value).toLocaleTimeString('sr-RS', { hour: '2-digit', minute: '2-digit' }) }
-function formatWeekday(value: string) { return new Date(value).toLocaleDateString('sr-RS', { weekday: 'short' }) }
-function formatDateShort(value: string) { return new Date(value).toLocaleDateString('sr-RS', { weekday: 'short', day: 'numeric' }) }
-function formatDateLong(value: string) { return new Date(value).toLocaleDateString('sr-RS', { weekday: 'long', day: 'numeric', month: 'short' }) }
+function timeZoneOffsetMinutes(timeZone: string, date: Date) {
+  try {
+    const parts = new Intl.DateTimeFormat('en-US', { timeZone, timeZoneName: 'shortOffset', hour: '2-digit' }).formatToParts(date)
+    const label = parts.find((part) => part.type === 'timeZoneName')?.value || 'GMT'
+    const match = label.match(/GMT([+-])(\d{1,2})(?::?(\d{2}))?/i)
+    if (!match) return 0
+    const sign = match[1] === '-' ? -1 : 1
+    return sign * (Number(match[2]) * 60 + Number(match[3] || 0))
+  } catch { return -date.getTimezoneOffset() }
+}
+function zonedParts(value: string, timeZone: string) {
+  const parts = new Intl.DateTimeFormat('en-CA', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).formatToParts(new Date(value))
+  const get = (type: string) => parts.find((part) => part.type === type)?.value || ''
+  return { year:get('year'), month:get('month'), day:get('day'), hour:get('hour'), minute:get('minute') }
+}
+function toZonedDateTimeValue(value: string, timeZone: string) { const p=zonedParts(value,timeZone); return `${p.year}-${p.month}-${p.day}T${p.hour}:${p.minute}` }
+function zonedInputToIso(value: string, timeZone: string) {
+  const match=value.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/)
+  if(!match)return new Date(value).toISOString()
+  const desired=Date.UTC(Number(match[1]),Number(match[2])-1,Number(match[3]),Number(match[4]),Number(match[5]))
+  let offset=timeZoneOffsetMinutes(timeZone,new Date(desired)),utc=desired-offset*60000
+  const corrected=timeZoneOffsetMinutes(timeZone,new Date(utc)); if(corrected!==offset)utc=desired-corrected*60000
+  return new Date(utc).toISOString()
+}
+function formatTime(value: string, timeZone?: string) { return new Date(value).toLocaleTimeString('sr-RS', { hour: '2-digit', minute: '2-digit', ...(timeZone?{timeZone}:{}) }) }
+function formatWeekday(value: string, timeZone?: string) { return new Date(value).toLocaleDateString('sr-RS', { weekday: 'short', ...(timeZone?{timeZone}:{}) }) }
+function formatDateShort(value: string, timeZone?: string) { return new Date(value).toLocaleDateString('sr-RS', { weekday: 'short', day: 'numeric', ...(timeZone?{timeZone}:{}) }) }
+function formatDateLong(value: string, timeZone?: string) { return new Date(value).toLocaleDateString('sr-RS', { weekday: 'long', day: 'numeric', month: 'short', ...(timeZone?{timeZone}:{}) }) }
 function shorten(value: string, max: number) { const clean = value.replace(/\s+/g, ' ').trim(); return clean.length <= max ? clean : `${clean.slice(0, max - 1).trim()}…` }
