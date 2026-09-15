@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { BadgeEuro, Bell, Building2, CalendarDays, ChefHat, Image as ImageIcon, LifeBuoy, LockKeyhole, LogOut, Megaphone, Menu as MenuIcon, Palette, Plus, Rocket, Send, Settings, ShieldCheck, Sparkles, UtensilsCrossed, X } from 'lucide-react'
+import { BadgeEuro, BarChart3, Bell, Building2, CalendarDays, ChefHat, Image as ImageIcon, LifeBuoy, LockKeyhole, LogOut, Megaphone, Menu as MenuIcon, Palette, Plus, Rocket, Send, Settings, ShieldCheck, Sparkles, UtensilsCrossed, X } from 'lucide-react'
 import type { Session } from '@supabase/supabase-js'
 import { supabase } from './lib/supabase'
 import type { Entitlement, MenuItem, Post, Restaurant } from './types'
@@ -24,8 +24,9 @@ import { NotificationsCenter } from './components/NotificationsCenter'
 import { LandingScreen } from './components/LandingScreen'
 import { LegalScreen } from './components/LegalScreen'
 import { NetworkStatus } from './components/NetworkStatus'
+import { InsightsCenter } from './components/InsightsCenter'
 
-type Tab = 'launch' | 'dashboard' | 'creative' | 'studio' | 'brand' | 'publish' | 'menu' | 'promotions' | 'settings' | 'support' | 'notifications' | 'billing' | 'admin'
+type Tab = 'launch' | 'dashboard' | 'creative' | 'studio' | 'brand' | 'publish' | 'insights' | 'menu' | 'promotions' | 'settings' | 'support' | 'notifications' | 'billing' | 'admin'
 type AppControlsLite = { maintenance_mode:boolean; maintenance_message:string|null; sales_open:boolean; signup_open:boolean; announcement_enabled:boolean; announcement_text:string|null; announcement_tone:'info'|'success'|'warning'; app_version:string }
 const ACTIVE_RESTAURANT_KEY = 'restaurant-autopilot-active-restaurant'
 const defaultControls:AppControlsLite={maintenance_mode:false,maintenance_message:null,sales_open:true,signup_open:true,announcement_enabled:false,announcement_text:null,announcement_tone:'info',app_version:'1.0'}
@@ -150,7 +151,7 @@ function App() {
     }
     if (tab === 'notifications') await loadUnreadNotifications()
     if (restaurant) {
-      if (tab === 'launch' || tab === 'dashboard' || tab === 'creative' || tab === 'publish' || tab === 'studio') await loadPosts(restaurant.id)
+      if (tab === 'launch' || tab === 'dashboard' || tab === 'creative' || tab === 'publish' || tab === 'studio' || tab === 'insights') await loadPosts(restaurant.id)
       if (tab === 'launch' || tab === 'creative' || tab === 'menu' || tab === 'promotions' || tab === 'studio' || tab === 'brand') await loadMenu(restaurant.id)
       if (tab === 'creative') await loadAccountState()
     }
@@ -203,6 +204,7 @@ function App() {
         <button className={activeTab==='studio'?'nav-active':''} onClick={()=>void openTab('studio')}><ImageIcon size={18}/> Visual Studio</button>
         <button className={(activeTab==='brand'?'nav-active brand-nav':'brand-nav')+' mobile-hide'} onClick={()=>void openTab('brand')}><Palette size={18}/> Brend <span className="nav-beta">LOGO</span></button>
         <button className={activeTab==='publish'?'nav-active':''} onClick={()=>void openTab('publish')}><Send size={18}/> Publish Center</button>
+        <button className={(activeTab==='insights'?'nav-active insights-nav':'insights-nav')+' mobile-hide'} onClick={()=>void openTab('insights')}><BarChart3 size={18}/> Rezultati <span className="nav-beta">DATA</span></button>
         <button className={(activeTab==='menu'?'nav-active':'')+' mobile-hide'} onClick={()=>void openTab('menu')}><UtensilsCrossed size={18}/> Meni</button>
         <button className={`${activeTab==='promotions'?'nav-active ':''}${canUseCampaigns?'':'locked-nav'} mobile-hide`} onClick={()=>void openTab('promotions')}><Megaphone size={18}/> Akcije {!canUseCampaigns&&<span className="nav-beta"><LockKeyhole size={9}/> PRO</span>}</button>
         <button className={(activeTab==='billing'?'nav-active billing-nav':'billing-nav')+' mobile-hide'} onClick={()=>void openTab('billing')}><BadgeEuro size={18}/> Paket / licenca</button>
@@ -217,6 +219,7 @@ function App() {
     {mobileMenuOpen&&<div className="mobile-drawer-backdrop" onMouseDown={()=>setMobileMenuOpen(false)}><div className="mobile-drawer" onMouseDown={e=>e.stopPropagation()}><div className="mobile-drawer-head"><div><strong>{restaurant.name}</strong><small>Restaurant Autopilot</small></div><button className="icon-button" onClick={()=>setMobileMenuOpen(false)}><X size={19}/></button></div><div className="mobile-drawer-grid">
       <button onClick={()=>mobileGo('brand')}><Palette size={19}/><span>Brend</span><small>logo i boje</small></button>
       <button onClick={()=>mobileGo('menu')}><UtensilsCrossed size={19}/><span>Meni</span><small>jela i slike</small></button>
+      <button onClick={()=>mobileGo('insights')}><BarChart3 size={19}/><span>Rezultati</span><small>reach i konverzije</small></button>
       <button onClick={()=>mobileGo('promotions')} className={!canUseCampaigns?'locked':''}><Megaphone size={19}/><span>Akcije</span><small>{canUseCampaigns?'kampanje':'PRO / BUSINESS'}</small></button>
       <button onClick={()=>mobileGo('billing')}><BadgeEuro size={19}/><span>Paket</span><small>licenca i naplata</small></button>
       <button onClick={()=>mobileGo('settings')}><Settings size={19}/><span>Podešavanja</span><small>restoran i mreže</small></button>
@@ -234,6 +237,7 @@ function App() {
       {activeTab==='studio'&&<VisualStudio restaurant={restaurant} menuItems={menuItems} posts={posts} setNotice={setNotice}/>} 
       {activeTab==='brand'&&<BrandKit restaurant={restaurant} menuItems={menuItems} onSaved={refreshRestaurant} setNotice={setNotice}/>} 
       {activeTab==='publish'&&<PublishCenter restaurant={restaurant} posts={posts} onChanged={()=>loadPosts(restaurant.id)} setNotice={setNotice}/>} 
+      {activeTab==='insights'&&<InsightsCenter restaurant={restaurant} posts={posts} menuItems={menuItems} setNotice={setNotice}/>} 
       {activeTab==='menu'&&<MenuManager restaurant={restaurant} userId={session.user.id} items={menuItems} onChanged={()=>loadMenu(restaurant.id)} setNotice={setNotice}/>} 
       {activeTab==='promotions'&&canUseCampaigns&&<Promotions restaurant={restaurant} menuItems={menuItems} onChanged={refreshContent} setNotice={setNotice}/>} 
       {activeTab==='billing'&&<BillingPage email={session.user.email||''} onAccessChanged={accessChanged} onSignOut={signOut}/>} 
