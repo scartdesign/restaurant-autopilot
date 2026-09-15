@@ -1,6 +1,7 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './App'
+import { AppErrorBoundary } from './components/AppErrorBoundary'
 import { DemoCreative } from './components/DemoCreative'
 import { DemoOwner } from './components/DemoOwner'
 import './styles.css'
@@ -49,6 +50,6 @@ const ownerPreview = params.get('owner') === 'demo'
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    {ownerPreview ? <PreviewShell kind="owner"/> : creativePreview ? <PreviewShell kind="creative"/> : <App />}
+    <AppErrorBoundary>{ownerPreview ? <PreviewShell kind="owner"/> : creativePreview ? <PreviewShell kind="creative"/> : <App />}</AppErrorBoundary>
   </React.StrictMode>,
 )
