@@ -40,6 +40,7 @@ function App() {
   const [isSuperadmin, setIsSuperadmin] = useState(false)
   const [hasAccess, setHasAccess] = useState(false)
   const [notice, setNotice] = useState('')
+  const [unreadNotifications,setUnreadNotifications]=useState(0)
   const [activeTab, setActiveTab] = useState<Tab>('launch')
   const [demo, setDemo] = useState(false)
   const [addingRestaurant, setAddingRestaurant] = useState(false)
@@ -75,7 +76,7 @@ function App() {
   async function boot(currentSession = session) {
     if (!currentSession) return
     setLoading(true)
-    await Promise.all([loadAccountState(),loadAppControls()])
+    await Promise.all([loadAccountState(),loadAppControls(),loadUnreadNotifications()])
     await loadRestaurants(currentSession.user.id)
     setAccountReady(true)
     setLoading(false)
@@ -119,6 +120,10 @@ function App() {
     const { data, error } = await supabase.from('menu_items').select('*').eq('restaurant_id', restaurantId).order('created_at', { ascending: false })
     if (error) setNotice(error.message); else setMenuItems((data || []) as MenuItem[])
   }
+  async function loadUnreadNotifications() {
+    const { count } = await supabase.from('notification_outbox').select('id',{count:'exact',head:true}).eq('visible_in_app',true).is('read_at',null)
+    setUnreadNotifications(count || 0)
+  }
   async function loadPosts(restaurantId: string) {
     const { data, error } = await supabase.from('posts').select('*').eq('restaurant_id', restaurantId).order('scheduled_for', { ascending: false }).limit(60)
     if (error) setNotice(error.message); else setPosts((data || []) as Post[])
@@ -131,6 +136,7 @@ function App() {
       setNotice('Campaign Autopilot je uključen u Pro i Business paket. Paket možeš promeniti iz „Paket / licenca“.')
       setActiveTab('billing'); return
     }
+    if (tab === 'notifications') await loadUnreadNotifications()
     if (restaurant) {
       if (tab === 'launch' || tab === 'dashboard' || tab === 'creative' || tab === 'publish' || tab === 'studio') await loadPosts(restaurant.id)
       if (tab === 'launch' || tab === 'creative' || tab === 'menu' || tab === 'promotions' || tab === 'studio' || tab === 'brand') await loadMenu(restaurant.id)
@@ -185,7 +191,7 @@ function App() {
         <button className={activeTab==='billing'?'nav-active billing-nav':'billing-nav'} onClick={()=>void openTab('billing')}><BadgeEuro size={18}/> Paket / licenca</button>
         <button className={activeTab==='settings'?'nav-active':''} onClick={()=>void openTab('settings')}><Settings size={18}/> Podešavanja</button>
         <button className={activeTab==='support'?'nav-active support-nav':'support-nav'} onClick={()=>void openTab('support')}><LifeBuoy size={18}/> Podrška</button>
-        <button className={activeTab==='notifications'?'nav-active':''} onClick={()=>void openTab('notifications')}><Bell size={18}/> Obaveštenja</button>
+        <button className={activeTab==='notifications'?'nav-active':''} onClick={()=>void openTab('notifications')}><Bell size={18}/> Obaveštenja {unreadNotifications>0&&<span className="nav-beta">{unreadNotifications>99?'99+':unreadNotifications}</span>}</button>
         {isSuperadmin&&<button className={activeTab==='admin'?'nav-active admin-nav':'admin-nav'} onClick={()=>void openTab('admin')}><ShieldCheck size={18}/> Superadmin <span className="nav-beta">OWNER</span></button>}
       </nav>
     </div><button className="logout" onClick={signOut}><LogOut size={18}/> Odjavi se</button></aside>
