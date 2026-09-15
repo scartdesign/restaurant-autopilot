@@ -26,8 +26,8 @@ export function PublishCenter({ restaurant, posts, onChanged, setNotice }: {
     if (!posts.length) { setNotice('Nema sadržaja za export.'); return }
     const headers = ['datum','vreme','status','format','naslov','instagram_caption','instagram_hashtags','facebook_caption','facebook_hashtags','cta','search_keywords']
     const rows = ordered.map((post) => [
-      post.scheduled_for ? formatDate(post.scheduled_for) : '',
-      post.scheduled_for ? formatTime(post.scheduled_for) : '',
+      post.scheduled_for ? formatDate(post.scheduled_for, restaurant.timezone) : '',
+      post.scheduled_for ? formatTime(post.scheduled_for, restaurant.timezone) : '',
       post.status, post.post_type, post.title || '',
       post.platform_content?.instagram?.caption || post.caption || '',
       (post.platform_content?.instagram?.hashtags || post.hashtags || []).join(' '),
@@ -59,7 +59,7 @@ export function PublishCenter({ restaurant, posts, onChanged, setNotice }: {
     const text = approved.map((post, index) => {
       const igCaption = post.platform_content?.instagram?.caption || post.caption || ''
       const tags = (post.platform_content?.instagram?.hashtags || post.hashtags || []).join(' ')
-      return `${index + 1}. ${post.title || 'OBJAVA'}\n${post.scheduled_for ? `${formatDateLong(post.scheduled_for)} u ${formatTime(post.scheduled_for)}` : 'Bez termina'}\n\n${igCaption}\n\n${tags}`
+      return `${index + 1}. ${post.title || 'OBJAVA'}\n${post.scheduled_for ? `${formatDateLong(post.scheduled_for, restaurant.timezone)} u ${formatTime(post.scheduled_for, restaurant.timezone)}` : 'Bez termina'}\n\n${igCaption}\n\n${tags}`
     }).join('\n\n────────────────────\n\n')
     try {
       await navigator.clipboard.writeText(text)
@@ -93,13 +93,13 @@ export function PublishCenter({ restaurant, posts, onChanged, setNotice }: {
   }
 
   function openSchedule(post: Post) {
-    const initial = post.scheduled_for ? dateParts(post.scheduled_for) : defaultDraft(post)
+    const initial = post.scheduled_for ? dateParts(post.scheduled_for, restaurant.timezone) : defaultDraft(post, restaurant.timezone)
     setScheduleDraft(initial)
     setEditingId(post.id)
   }
 
   function useAutopilotTime(post: Post) {
-    const draft = scheduleDraft.date ? scheduleDraft : defaultDraft(post)
+    const draft = scheduleDraft.date ? scheduleDraft : defaultDraft(post, restaurant.timezone)
     setScheduleDraft({ ...draft, time: recommendedTime(post) })
   }
 
@@ -108,16 +108,14 @@ export function PublishCenter({ restaurant, posts, onChanged, setNotice }: {
       setNotice('Izaberi datum i vreme objave.')
       return
     }
-    const local = new Date(`${scheduleDraft.date}T${scheduleDraft.time}:00`)
-    if (Number.isNaN(local.getTime())) {
-      setNotice('Termin nije ispravan.')
-      return
-    }
+    let scheduledIso = ''
+    try { scheduledIso = zonedInputToIso(`${scheduleDraft.date}T${scheduleDraft.time}`, restaurant.timezone) }
+    catch { setNotice('Termin nije ispravan.'); return }
     setWorkingId(post.id)
-    const { error } = await supabase.from('posts').update({ scheduled_for: local.toISOString() }).eq('id', post.id)
+    const { error } = await supabase.from('posts').update({ scheduled_for: scheduledIso }).eq('id', post.id)
     if (error) setNotice(error.message)
     else {
-      setNotice(`Termin je sačuvan: ${local.toLocaleDateString('sr-RS', { weekday: 'long', day: 'numeric', month: 'long' })} u ${local.toLocaleTimeString('sr-RS', { hour: '2-digit', minute: '2-digit' })}.`)
+      setNotice(`Termin je sačuvan: ${formatDateLong(scheduledIso, restaurant.timezone)} u ${formatTime(scheduledIso, restaurant.timezone)} · ${restaurant.timezone}.`)
       setEditingId('')
       await onChanged()
     }
@@ -127,13 +125,13 @@ export function PublishCenter({ restaurant, posts, onChanged, setNotice }: {
   return (
     <>
       <header className="page-header publish-header">
-        <div><p className="eyebrow">PUBLISH CENTER</p><h1>Tačan dan. Tačno vreme. Sve spremno.</h1><p className="muted">Svaka objava sada ima vidljiv termin koji možeš promeniti pre objavljivanja.</p></div>
+        <div><p className="eyebrow">PUBLISH CENTER</p><h1>Tačan dan. Tačno vreme. Sve spremno.</h1><p className="muted">Svaka objava ima termin u vremenskoj zoni restorana: <strong>{restaurant.timezone}</strong>.</p></div>
         <div className="publish-actions"><button className="secondary" onClick={exportCalendar}><CalendarClock size={16} /> .ICS kalendar</button><button className="primary" onClick={exportCsv}><Download size={16} /> Export CSV</button></div>
       </header>
 
       {nextPost && <section className="next-publish-card">
         <div className="next-publish-icon"><Clock3 size={22} /></div>
-        <div><span>SLEDEĆA OBJAVA</span><strong>{formatDateLong(nextPost.scheduled_for!)} · {formatTime(nextPost.scheduled_for!)}</strong><small>{nextPost.post_type.toUpperCase()} · {nextPost.title || 'Objava'}</small></div>
+        <div><span>SLEDEĆA OBJAVA</span><strong>{formatDateLong(nextPost.scheduled_for!, restaurant.timezone)} · {formatTime(nextPost.scheduled_for!, restaurant.timezone)}</strong><small>{nextPost.post_type.toUpperCase()} · {nextPost.title || 'Objava'}</small></div>
         <button className="secondary" onClick={() => openSchedule(nextPost)}><Pencil size={14} /> Promeni termin</button>
       </section>}
 
@@ -150,16 +148,16 @@ export function PublishCenter({ restaurant, posts, onChanged, setNotice }: {
         <div className="panel-heading"><h2><Send size={18} /> Red za objavu</h2><small>{ordered.length} stavki · datum + vreme</small></div>
         {ordered.length === 0 ? <div className="empty-small">Generiši nedelju sadržaja da bi se pojavio red za objavu.</div> : <div className="queue-list">
           {ordered.map((post) => <div className={`queue-item ${editingId === post.id ? 'editing-schedule' : ''}`} key={post.id}>
-            <div className={`queue-date ${post.status}`}><strong>{post.scheduled_for ? formatDate(post.scheduled_for) : '—'}</strong><span className="queue-time"><Clock3 size={11} /> {post.scheduled_for ? formatTime(post.scheduled_for) : 'bez termina'}</span></div>
+            <div className={`queue-date ${post.status}`}><strong>{post.scheduled_for ? formatDate(post.scheduled_for, restaurant.timezone) : '—'}</strong><span className="queue-time"><Clock3 size={11} /> {post.scheduled_for ? formatTime(post.scheduled_for, restaurant.timezone) : 'bez termina'}</span></div>
             <div className="queue-copy">
-              <div className="queue-title"><span className="queue-format">{post.post_type}</span><strong>{post.title || 'Objava'}</strong>{post.scheduled_for && <span className="schedule-chip">{formatWeekday(post.scheduled_for)} · {formatTime(post.scheduled_for)}</span>}</div>
+              <div className="queue-title"><span className="queue-format">{post.post_type}</span><strong>{post.title || 'Objava'}</strong>{post.scheduled_for && <span className="schedule-chip">{formatWeekday(post.scheduled_for, restaurant.timezone)} · {formatTime(post.scheduled_for, restaurant.timezone)}</span>}</div>
               <p>{post.caption}</p>
               <div className="queue-platforms"><span><Instagram size={13} /> {(post.platform_content?.instagram?.hashtags || post.hashtags || []).length} IG tags</span><span><Facebook size={13} /> {(post.platform_content?.facebook?.hashtags || []).length} FB tags</span><span>{post.discovery_score || 0}/100 discovery</span>{qualityScores[post.id] !== undefined && <span className="quality-inline"><ShieldCheck size={13} /> {qualityScores[post.id]}/100 quality</span>}</div>
 
               {editingId === post.id && <div className="schedule-editor">
-                <div className="schedule-fields"><label>Datum<input type="date" value={scheduleDraft.date} onChange={(e) => setScheduleDraft({ ...scheduleDraft, date: e.target.value })} /></label><label>Vreme<input type="time" step="300" value={scheduleDraft.time} onChange={(e) => setScheduleDraft({ ...scheduleDraft, time: e.target.value })} /></label></div>
+                <div className="schedule-fields"><label>Datum <small>{restaurant.timezone}</small><input type="date" value={scheduleDraft.date} onChange={(e) => setScheduleDraft({ ...scheduleDraft, date: e.target.value })} /></label><label>Vreme<input type="time" step="300" value={scheduleDraft.time} onChange={(e) => setScheduleDraft({ ...scheduleDraft, time: e.target.value })} /></label></div>
                 <div className="schedule-suggestion"><Sparkles size={14} /><span>Autopilot termin za ovaj format: <strong>{recommendedTime(post)}</strong></span><button type="button" onClick={() => useAutopilotTime(post)}>Primeni</button></div>
-                <div className="schedule-editor-actions"><button type="button" className="secondary" onClick={() => setEditingId('')}><X size={14} /> Otkaži</button><button type="button" className="secondary" onClick={() => setScheduleDraft(defaultDraft(post))}><RotateCcw size={14} /> Reset</button><button type="button" className="primary" disabled={workingId === post.id} onClick={() => void saveSchedule(post)}><Save size={14} /> Sačuvaj termin</button></div>
+                <div className="schedule-editor-actions"><button type="button" className="secondary" onClick={() => setEditingId('')}><X size={14} /> Otkaži</button><button type="button" className="secondary" onClick={() => setScheduleDraft(defaultDraft(post, restaurant.timezone))}><RotateCcw size={14} /> Reset</button><button type="button" className="primary" disabled={workingId === post.id} onClick={() => void saveSchedule(post)}><Save size={14} /> Sačuvaj termin</button></div>
               </div>}
             </div>
             <div className="queue-state"><span className={`status ${post.status}`}>{post.status}</span><button className="mini-schedule" onClick={() => openSchedule(post)}><CalendarClock size={14} /> Datum i vreme</button><button className="mini-quality" disabled={workingId === post.id} onClick={() => qualityCheck(post)}><ShieldCheck size={14} /> Quality check</button>{post.status === 'approved' && <button className="mini-publish" disabled={workingId === post.id} onClick={() => markPublished(post)}><CheckCircle2 size={14} /> Označi objavljeno</button>}{post.status === 'published' && <span className="published-ok"><CheckCircle2 size={15} /> završeno</span>}</div>
@@ -181,20 +179,43 @@ function recommendedTime(post: Post) {
   if (pillar === 'social_prompt') return '19:30'
   return '18:30'
 }
-function defaultDraft(post: Post): ScheduleDraft {
-  const base = post.scheduled_for ? new Date(post.scheduled_for) : new Date()
-  if (!post.scheduled_for) base.setDate(base.getDate() + 1)
-  return { date: localDateValue(base), time: recommendedTime(post) }
+function timeZoneOffsetMinutes(timeZone: string, date: Date) {
+  try {
+    const parts = new Intl.DateTimeFormat('en-US', { timeZone, timeZoneName: 'shortOffset', hour: '2-digit' }).formatToParts(date)
+    const label = parts.find((part) => part.type === 'timeZoneName')?.value || 'GMT'
+    const match = label.match(/GMT([+-])(\d{1,2})(?::?(\d{2}))?/i)
+    if (!match) return 0
+    const sign = match[1] === '-' ? -1 : 1
+    return sign * (Number(match[2]) * 60 + Number(match[3] || 0))
+  } catch { return -date.getTimezoneOffset() }
 }
-function dateParts(iso: string): ScheduleDraft {
-  const date = new Date(iso)
-  return { date: localDateValue(date), time: `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}` }
+function zonedParts(value: string, timeZone: string) {
+  const parts = new Intl.DateTimeFormat('en-CA', { timeZone, year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit', hourCycle:'h23' }).formatToParts(new Date(value))
+  const get=(type:string)=>parts.find((part)=>part.type===type)?.value||''
+  return {year:get('year'),month:get('month'),day:get('day'),hour:get('hour'),minute:get('minute')}
 }
-function localDateValue(date: Date) { return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}` }
-function formatDate(value: string) { return new Date(value).toLocaleDateString('sr-RS', { day: '2-digit', month: 'short' }) }
-function formatDateLong(value: string) { return new Date(value).toLocaleDateString('sr-RS', { weekday: 'long', day: 'numeric', month: 'long' }) }
-function formatWeekday(value: string) { return new Date(value).toLocaleDateString('sr-RS', { weekday: 'short' }) }
-function formatTime(value: string) { return new Date(value).toLocaleTimeString('sr-RS', { hour: '2-digit', minute: '2-digit' }) }
+function zonedInputToIso(value: string, timeZone: string) {
+  const match=value.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/)
+  if(!match)throw new Error('Invalid date')
+  const desired=Date.UTC(Number(match[1]),Number(match[2])-1,Number(match[3]),Number(match[4]),Number(match[5]))
+  let offset=timeZoneOffsetMinutes(timeZone,new Date(desired)),utc=desired-offset*60000
+  const corrected=timeZoneOffsetMinutes(timeZone,new Date(utc)); if(corrected!==offset)utc=desired-corrected*60000
+  return new Date(utc).toISOString()
+}
+function defaultDraft(post: Post, timeZone: string): ScheduleDraft {
+  if (post.scheduled_for) return dateParts(post.scheduled_for,timeZone)
+  const tomorrow = new Date(Date.now()+86400000)
+  const p=zonedParts(tomorrow,timeZone)
+  return { date: `${p.year}-${p.month}-${p.day}`, time: recommendedTime(post) }
+}
+function dateParts(iso: string, timeZone: string): ScheduleDraft {
+  const p=zonedParts(iso,timeZone)
+  return { date:`${p.year}-${p.month}-${p.day}`, time:`${p.hour}:${p.minute}` }
+}
+function formatDate(value: string, timeZone?: string) { return new Date(value).toLocaleDateString('sr-RS', { day:'2-digit', month:'short', ...(timeZone?{timeZone}:{}) }) }
+function formatDateLong(value: string, timeZone?: string) { return new Date(value).toLocaleDateString('sr-RS', { weekday:'long', day:'numeric', month:'long', ...(timeZone?{timeZone}:{}) }) }
+function formatWeekday(value: string, timeZone?: string) { return new Date(value).toLocaleDateString('sr-RS', { weekday:'short', ...(timeZone?{timeZone}:{}) }) }
+function formatTime(value: string, timeZone?: string) { return new Date(value).toLocaleTimeString('sr-RS', { hour:'2-digit', minute:'2-digit', ...(timeZone?{timeZone}:{}) }) }
 function qualityLabel(key: string) {
   const labels: Record<string, string> = { caption: 'dužina teksta', local_signal: 'lokalni signal', focused_hashtags: 'hashtag fokus', clear_cta: 'CTA', photo_ready: 'fotografija', platform_versions: 'IG/FB verzije', visual_design: 'vizuelni dizajn' }
   return labels[key] || key
