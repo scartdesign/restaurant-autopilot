@@ -36,6 +36,7 @@ export function MenuManager({ restaurant, userId, items, onChanged, setNotice }:
   },[items,query,categoryFilter,stateFilter])
   const photoCoverage = useMemo(() => items.length ? Math.round((items.filter((item) => item.image_url).length / items.length) * 100) : 0, [items])
   const aiBlocked=Boolean(aiStatus&&(!aiStatus.ready||(aiStatus.limit!==null&&aiStatus.used>=aiStatus.limit)))
+  const currentHero=useMemo(()=>items.find(item=>Number(item.marketing_priority||0)===3)||null,[items])
 
   useEffect(()=>{void loadAiStatus()},[restaurant.id])
   async function loadAiStatus(){
@@ -69,9 +70,18 @@ export function MenuManager({ restaurant, userId, items, onChanged, setNotice }:
         marketing_priority: Number(form.marketing_priority||0),
       }).select('id,name,image_url').single()
       if (error) throw error
+      const requestedPriority=Number(form.marketing_priority||0)
+      let heroDemoted=false
+      if(requestedPriority===3&&data?.id){
+        const{error:demoteError}=await supabase.from('menu_items').update({marketing_priority:2}).eq('restaurant_id',restaurant.id).eq('marketing_priority',3).neq('id',data.id)
+        if(demoteError)setNotice(`Jelo je dodato kao HERO, ali prethodni HERO nije automatski spušten: ${demoteError.message}`)
+        else heroDemoted=Boolean(currentHero&&currentHero.id!==data.id)
+      }
       setForm({ name: '', description: '', category: '', price: '', currency: 'RSD', marketing_priority: '0' })
       setImage(null)
-      setNotice(data?.image_url ? 'Jelo je dodato u meni.' : `Jelo „${data?.name || 'novo jelo'}“ je dodato. Ako nemaš fotografiju, klikni AI slika pored jela.`)
+      if(requestedPriority===3&&!heroDemoted)setNotice(`„${data?.name || 'Novo jelo'}“ je postavljeno kao HERO jelo.`)
+      else if(requestedPriority===3&&heroDemoted)setNotice(`„${data?.name || 'Novo jelo'}“ je novi HERO. „${currentHero?.name}“ je spušten na visok prioritet.`)
+      else setNotice(data?.image_url ? 'Jelo je dodato u meni.' : `Jelo „${data?.name || 'novo jelo'}“ je dodato. Ako nemaš fotografiju, klikni AI slika pored jela.`)
       await onChanged()
     } catch (error) {
       setNotice(error instanceof Error ? error.message : 'Greška pri dodavanju jela.')
@@ -179,11 +189,30 @@ export function MenuManager({ restaurant, userId, items, onChanged, setNotice }:
   async function setPriority(item: MenuItem, value: number) {
     setWorkingId(item.id)
     const priority = Math.max(0, Math.min(3, Math.round(value)))
+    const previousHeroes = priority === 3 ? items.filter((entry) => entry.id !== item.id && Number(entry.marketing_priority || 0) === 3) : []
+
+    if (previousHeroes.length) {
+      const { error: demoteError } = await supabase.from('menu_items')
+        .update({ marketing_priority: 2 })
+        .eq('restaurant_id', restaurant.id)
+        .in('id', previousHeroes.map((entry) => entry.id))
+      if (demoteError) {
+        setNotice(`Ne mogu da postavim novi HERO dok stari HERO ne bude spušten: ${demoteError.message}`)
+        setWorkingId('')
+        return
+      }
+    }
+
     const { error } = await supabase.from('menu_items').update({ marketing_priority: priority }).eq('id', item.id).eq('restaurant_id', restaurant.id)
-    if (error) setNotice(error.message)
-    else {
+    if (error) {
+      if (previousHeroes.length) {
+        await supabase.from('menu_items').update({ marketing_priority: 3 }).eq('restaurant_id', restaurant.id).in('id', previousHeroes.map((entry) => entry.id))
+      }
+      setNotice(error.message)
+    } else {
       const label = priority === 3 ? 'HERO' : priority === 2 ? 'visok' : priority === 1 ? 'blagi' : 'standardni'
-      setNotice(`„${item.name}“ · ${label} marketinški prioritet.`)
+      const replaced = previousHeroes.length ? ` Prethodni HERO „${previousHeroes[0].name}“ je automatski spušten na visok prioritet.` : ''
+      setNotice(`„${item.name}“ · ${label} marketinški prioritet.${replaced}`)
       await onChanged()
     }
     setWorkingId('')
@@ -226,6 +255,11 @@ export function MenuManager({ restaurant, userId, items, onChanged, setNotice }:
         <div><p className="eyebrow">MENI</p><h1>Jela i proizvodi</h1><p className="muted">Fotografije i podaci iz menija su gorivo za tekst, discovery i gotove vizuale. Nemaš fotografiju? Autopilot može da generiše realističnu AI food fotografiju.</p></div>
         <div className="menu-health"><span>Photo coverage</span><strong>{photoCoverage}%</strong><small>{items.filter((item) => item.image_url).length}/{items.length || 0} sa fotografijom</small></div>
       </header>
+
+      <div className="menu-hero-guide">
+        <div className="menu-hero-guide-icon"><Star size={18}/></div>
+        <div><strong>{currentHero ? `HERO jelo: ${currentHero.name}` : 'HERO jelo još nije izabrano'}</strong><span>{currentHero ? 'U svakom trenutku postoji samo jedan HERO. Ako izabereš drugo jelo, trenutno HERO jelo automatski prelazi na visok prioritet.' : 'Izaberi jedno glavno jelo koje želiš da najčešće nosi premium kampanje i najjače vizuale.'}</span></div>
+      </div>
 
       <div className="menu-import-bar">
         <div className="menu-import-copy"><FileSpreadsheet size={20} /><div><strong>Imaš veći meni?</strong><span>Uvezi do 500 jela odjednom iz CSV-a. Prihvatamo kolone naziv/opis/kategorija/cena/valuta.</span></div></div>
