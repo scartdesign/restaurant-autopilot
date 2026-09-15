@@ -45,6 +45,7 @@ export type MenuItem = {
   price: number | null
   currency: string
   image_url: string | null
+  marketing_priority: number
   is_active: boolean
 }
 
