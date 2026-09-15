@@ -163,17 +163,33 @@ export function VisualStudio({ restaurant, posts, menuItems, setNotice }: { rest
 
       <section className="studio-stage studio-stage-pro">
         <div className="stage-toolbar"><span><Sparkles size={14}/> FINAL PREVIEW</span><span>{design.format==='story'?'9:16 · 1080×1920':'4:5 · 1080×1350'} · {templateNames[design.template]}</span></div>
-        <div className={`studio-artboard ${design.format} template-${design.template} copy-${design.copyPosition} font-${design.fontPair}`} style={{'--brand':design.primaryColor,'--accent':design.accentColor,'--overlay':String(design.overlay),'--photo-pos':design.photoPosition==='left'?'left center':design.photoPosition==='right'?'right center':'center center',backgroundImage:design.imageUrl?`url(${design.imageUrl})`:undefined} as CSSProperties}>
-          <div className="artboard-photo-shade"/>
-          {design.logoVisible&&<div className={`floating-brand-logo pos-${design.logoPosition} size-${design.logoSize} badge-${design.logoBadge}`}>{restaurant.logo_url?<img src={restaurant.logo_url} alt={restaurant.name}/>:<span>{restaurant.name.slice(0,1).toUpperCase()}</span>}</div>}
-          <div className="artboard-brandline"><strong>{restaurant.name}</strong><span>{location}</span></div>
-          <div className="artboard-copy">{price&&design.priceVisible&&<span className="visual-price">{price}</span>}<h2>{design.headline||'Naslov objave'}</h2><p>{design.subline||'Kratka poruka koja prodaje iskustvo, ne samo jelo.'}</p><div className="visual-cta">{design.cta||'Svrati danas'} <span>→</span></div></div>
-          <div className="artboard-footer"><span>{restaurant.instagram||restaurant.name}</span><span>{design.format==='story'?'STORY':'FEED'}</span></div>
-        </div>
+        {design.template==='premium-grid'
+          ? <PremiumGridPreview design={design} restaurant={restaurant} items={promoItems} location={location}/>
+          : <div className={`studio-artboard ${design.format} template-${design.template} copy-${design.copyPosition} font-${design.fontPair}`} style={{'--brand':design.primaryColor,'--accent':design.accentColor,'--overlay':String(design.overlay),'--photo-pos':design.photoPosition==='left'?'left center':design.photoPosition==='right'?'right center':'center center',backgroundImage:design.imageUrl?`url(${design.imageUrl})`:undefined} as CSSProperties}>
+            <div className="artboard-photo-shade"/>
+            {design.logoVisible&&<div className={`floating-brand-logo pos-${design.logoPosition} size-${design.logoSize} badge-${design.logoBadge}`}>{restaurant.logo_url?<img src={restaurant.logo_url} alt={restaurant.name}/>:<span>{restaurant.name.slice(0,1).toUpperCase()}</span>}</div>}
+            <div className="artboard-brandline"><strong>{restaurant.name}</strong><span>{location}</span></div>
+            <div className="artboard-copy">{price&&design.priceVisible&&<span className="visual-price">{price}</span>}<h2>{design.headline||'Naslov objave'}</h2><p>{design.subline||'Kratka poruka koja prodaje iskustvo, ne samo jelo.'}</p><div className="visual-cta">{design.cta||'Svrati danas'} <span>→</span></div></div>
+            <div className="artboard-footer"><span>{restaurant.instagram||restaurant.name}</span><span>{design.format==='story'?'STORY':'FEED'}</span></div>
+          </div>}
         <div className="studio-below-preview"><div><CheckCircle2 size={17}/><span>PNG export koristi isti logo, poziciju, boje i layout kao preview.</span></div><div><ImageIcon size={17}/><span>{design.imageUrl?'Koristi se realna fotografija iz menija.':'Dodaj fotografiju za maksimalan kvalitet.'}</span></div></div>
       </section>
     </div>
   </>
+}
+
+function PremiumGridPreview({design,restaurant,items,location}:{design:DesignState;restaurant:Restaurant;items:MenuItem[];location:string}){
+  const cards=items.length?Array.from({length:5},(_,i)=>items[i%items.length]):[]
+  return <div className={`studio-artboard ${design.format} template-premium-grid promo-grid-artboard`} style={{'--brand':design.primaryColor,'--accent':design.accentColor,'--overlay':String(design.overlay)} as CSSProperties}>
+    <div className="promo-grid-header"><div><strong>{restaurant.name}</strong><span>{location}</span></div>{design.logoVisible&&<div className={`promo-grid-logo badge-${design.logoBadge}`}>{restaurant.logo_url?<img src={restaurant.logo_url} alt={restaurant.name}/>:<span>{restaurant.name.slice(0,1).toUpperCase()}</span>}</div>}</div>
+    <div className="promo-grid-canvas">
+      {cards.length?<>{cards.map((menuItem,index)=><article key={index} className={index===0?'promo-grid-hero':'promo-grid-small'} style={{backgroundImage:menuItem.image_url?`url(${menuItem.image_url})`:undefined}}>
+        <div className="promo-grid-shade"/>
+        <div className="promo-grid-card-copy"><span>{index===0?'CHEF PICK':index===1?'LUNCH':index===2?'DINNER':index===3?'FRESH':'SWEET'}</span><strong>{menuItem.name}</strong>{design.priceVisible&&menuItem.price?<b>{menuItem.price} {menuItem.currency||'RSD'}</b>:null}</div>
+      </article>)}</>:<div className="promo-grid-empty"><ImageIcon size={28}/><span>Dodaj jela u meni da Premium Grid prikaže više kartica.</span></div>}
+    </div>
+    <div className="promo-grid-footer"><div><span>PREMIUM MENU</span><h2>{design.headline||'Ukus koji se pamti.'}</h2><p>{shorten(design.subline||'Izaberi favorita i svrati danas.',76)}</p></div><div className="promo-grid-cta">{design.cta||'Svrati danas'} <span>→</span></div></div>
+  </div>
 }
 
 function DesignCheck({ok,text,soft=false}:{ok:boolean;text:string;soft?:boolean}){return <span className={ok?'ok':soft?'soft':''}><CheckCircle2 size={13}/> {text}</span>}
