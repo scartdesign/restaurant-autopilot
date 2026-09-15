@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { CalendarClock, CheckCircle2, ClipboardCopy, Clock3, Download, ExternalLink, Facebook, Instagram, Pencil, RotateCcw, Save, Send, ShieldCheck, Sparkles, X } from 'lucide-react'
+import { CalendarClock, CalendarRange, CheckCircle2, ClipboardCopy, Clock3, Download, ExternalLink, Facebook, Instagram, List, Pencil, RotateCcw, Save, Send, ShieldCheck, Sparkles, X } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import type { Post, Restaurant } from '../types'
 
@@ -15,6 +15,8 @@ export function PublishCenter({ restaurant, posts, onChanged, setNotice }: {
   const [qualityScores, setQualityScores] = useState<Record<string, number>>({})
   const [editingId, setEditingId] = useState('')
   const [scheduleDraft, setScheduleDraft] = useState<ScheduleDraft>({ date: '', time: '' })
+  const [view,setView]=useState<'queue'|'calendar'>('queue')
+  const [bulkWorking,setBulkWorking]=useState(false)
 
   const ordered = useMemo(() => [...posts].sort((a, b) => new Date(a.scheduled_for || 0).getTime() - new Date(b.scheduled_for || 0).getTime()), [posts])
   const approved = posts.filter((post) => post.status === 'approved')
@@ -23,6 +25,16 @@ export function PublishCenter({ restaurant, posts, onChanged, setNotice }: {
   const overdue = approved.filter((post) => post.scheduled_for && new Date(post.scheduled_for).getTime() < Date.now())
   const readyPercent = posts.length ? Math.round(((approved.length + published.length) / posts.length) * 100) : 0
   const nextPost = ordered.find((post) => post.scheduled_for && new Date(post.scheduled_for).getTime() > Date.now() && post.status !== 'published') || ordered.find((post) => post.scheduled_for && post.status !== 'published')
+  const calendarDays=useMemo(()=>buildCalendarDays(restaurant.timezone,14),[restaurant.timezone])
+  const calendarMap=useMemo(()=>{
+    const map=new Map<string,Post[]>()
+    for(const post of ordered){if(!post.scheduled_for)continue;const p=zonedParts(post.scheduled_for,restaurant.timezone);const key=`${p.year}-${p.month}-${p.day}`;map.set(key,[...(map.get(key)||[]),post])}
+    return map
+  },[ordered,restaurant.timezone])
+  const conflicts=useMemo(()=>ordered.filter((post,index)=>{
+    if(!post.scheduled_for||post.status==='published')return false
+    return ordered.some((other,j)=>j!==index&&other.scheduled_for&&other.status!=='published'&&Math.abs(new Date(other.scheduled_for).getTime()-new Date(post.scheduled_for!).getTime())<45*60*1000)
+  }).length,[ordered])
 
   function exportCsv() {
     if (!posts.length) { setNotice('Nema sadržaja za export.'); return }
@@ -86,14 +98,44 @@ export function PublishCenter({ restaurant, posts, onChanged, setNotice }: {
   async function approveAll() {
     if (!drafts.length) { setNotice('Nema draft objava za odobravanje.'); return }
     setWorkingId('bulk-approve')
-    const ids = drafts.map((post) => post.id)
-    const { error } = await supabase.from('posts').update({ status: 'approved' }).in('id', ids).eq('restaurant_id', restaurant.id)
-    if (error) setNotice(error.message)
-    else {
-      setNotice(`Odobreno je ${ids.length} objava. Publish Center je spreman za završnu proveru.`)
-      await onChanged()
+    const passed:string[]=[]
+    const failed:string[]=[]
+    for(const post of drafts){
+      const {data,error}=await supabase.functions.invoke('content-engine',{body:{action:'quality_check',restaurantId:restaurant.id,postId:post.id}})
+      if(error||data?.error||Number(data?.score||0)<70)failed.push(post.title||'Objava')
+      else passed.push(post.id)
     }
+    if(passed.length){
+      const {error}=await supabase.from('posts').update({status:'approved'}).in('id',passed).eq('restaurant_id',restaurant.id)
+      if(error){setNotice(error.message);setWorkingId('');return}
+    }
+    await onChanged()
+    setNotice(failed.length
+      ? `Odobreno ${passed.length}. Preskočeno ${failed.length} jer nisu prošle quality check.`
+      : `Sve objave su prošle quality check i odobrene su (${passed.length}).`)
     setWorkingId('')
+  }
+
+  async function autoScheduleWeek(){
+    const candidates=ordered.filter(post=>post.status!=='published')
+    if(!candidates.length){setNotice('Nema sadržaja za automatsko raspoređivanje.');return}
+    setBulkWorking(true)
+    const start=localDateString(new Date(),restaurant.timezone)
+    const updates:{id:string;scheduled_for:string}[]=[]
+    let cursor=start
+    for(let i=0;i<candidates.length;i++){
+      if(i>0)cursor=addLocalDays(cursor,1)
+      const draft=autopilotDraft(candidates[i],cursor,restaurant)
+      cursor=draft.date
+      updates.push({id:candidates[i].id,scheduled_for:zonedInputToIso(`${draft.date}T${draft.time}`,restaurant.timezone)})
+    }
+    for(const row of updates){
+      const{error}=await supabase.from('posts').update({scheduled_for:row.scheduled_for}).eq('id',row.id).eq('restaurant_id',restaurant.id)
+      if(error){setNotice(error.message);setBulkWorking(false);return}
+    }
+    await onChanged()
+    setNotice(`Autopilot je rasporedio ${updates.length} objava bez preklapanja i uz radno vreme restorana.`)
+    setBulkWorking(false)
   }
 
   async function markPublished(post: Post) {
@@ -156,7 +198,7 @@ export function PublishCenter({ restaurant, posts, onChanged, setNotice }: {
     <>
       <header className="page-header publish-header">
         <div><p className="eyebrow">PUBLISH CENTER</p><h1>Tačan dan. Tačno vreme. Sve spremno.</h1><p className="muted">Svaka objava ima termin u vremenskoj zoni restorana: <strong>{restaurant.timezone}</strong>.</p></div>
-        <div className="publish-actions">{drafts.length>0&&<button className="secondary" onClick={()=>void approveAll()} disabled={workingId==='bulk-approve'}><CheckCircle2 size={16}/>{workingId==='bulk-approve'?'Odobravam…':`Odobri sve (${drafts.length})`}</button>}<button className="secondary" onClick={exportCalendar}><CalendarClock size={16} /> .ICS kalendar</button><button className="primary" onClick={exportCsv}><Download size={16} /> Export CSV</button></div>
+        <div className="publish-actions">{drafts.length>0&&<button className="secondary" onClick={()=>void approveAll()} disabled={workingId==='bulk-approve'}><CheckCircle2 size={16}/>{workingId==='bulk-approve'?'Proveravam…':`Quality + odobri (${drafts.length})`}</button>}<button className="secondary" onClick={()=>void autoScheduleWeek()} disabled={bulkWorking}><Sparkles size={16}/>{bulkWorking?'Raspoređujem…':'Auto rasporedi'}</button><button className="secondary" onClick={exportCalendar}><CalendarClock size={16} /> .ICS kalendar</button><button className="primary" onClick={exportCsv}><Download size={16} /> Export CSV</button></div>
       </header>
 
       {nextPost && <section className="next-publish-card">
@@ -173,11 +215,13 @@ export function PublishCenter({ restaurant, posts, onChanged, setNotice }: {
       </section>
 
       {overdue.length>0&&<div className="publish-overdue-note"><Clock3 size={17}/><div><strong>{overdue.length} odobrenih objava ima termin u prošlosti.</strong><span>Promeni termin pre objavljivanja da red za objavu ostane tačan.</span></div></div>}
+      {conflicts>0&&<div className="publish-overdue-note publish-conflict-note"><Clock3 size={17}/><div><strong>{conflicts} objava ima termin koji se preklapa sa drugom objavom.</strong><span>Klikni „Auto rasporedi“ da razdvoji termine uz radno vreme restorana.</span></div></div>}
       <div className="publishing-note"><Sparkles size={17} /><div><strong>Autopilot raspoređuje, ti kontrolišeš</strong><span>Početni termini se generišu automatski prema tipu sadržaja i radnom vremenu. Svaki datum i vreme možeš ručno da promeniš.</span></div></div>
 
       <section className="publish-queue panel">
-        <div className="panel-heading"><h2><Send size={18} /> Red za objavu</h2><small>{ordered.length} stavki · datum + vreme</small></div>
-        {ordered.length === 0 ? <div className="empty-small">Generiši nedelju sadržaja da bi se pojavio red za objavu.</div> : <div className="queue-list">
+        <div className="panel-heading publish-view-head"><h2>{view==='queue'?<><Send size={18}/> Red za objavu</>:<><CalendarRange size={18}/> Kalendar sadržaja</>}</h2><div className="publish-view-switch"><button className={view==='queue'?'active':''} onClick={()=>setView('queue')}><List size={14}/> Red</button><button className={view==='calendar'?'active':''} onClick={()=>setView('calendar')}><CalendarRange size={14}/> 14 dana</button></div></div>
+        {view==='calendar'?<div className="publish-calendar">{calendarDays.map(day=>{const dayPosts=calendarMap.get(day.key)||[];return <article key={day.key} className={`publish-day ${day.today?'today':''} ${day.open?'':'closed'}`}><header><span>{day.weekday}</span><strong>{day.label}</strong>{!day.open&&<small>Zatvoreno</small>}</header><div className="publish-day-posts">{dayPosts.length?dayPosts.map(post=><button key={post.id} className={`calendar-post ${post.status}`} onClick={()=>openSchedule(post)}><span>{post.scheduled_for?formatTime(post.scheduled_for,restaurant.timezone):'—'}</span><strong>{post.title||'Objava'}</strong><small>{post.post_type}</small></button>):<span className="calendar-empty">bez objave</span>}</div></article>})}</div>
+        :ordered.length === 0 ? <div className="empty-small">Generiši nedelju sadržaja da bi se pojavio red za objavu.</div> : <div className="queue-list">
           {ordered.map((post) => <div className={`queue-item ${editingId === post.id ? 'editing-schedule' : ''}`} key={post.id}>
             <div className={`queue-date ${post.status}`}><strong>{post.scheduled_for ? formatDate(post.scheduled_for, restaurant.timezone) : '—'}</strong><span className="queue-time"><Clock3 size={11} /> {post.scheduled_for ? formatTime(post.scheduled_for, restaurant.timezone) : 'bez termina'}</span></div>
             <div className="queue-copy">
@@ -201,6 +245,21 @@ export function PublishCenter({ restaurant, posts, onChanged, setNotice }: {
   )
 }
 
+function localDateString(date:Date,timeZone:string){
+  const parts=new Intl.DateTimeFormat('en-CA',{timeZone,year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(date)
+  const get=(type:string)=>parts.find(p=>p.type===type)?.value||''
+  return `${get('year')}-${get('month')}-${get('day')}`
+}
+function buildCalendarDays(timeZone:string,count:number){
+  const today=localDateString(new Date(),timeZone)
+  return Array.from({length:count},(_,i)=>{
+    const key=addLocalDays(today,i)
+    const d=new Date(key+'T12:00:00Z')
+    const weekday=new Intl.DateTimeFormat('sr-RS',{weekday:'short',timeZone:'UTC'}).format(d)
+    const label=new Intl.DateTimeFormat('sr-RS',{day:'2-digit',month:'2-digit',timeZone:'UTC'}).format(d)
+    return{key,weekday,label,today:key===today,open:true}
+  })
+}
 function preferredMinutes(post:Post){
   if(post.post_type==='promotion')return 17*60+30
   if(post.post_type==='story')return 11*60+30
