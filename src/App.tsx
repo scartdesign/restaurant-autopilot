@@ -224,7 +224,6 @@ function App() {
       {appControls.announcement_enabled&&appControls.announcement_text&&<div className={`global-announcement ${appControls.announcement_tone}`}><Megaphone size={15}/><span>{appControls.announcement_text}</span></div>}
       {notice&&<div className="notice"><span>{notice}</span><button onClick={()=>setNotice('')}><X size={15}/></button></div>}
       {activeTab==='launch'&&<LaunchCenter restaurant={restaurant} menuItems={menuItems} posts={posts} onNavigate={(tab)=>void openTab(tab as Tab)}/>} 
-      {activeTab==='launch'&&<LaunchCenter restaurant={restaurant} menuItems={menuItems} posts={posts} onNavigate={(tab)=>void openTab(tab)}/>} 
       {activeTab==='dashboard'&&<Dashboard restaurant={restaurant} menuItems={menuItems} posts={posts} onChanged={refreshContent} setNotice={setNotice}/>} 
       {activeTab==='creative'&&<CreativeHub restaurant={restaurant} menuItems={menuItems} entitlement={isSuperadmin?{active:true,is_superadmin:true,features:{campaign_pack:true}}:entitlement} onChanged={refreshContent} setNotice={setNotice}/>} 
       {activeTab==='studio'&&<VisualStudio restaurant={restaurant} menuItems={menuItems} posts={posts} setNotice={setNotice}/>} 
@@ -236,7 +235,6 @@ function App() {
       {activeTab==='settings'&&<SettingsPanel restaurant={restaurant} onSaved={refreshRestaurant} setNotice={setNotice}/>} 
       {activeTab==='support'&&<SupportCenter restaurant={restaurant} setNotice={setNotice}/>} 
       {activeTab==='notifications'&&<NotificationsCenter setNotice={setNotice} onUnreadChanged={setUnreadNotifications}/>} 
-      {activeTab==='support'&&<SupportCenter restaurant={restaurant} setNotice={setNotice}/>}  
       {activeTab==='admin'&&isSuperadmin&&<OwnerControlPlus setNotice={setNotice} onCloseApp={async()=>{await loadAppControls();setActiveTab('dashboard')}}/>} 
     </main>
   </div>
