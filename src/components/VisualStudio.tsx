@@ -139,9 +139,10 @@ export function VisualStudio({ restaurant, posts, menuItems, setNotice }: { rest
     } catch(error) { setNotice(error instanceof Error ? error.message : 'Greška pri izvozu.'); setWorking(false) }
   }
 
-  const headlinePreviewStyle:CSSProperties={fontSize:`clamp(${34*design.headlineScale}px,${5.8*design.headlineScale}vw,${84*design.headlineScale}px)`}
+  const headlinePreviewStyle:CSSProperties={fontSize:`clamp(${34*design.headlineScale}px,${5.8*design.headlineScale}vw,${84*design.headlineScale}px)`,letterSpacing:`${design.headlineTracking}em`,lineHeight:design.headlineLineHeight}
   const sublinePreviewStyle:CSSProperties={fontSize:`clamp(${11*design.sublineScale}px,${1.55*design.sublineScale}vw,${21*design.sublineScale}px)`}
   const ctaPreviewStyle:CSSProperties={fontSize:`${12*design.ctaScale}px`,padding:`${11*design.ctaScale}px ${16*design.ctaScale}px`}
+  const pricePreviewStyle:CSSProperties={fontSize:`${11*design.priceScale}px`,padding:`${7*design.priceScale}px ${11*design.priceScale}px`}
 
   return <>
     <header className="page-header studio-header studio-header-pro"><div><p className="eyebrow">VISUAL STUDIO</p><h1>Objava mora da izgleda kao da ju je radio dizajner.</h1><p className="muted">Realna fotografija, logo, brend boje, hijerarhija i CTA — sve menjaš uživo.</p></div><div className="studio-header-actions"><button className="secondary" onClick={saveDesign} disabled={saving}><Save size={17}/>{saving?'Čuvam…':'Sačuvaj objavu'}</button><button className="primary" onClick={downloadPng} disabled={working}><Download size={18}/>{working?'Renderujem…':`Preuzmi ${design.format==='story'?'1080×1920':'1080×1350'}`}</button></div></header>
@@ -153,11 +154,14 @@ export function VisualStudio({ restaurant, posts, menuItems, setNotice }: { rest
         <div className="studio-fieldset"><span>Format</span><div className="segmented"><button type="button" className={design.format==='feed'?'active':''} onClick={()=>patch({format:'feed'})}>Feed 4:5</button><button type="button" className={design.format==='story'?'active':''} onClick={()=>patch({format:'story'})}>Story 9:16</button></div></div>
         <div className="studio-fieldset"><span><Palette size={14}/> Stil</span><div className="template-picker template-picker-six">{(Object.keys(templateNames) as Template[]).map(value=><button type="button" key={value} className={design.template===value?'active':''} onClick={()=>patch({template:value})}><i className={`template-dot ${value}`}/><span>{templateNames[value]}</span></button>)}</div></div>
         <div className="studio-fieldset typography-controls"><span><AlignLeft size={14}/> Tipografija i raspored</span><div className="studio-brand-grid"><label>Font<select value={design.fontPair} onChange={e=>patch({fontPair:e.target.value as FontPair})}><option value="modern">Modern Sans</option><option value="editorial">Editorial Serif</option><option value="impact">Impact / Promo</option></select></label><label>Pozicija teksta<select value={design.copyPosition} onChange={e=>patch({copyPosition:e.target.value as CopyPosition})}><option value="top">Gore</option><option value="center">Centar</option><option value="bottom">Dole</option></select></label></div>
-          <div style={{display:'grid',gap:8,marginTop:8}}>
+          <div className="typography-size-stack">
             <FontScaleControl label="Glavni naslov" value={design.headlineScale} min={.7} max={1.6} onChange={value=>patch({headlineScale:value})} onMinus={()=>adjustScale('headlineScale',-.1,.7,1.6)} onPlus={()=>adjustScale('headlineScale',.1,.7,1.6)}/>
             <FontScaleControl label="Podnaslov" value={design.sublineScale} min={.7} max={1.5} onChange={value=>patch({sublineScale:value})} onMinus={()=>adjustScale('sublineScale',-.1,.7,1.5)} onPlus={()=>adjustScale('sublineScale',.1,.7,1.5)}/>
             <FontScaleControl label="CTA dugme" value={design.ctaScale} min={.8} max={1.5} onChange={value=>patch({ctaScale:value})} onMinus={()=>adjustScale('ctaScale',-.1,.8,1.5)} onPlus={()=>adjustScale('ctaScale',.1,.8,1.5)}/>
-            <button type="button" className="secondary" style={{minHeight:34,fontSize:10}} onClick={()=>patch({headlineScale:1,sublineScale:1,ctaScale:1})}><RotateCcw size={13}/> Vrati veličine na 100%</button>
+            {price&&<FontScaleControl label="Cena" value={design.priceScale} min={.8} max={1.5} onChange={value=>patch({priceScale:value})} onMinus={()=>adjustScale('priceScale',-.1,.8,1.5)} onPlus={()=>adjustScale('priceScale',.1,.8,1.5)}/>}
+            <RangeControl label="Razmak slova" value={design.headlineTracking} min={-.08} max={.12} step={.01} display={Math.round(design.headlineTracking*100)+'%'} onChange={headlineTracking=>patch({headlineTracking})}/>
+            <RangeControl label="Razmak redova" value={design.headlineLineHeight} min={.78} max={1.3} step={.02} display={Math.round(design.headlineLineHeight*100)+'%'} onChange={headlineLineHeight=>patch({headlineLineHeight})}/>
+            <button type="button" className="secondary typography-reset" onClick={()=>patch({headlineScale:1,sublineScale:1,ctaScale:1,priceScale:1,headlineTracking:-.055,headlineLineHeight:.92})}><RotateCcw size={13}/> Vrati tipografiju</button>
           </div>
           {price&&<button type="button" className={design.priceVisible?'price-toggle active':'price-toggle'} onClick={()=>patch({priceVisible:!design.priceVisible})}>{design.priceVisible?<Eye size={14}/>:<EyeOff size={14}/>} {design.priceVisible?'Cena se prikazuje':'Cena je sakrivena'}</button>}
         </div>
@@ -187,7 +191,7 @@ export function VisualStudio({ restaurant, posts, menuItems, setNotice }: { rest
             <div className="artboard-photo-shade"/>
             {design.logoVisible&&<div className={`floating-brand-logo pos-${design.logoPosition} size-${design.logoSize} badge-${design.logoBadge}`}>{restaurant.logo_url?<img src={restaurant.logo_url} alt={restaurant.name}/>:<span>{restaurant.name.slice(0,1).toUpperCase()}</span>}</div>}
             <div className="artboard-brandline"><strong>{restaurant.name}</strong><span>{location}</span></div>
-            <div className="artboard-copy">{price&&design.priceVisible&&<span className="visual-price">{price}</span>}<h2 style={headlinePreviewStyle}>{design.headline||'Naslov objave'}</h2><p style={sublinePreviewStyle}>{design.subline||'Kratka poruka koja prodaje iskustvo, ne samo jelo.'}</p><div className="visual-cta" style={ctaPreviewStyle}>{design.cta||'Svrati danas'} <span>→</span></div></div>
+            <div className="artboard-copy">{price&&design.priceVisible&&<span className="visual-price" style={pricePreviewStyle}>{price}</span>}<h2 style={headlinePreviewStyle}>{design.headline||'Naslov objave'}</h2><p style={sublinePreviewStyle}>{design.subline||'Kratka poruka koja prodaje iskustvo, ne samo jelo.'}</p><div className="visual-cta" style={ctaPreviewStyle}>{design.cta||'Svrati danas'} <span>→</span></div></div>
             <div className="artboard-footer"><span>{restaurant.instagram||restaurant.name}</span><span>{design.format==='story'?'STORY':'FEED'}</span></div>
           </div>}
         <div className="studio-below-preview"><div><CheckCircle2 size={17}/><span>PNG export koristi isti logo, poziciju, boje, veličine slova i layout kao preview.</span></div><div><ImageIcon size={17}/><span>{design.imageUrl?'Koristi se realna fotografija iz menija.':'Dodaj fotografiju za maksimalan kvalitet.'}</span></div></div>
