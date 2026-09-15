@@ -176,6 +176,19 @@ export function MenuManager({ restaurant, userId, items, onChanged, setNotice }:
     setNotice('CSV šablon je preuzet. Popuni ga i vrati kroz „Uvezi CSV“.')
   }
 
+  async function setPriority(item: MenuItem, value: number) {
+    setWorkingId(item.id)
+    const priority = Math.max(0, Math.min(3, Math.round(value)))
+    const { error } = await supabase.from('menu_items').update({ marketing_priority: priority }).eq('id', item.id).eq('restaurant_id', restaurant.id)
+    if (error) setNotice(error.message)
+    else {
+      const label = priority === 3 ? 'HERO' : priority === 2 ? 'visok' : priority === 1 ? 'blagi' : 'standardni'
+      setNotice(`„${item.name}“ · ${label} marketinški prioritet.`)
+      await onChanged()
+    }
+    setWorkingId('')
+  }
+
   async function toggleItem(item: MenuItem) {
     setWorkingId(item.id)
     const { error } = await supabase.from('menu_items').update({ is_active: !item.is_active }).eq('id', item.id)
@@ -230,7 +243,7 @@ export function MenuManager({ restaurant, userId, items, onChanged, setNotice }:
             <label>Cena<input type="number" min="0" step="0.01" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} placeholder="890" /></label>
             <label>Valuta<select value={form.currency} onChange={(e) => setForm({ ...form, currency: e.target.value })}><option>RSD</option><option>EUR</option><option>BAM</option><option>MKD</option></select></label>
           </div>
-          <label>Opis<textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Pelat, mozzarella, šunka, pečurke…" rows={4} /></label>
+          <label>Opis<textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Pelat, mozzarella, šunka, pečurke…" rows={4} /></label><label>Marketing prioritet<select value={form.marketing_priority} onChange={e=>setForm({...form,marketing_priority:e.target.value})}><option value="0">Standardno</option><option value="1">Promoviši malo češće</option><option value="2">Visok prioritet</option><option value="3">HERO jelo</option></select></label>
           <label className="upload-box"><Upload size={18} /><span>{image ? image.name : 'Dodaj fotografiju jela (opciono)'}</span><input className="file-input" type="file" accept="image/jpeg,image/png,image/webp" onChange={chooseImage} /></label>
           {!image && <div className="form-ai-note"><WandSparkles size={15}/> Možeš dodati jelo bez fotografije i zatim kliknuti „AI slika“.</div>}
           <button className="primary full" disabled={working}>{working ? 'Radim…' : 'Dodaj u meni'}</button>
@@ -238,18 +251,18 @@ export function MenuManager({ restaurant, userId, items, onChanged, setNotice }:
 
         <section className="panel">
           <div className="panel-heading"><h2>Trenutni meni <span className="pill">{items.length}</span></h2><small>{items.filter((item) => item.is_active).length} aktivno</small></div>
-          {items.length>0&&<div className="menu-filterbar"><label className="menu-search"><Search size={15}/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Pretraži jelo, opis ili kategoriju…"/></label><select value={categoryFilter} onChange={e=>setCategoryFilter(e.target.value)}><option value="all">Sve kategorije</option>{categories.map(category=><option key={category} value={category}>{category}</option>)}</select><select value={stateFilter} onChange={e=>setStateFilter(e.target.value as typeof stateFilter)}><option value="all">Sve stavke</option><option value="active">Aktivne</option><option value="paused">Pauzirane</option><option value="missing-photo">Bez fotografije</option></select><span>{filteredItems.length} prikazano</span></div>}
+          {items.length>0&&<div className="menu-filterbar"><label className="menu-search"><Search size={15}/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Pretraži jelo, opis ili kategoriju…"/></label><select value={categoryFilter} onChange={e=>setCategoryFilter(e.target.value)}><option value="all">Sve kategorije</option>{categories.map(category=><option key={category} value={category}>{category}</option>)}</select><select value={stateFilter} onChange={e=>setStateFilter(e.target.value as typeof stateFilter)}><option value="all">Sve stavke</option><option value="active">Aktivne</option><option value="paused">Pauzirane</option><option value="missing-photo">Bez fotografije</option><option value="priority">Marketinški prioritet</option></select><span>{filteredItems.length} prikazano</span></div>}
           <div className="menu-list">
             {items.length === 0 ? <div className="empty-small">Još nema jela. Možeš ručno da dodaš prvo ili da uvezeš ceo CSV.</div> : filteredItems.length===0?<div className="empty-small">Nema stavki koje odgovaraju filteru.</div>:filteredItems.map((item) => (
               <div className={`menu-row ${item.is_active ? '' : 'inactive'}`} key={item.id}>
                 {item.image_url ? <img className="food-thumb" src={item.image_url} alt="" /> : <div className="food-icon"><ImageIcon size={18} /></div>}
-                <div className="menu-copy"><strong>{item.name}</strong><small>{item.category || 'Bez kategorije'}{item.description ? ` · ${item.description}` : ''}</small>{!item.image_url && <span className="no-photo-label">Nema slike · AI može da je napravi</span>}</div>
+                <div className="menu-copy"><strong>{item.name}{Number(item.marketing_priority||0)>0&&<span className={`menu-priority-badge p${item.marketing_priority}`}><Star size={10}/>{item.marketing_priority===3?'HERO':item.marketing_priority===2?'VISOK':'PRIORITET'}</span>}</strong><small>{item.category || 'Bez kategorije'}{item.description ? ` · ${item.description}` : ''}</small>{!item.image_url && <span className="no-photo-label">Nema slike · AI može da je napravi</span>}</div>
                 <div className="menu-right">
                   <div className="price">{item.price ? `${item.price} ${item.currency}` : '—'}</div>
                   <div className="row-actions">
                     <button className={`mini-button ai-photo-button ${item.image_url ? 'has-photo' : ''}`} disabled={aiWorkingId === item.id||aiBlocked} onClick={() => generateAiImage(item)} type="button"><WandSparkles size={13}/>{aiWorkingId === item.id ? 'AI radi…' : item.image_url ? 'AI nova' : 'AI slika'}</button>
                     <button className="mini-button ai-variants-button" disabled={aiWorkingId === item.id||aiBlocked} onClick={() => generateAiVariants(item)} type="button"><Sparkles size={13}/> 3 varijante</button>
-                    <button className="mini-button" disabled={workingId === item.id} onClick={() => toggleItem(item)} type="button">{item.is_active ? 'Aktivno' : 'Pauzirano'}</button>
+                    <select className="priority-select" value={String(item.marketing_priority||0)} disabled={workingId===item.id} onChange={e=>void setPriority(item,Number(e.target.value))} title="Marketinški prioritet"><option value="0">Prioritet 0</option><option value="1">Prioritet 1</option><option value="2">Prioritet 2</option><option value="3">HERO 3</option></select><button className="mini-button" disabled={workingId === item.id} onClick={() => toggleItem(item)} type="button">{item.is_active ? 'Aktivno' : 'Pauzirano'}</button>
                     <button className="danger-icon" disabled={workingId === item.id} onClick={() => deleteItem(item)} type="button" title="Obriši"><Trash2 size={15} /></button>
                   </div>
                 </div>
