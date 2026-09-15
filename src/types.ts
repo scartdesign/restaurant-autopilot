@@ -92,6 +92,17 @@ export type GenerationMeta = Record<string, unknown> & {
   variation?: number
   format?: string
   visual_design?: VisualDesignMeta
+  learning_signal?: {
+    performance_samples?: number
+    item_score?: number
+    marketing_priority?: number
+    recent_uses_30d?: number
+  }
+  campaign_style?: string
+  campaign_focus?: string
+  campaign_focus_menu_item_id?: string | null
+  hero_menu_item_id?: string | null
+  marketing_priority?: number
 }
 
 export type Post = {
