@@ -80,6 +80,7 @@ export type VisualDesignMeta = {
   price_scale?: number
   headline_tracking?: number
   headline_line_height?: number
+  text_align?: 'left' | 'center' | 'right'
   saved_at?: string
 }
 
