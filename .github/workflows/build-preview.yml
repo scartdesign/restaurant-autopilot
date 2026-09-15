@@ -38,3 +38,8 @@ jobs:
             git commit -m "Update compiled preview"
             git push
           fi
+      - name: Sync compiled preview to Supabase Storage
+        run: |
+          curl -fsS -X POST "https://pkbsveezmjkvfuiplrqb.supabase.co/functions/v1/publish-static" \
+            -H "Content-Type: application/json" \
+            -d '{}'
