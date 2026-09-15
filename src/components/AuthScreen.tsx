@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabase'
 
 const LOGIN_FOOD = 'https://images.unsplash.com/photo-1574071318508-1cdbab80d002?auto=format&fit=crop&w=1800&q=88'
 
-export function AuthScreen({ onDemo, signupOpen=true }: { onDemo: () => void; signupOpen?:boolean }) {
+export function AuthScreen({ onDemo, onBack, signupOpen=true }: { onDemo: () => void; onBack?:()=>void; signupOpen?:boolean }) {
   const [mode, setMode] = useState<'login' | 'signup'>('login')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -43,7 +43,7 @@ export function AuthScreen({ onDemo, signupOpen=true }: { onDemo: () => void; si
       </section>
 
       <section className="auth-form-zone">
-        <div className="auth-card auth-card-pro auth-card-wow">
+        <div className="auth-card auth-card-pro auth-card-wow">{onBack&&<button type="button" className="auth-back-home" onClick={onBack}>← Nazad na početnu</button>}
           <div className="auth-logo"><ChefHat size={28} /></div><p className="eyebrow">MARKETING BEZ CIMANJA</p><h1>{mode === 'login' ? <>Dobrodošao<br />nazad.</> : <>Pokreni svoj<br />Autopilot.</>}</h1><p className="muted">{mode === 'login' ? 'Uđi u komandni centar svog restorana.' : signupOpen?'Napravi nalog i pripremi prvi sadržaj za nekoliko minuta.':'Registracije su trenutno zatvorene od strane OWNER-a.'}</p>
           <div className="auth-benefits"><span><Sparkles size={13} /> sadržaj</span><span><MapPin size={13} /> local reach</span><span><Hash size={13} /> discovery</span></div>
           <form onSubmit={submit}><label>Email<input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required placeholder="restoran@email.com" autoComplete="email" /></label><label>Lozinka<input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={mode==='signup'?8:6} placeholder={mode==='signup'?'Najmanje 8 karaktera':'Tvoja lozinka'} autoComplete={mode==='login'?'current-password':'new-password'} /></label><button className="primary full auth-submit" disabled={working||(mode==='signup'&&!signupOpen)}>{working ? 'Sačekaj…' : mode === 'login' ? 'Prijavi se' : signupOpen?'Napravi nalog':'Registracije zatvorene'} <ArrowRight size={17} /></button></form>
