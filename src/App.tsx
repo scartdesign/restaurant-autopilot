@@ -21,6 +21,7 @@ import { CreativeHub } from './components/CreativeHub'
 import { LaunchCenter } from './components/LaunchCenter'
 import { SupportCenter } from './components/SupportCenter'
 import { NotificationsCenter } from './components/NotificationsCenter'
+import { LandingScreen } from './components/LandingScreen'
 
 type Tab = 'launch' | 'dashboard' | 'creative' | 'studio' | 'brand' | 'publish' | 'menu' | 'promotions' | 'settings' | 'support' | 'notifications' | 'billing' | 'admin'
 type AppControlsLite = { maintenance_mode:boolean; maintenance_message:string|null; sales_open:boolean; signup_open:boolean; announcement_enabled:boolean; announcement_text:string|null; announcement_tone:'info'|'success'|'warning'; app_version:string }
@@ -43,6 +44,7 @@ function App() {
   const [unreadNotifications,setUnreadNotifications]=useState(0)
   const [activeTab, setActiveTab] = useState<Tab>('launch')
   const [demo, setDemo] = useState(false)
+  const [showAuth,setShowAuth]=useState(false)
   const [addingRestaurant, setAddingRestaurant] = useState(false)
   const [recoveryMode,setRecoveryMode]=useState(false)
   const adminSetupRequested = new URLSearchParams(window.location.search).get('superadmin') === 'setup'
@@ -165,7 +167,10 @@ function App() {
   if (demo) return <DemoScreen onExit={() => setDemo(false)} />
   if (loading || (session && !accountReady)) return <div className="screen-center"><div className="loader" />Učitavanje Restaurant Autopilota…</div>
   if (recoveryMode && session) return <PasswordRecovery onDone={recoveryDone}/>
-  if (!session) return <AuthScreen onDemo={() => setDemo(true)} signupOpen={appControls.signup_open} />
+  if (!session) {
+    if (showAuth || adminSetupRequested) return <AuthScreen onDemo={() => setDemo(true)} onBack={adminSetupRequested?undefined:()=>setShowAuth(false)} signupOpen={appControls.signup_open} />
+    return <LandingScreen onAuth={()=>setShowAuth(true)} onDemo={()=>setDemo(true)}/>
+  }
   if (adminSetupRequested && !isSuperadmin) return <AdminSetup email={session.user.email || ''} onActivated={adminActivated} onCancel={() => { window.history.replaceState({}, '', window.location.pathname); void loadAccountState() }} />
   if (!isSuperadmin && appControls.maintenance_mode) return <MaintenanceScreen message={appControls.maintenance_message} version={appControls.app_version} onSignOut={signOut}/>
   if (!isSuperadmin && !hasAccess) return <BillingPage email={session.user.email || ''} onAccessChanged={accessChanged} onSignOut={signOut} />
