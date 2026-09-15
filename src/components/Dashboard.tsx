@@ -59,6 +59,7 @@ export function Dashboard({ restaurant, menuItems, posts, onChanged, setNotice }
     }
 
     const generated = (data?.posts || []) as Post[]
+    const performanceSamples=Number(data?.learning?.performance_samples||0)
     let aiEnhanced = 0
     try {
       const { data: aiStatus } = await supabase.functions.invoke('creative-advisor', {
@@ -81,8 +82,8 @@ export function Dashboard({ restaurant, menuItems, posts, onChanged, setNotice }
     await onChanged()
     const count = generated.length || restaurant.posting_frequency || 0
     setNotice(aiEnhanced
-      ? `Nedelja je spremna: ${count} objava, a AI je finalno doradio ${aiEnhanced}/${count} tekstova. Dizajn, datum i vreme su sačuvani.`
-      : `Autopilot je napravio ${count} dizajniranih predloga sa datumom i vremenom. AI nije bio dostupan, pa je zadržan Smart fallback.`)
+      ? `Nedelja je spremna: ${count} objava, AI je doradio ${aiEnhanced}/${count} tekstova${performanceSamples?` i učio iz ${performanceSamples} stvarnih rezultata`:''}. Dizajn, datum i vreme su sačuvani.`
+      : `Autopilot je napravio ${count} dizajniranih predloga sa datumom i vremenom${performanceSamples?` i koristio ${performanceSamples} stvarnih performance rezultata`:''}. Tekst koristi Smart fallback gde AI nije dostupan.`)
     setGenerating(false)
   }
 
