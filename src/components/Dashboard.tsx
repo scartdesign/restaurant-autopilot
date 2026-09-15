@@ -13,11 +13,23 @@ export function Dashboard({ restaurant, menuItems, posts, onChanged, setNotice }
   const [generating, setGenerating] = useState(false)
   const [workingId, setWorkingId] = useState('')
   const [editing, setEditing] = useState<Post | null>(null)
+  const [contentQuery,setContentQuery]=useState('')
+  const [contentStatus,setContentStatus]=useState<'all'|Post['status']>('all')
+  const [contentType,setContentType]=useState<'all'|Post['post_type']>('all')
   const activeItems = useMemo(() => menuItems.filter((item) => item.is_active), [menuItems])
   const approvedCount = useMemo(() => posts.filter((post) => post.status === 'approved' || post.status === 'published').length, [posts])
   const averageDiscovery = useMemo(() => posts.length ? Math.round(posts.reduce((sum, post) => sum + (post.discovery_score || 0), 0) / posts.length) : 0, [posts])
   const photoCoverage = useMemo(() => activeItems.length ? Math.round((activeItems.filter((item) => item.image_url).length / activeItems.length) * 100) : 0, [activeItems])
   const orderedPosts = useMemo(() => [...posts].sort((a, b) => new Date(a.scheduled_for || 0).getTime() - new Date(b.scheduled_for || 0).getTime()), [posts])
+  const filteredPosts=useMemo(()=>{
+    const q=contentQuery.trim().toLocaleLowerCase('sr')
+    return posts.filter(post=>{
+      if(contentStatus!=='all'&&post.status!==contentStatus)return false
+      if(contentType!=='all'&&post.post_type!==contentType)return false
+      if(q&&!([post.title||'',post.caption||'',...(post.seo_keywords||[]),...(post.hashtags||[])].join(' ').toLocaleLowerCase('sr').includes(q)))return false
+      return true
+    })
+  },[posts,contentQuery,contentStatus,contentType])
   const nextScheduled = useMemo(() => orderedPosts.find((post) => post.scheduled_for && new Date(post.scheduled_for).getTime() > Date.now() && post.status !== 'published') || orderedPosts.find((post) => post.scheduled_for && post.status !== 'published'), [orderedPosts])
   const heroImage = useMemo(() => {
     const itemPhoto = activeItems.find((item) => item.image_url)?.image_url
@@ -246,11 +258,14 @@ export function Dashboard({ restaurant, menuItems, posts, onChanged, setNotice }
           <div><p className="eyebrow">CONTENT LIBRARY</p><h2>Sadržaj ove nedelje</h2></div>
           <span className="engine-badge"><Sparkles size={14} /> AI Copy + Design + Schedule + Discovery</span>
         </div>
+        {posts.length>0&&<div className="content-filterbar"><label><Search size={15}/><input value={contentQuery} onChange={e=>setContentQuery(e.target.value)} placeholder="Pretraži naslov, tekst, hashtag…"/></label><select value={contentStatus} onChange={e=>setContentStatus(e.target.value as typeof contentStatus)}><option value="all">Svi statusi</option><option value="draft">Draft</option><option value="approved">Odobreno</option><option value="published">Objavljeno</option><option value="rejected">Odbijeno</option></select><select value={contentType} onChange={e=>setContentType(e.target.value as typeof contentType)}><option value="all">Svi formati</option><option value="feed">Feed</option><option value="story">Story</option><option value="promotion">Promo</option></select><span>{filteredPosts.length}/{posts.length}</span></div>}
         {posts.length === 0 ? (
           <div className="empty-state wow-empty"><Sparkles size={30} /><h3>Još nema sadržaja</h3><p>Dodaj kvalitetne fotografije i jela u meni, zatim pokreni nedelju.</p><button className="wow-primary" onClick={generateWeek}><Sparkles size={17} /> Generiši sada</button></div>
+        ) : filteredPosts.length===0 ? (
+          <div className="empty-state wow-empty"><Search size={28}/><h3>Nema rezultata za ovaj filter.</h3><p>Promeni status, format ili pojam za pretragu.</p><button className="secondary" onClick={()=>{setContentQuery('');setContentStatus('all');setContentType('all')}}>Očisti filtere</button></div>
         ) : (
           <div className="post-grid post-grid-pro wow-post-grid">
-            {posts.map((post) => <PostCard key={post.id} post={post} restaurant={restaurant} menuItems={menuItems} working={workingId === post.id} onEdit={() => setEditing(post)} onAiCopy={() => aiCopy(post)} onOptimize={() => optimizeDiscovery(post)} onDuplicate={() => duplicatePost(post)} onDelete={() => deletePost(post)} onStatus={(status) => changeStatus(post, status)} setNotice={setNotice} />)}
+            {filteredPosts.map((post) => <PostCard key={post.id} post={post} restaurant={restaurant} menuItems={menuItems} working={workingId === post.id} onEdit={() => setEditing(post)} onAiCopy={() => aiCopy(post)} onOptimize={() => optimizeDiscovery(post)} onDuplicate={() => duplicatePost(post)} onDelete={() => deletePost(post)} onStatus={(status) => changeStatus(post, status)} setNotice={setNotice} />)}
           </div>
         )}
       </section>
