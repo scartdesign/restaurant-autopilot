@@ -3,10 +3,11 @@ import { ArrowLeft, Hash, Image as ImageIcon, MapPin, Palette, Sparkles, Target,
 import { supabase } from '../lib/supabase'
 import { OpeningHoursEditor, defaultOpeningHours } from './OpeningHoursEditor'
 import { optimizeImage } from '../lib/image'
+import { browserTimeZone, commonTimeZones, isValidTimeZone } from '../lib/timezone'
 
 export function Onboarding({ userId, onCreated, onCancel, additional = false }: { userId: string; onCreated: () => Promise<void>; onCancel?: () => void; additional?: boolean }) {
   const [form, setForm] = useState({
-    name: '', city: '', neighborhood: '', country: 'Serbia', timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'Europe/Belgrade', cuisine_type: '', target_audience: '',
+    name: '', city: '', neighborhood: '', country: 'Serbia', timezone: browserTimeZone(), cuisine_type: '', target_audience: '',
     social_goal: 'reservations', hashtag_mode: 'smart', brand_style: 'modern', tone: 'friendly',
     phone: '', instagram: '', posting_frequency: '5', primary_color: '#17211b', secondary_color: '#b9df72', opening_hours: defaultOpeningHours(),
   })
@@ -24,7 +25,7 @@ export function Onboarding({ userId, onCreated, onCancel, additional = false }: 
   }
 
   async function submit(event: FormEvent) {
-    event.preventDefault(); setWorking(true); setMessage('')
+    event.preventDefault(); if(!isValidTimeZone(form.timezone)){setMessage('Vremenska zona nije validna. Izaberi npr. Europe/Belgrade.');return} setWorking(true); setMessage('')
     try {
       const { data: restaurant, error } = await supabase.from('restaurants').insert({
         owner_id: userId, name: form.name.trim(), city: form.city.trim() || null, neighborhood: form.neighborhood.trim() || null, country: form.country.trim() || 'Serbia', timezone: form.timezone.trim() || 'Europe/Belgrade', cuisine_type: form.cuisine_type.trim() || null,
@@ -59,7 +60,7 @@ export function Onboarding({ userId, onCreated, onCancel, additional = false }: 
     <form onSubmit={submit} className="grid-form onboarding-grid">
       <label>Naziv restorana<input required value={form.name} onChange={e=>setForm({...form,name:e.target.value})} placeholder="Bella Napoli"/></label><label>Tip kuhinje<input value={form.cuisine_type} onChange={e=>setForm({...form,cuisine_type:e.target.value})} placeholder="Italijanska"/></label>
       <label>Grad<input value={form.city} onChange={e=>setForm({...form,city:e.target.value})} placeholder="Beograd"/></label><label>Kraj / naselje<input value={form.neighborhood} onChange={e=>setForm({...form,neighborhood:e.target.value})} placeholder="Vračar"/></label>
-      <label>Država<input value={form.country} onChange={e=>setForm({...form,country:e.target.value})}/></label><label>Vremenska zona<input value={form.timezone} onChange={e=>setForm({...form,timezone:e.target.value})} placeholder="Europe/Belgrade"/></label>
+      <label>Država<input value={form.country} onChange={e=>setForm({...form,country:e.target.value})}/></label><label>Vremenska zona<input list="onboarding-timezones" value={form.timezone} onChange={e=>setForm({...form,timezone:e.target.value})} placeholder="Europe/Belgrade"/><datalist id="onboarding-timezones">{commonTimeZones.map(zone=><option key={zone} value={zone}/>)}</datalist></label>
       <label className="span-2">Ciljna publika<input value={form.target_audience} onChange={e=>setForm({...form,target_audience:e.target.value})} placeholder="Parovi, porodice, turisti..."/></label>
       <label>Glavni cilj<select value={form.social_goal} onChange={e=>setForm({...form,social_goal:e.target.value})}><option value="reservations">Više rezervacija</option><option value="walk_ins">Više dolazaka</option><option value="delivery">Više porudžbina</option><option value="awareness">Prepoznatljivost</option></select></label>
       <label>Hashtag strategija<select value={form.hashtag_mode} onChange={e=>setForm({...form,hashtag_mode:e.target.value})}><option value="smart">Smart — automatski balans</option><option value="local">Local focus</option><option value="balanced">Balanced</option><option value="minimal">Minimal</option></select></label>
