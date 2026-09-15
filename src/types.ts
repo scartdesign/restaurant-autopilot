@@ -9,6 +9,7 @@ export type Restaurant = {
   city: string | null
   neighborhood: string | null
   country: string
+  timezone: string
   phone: string | null
   website: string | null
   instagram: string | null
