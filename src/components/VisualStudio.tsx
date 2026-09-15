@@ -22,7 +22,7 @@ type DesignState = {
 
 const templateNames: Record<Template, string> = { editorial:'Editorial', bold:'Bold', minimal:'Minimal', split:'Split', poster:'Poster', luxe:'Luxe', 'premium-grid':'Premium Grid', 'hero-menu':'Hero Menu', 'bold-offer':'Bold Offer', 'lunch-time':'Lunch Time', family:'Family', 'promo-badge':'Promo Badge' }
 
-export function VisualStudio({ restaurant, posts, menuItems, setNotice }: { restaurant:Restaurant; posts:Post[]; menuItems:MenuItem[]; setNotice:(value:string)=>void }) {
+export function VisualStudio({ restaurant, posts, menuItems, setNotice, onChanged }: { restaurant:Restaurant; posts:Post[]; menuItems:MenuItem[]; setNotice:(value:string)=>void; onChanged:()=>Promise<void>|void }) {
   const usablePosts = useMemo(() => posts.filter(p => p.status !== 'rejected'), [posts])
   const imageOptions = useMemo(() => menuItems.filter(i => i.is_active && i.image_url), [menuItems])
   const [selectedId, setSelectedId] = useState(() => usablePosts.find(p => p.status === 'approved')?.id || usablePosts[0]?.id || '')
@@ -36,9 +36,12 @@ export function VisualStudio({ restaurant, posts, menuItems, setNotice }: { rest
   const [presets,setPresets]=useState<DesignPreset[]>([])
   const [presetName,setPresetName]=useState('')
   const [presetWorking,setPresetWorking]=useState(false)
+  const [dirty,setDirty]=useState(false)
+  const [autosaveState,setAutosaveState]=useState<'saved'|'saving'|'error'>('saved')
 
-  useEffect(() => { if (selected) { setDesign(designFromPost(selected, menuItems, restaurant)); setUndoStack([]); setRedoStack([]) } }, [selectedId, restaurant.id])
+  useEffect(() => { if (selected) { setDesign(designFromPost(selected, menuItems, restaurant)); setUndoStack([]); setRedoStack([]); setDirty(false); setAutosaveState('saved') } }, [selectedId, restaurant.id])
   useEffect(()=>{void loadPresets()},[restaurant.id])
+  useEffect(()=>{if(!dirty||!selected)return;const timer=window.setTimeout(()=>void saveDesign(true),1800);return()=>window.clearTimeout(timer)},[design,dirty,selected?.id])
 
   const item = selected ? menuItems.find(i => i.id === selected.menu_item_id) : undefined
   const promoItems = useMemo(() => {
@@ -54,9 +57,9 @@ export function VisualStudio({ restaurant, posts, menuItems, setNotice }: { rest
 
   if (!selected) return <><header className="page-header"><div><p className="eyebrow">VISUAL STUDIO</p><h1>Gotovi vizuali</h1><p className="muted">Prvo generiši nedelju sadržaja, pa ovde pravi finalne objave.</p></div></header><div className="empty-state"><ImageIcon size={34}/><h3>Nema objava za dizajn</h3><p>Dodaj jela sa fotografijama i generiši sadržaj.</p></div></>
 
-  const patch = (value:Partial<DesignState>) => setDesign(current => { setUndoStack(stack=>[...stack.slice(-29),current]); setRedoStack([]); return { ...current, ...value } })
-  function undoDesign(){setUndoStack(stack=>{if(!stack.length)return stack;const previous=stack[stack.length-1];setRedoStack(redo=>[...redo.slice(-29),design]);setDesign(previous);return stack.slice(0,-1)})}
-  function redoDesign(){setRedoStack(stack=>{if(!stack.length)return stack;const next=stack[stack.length-1];setUndoStack(undo=>[...undo.slice(-29),design]);setDesign(next);return stack.slice(0,-1)})}
+  const patch = (value:Partial<DesignState>) => setDesign(current => { setUndoStack(stack=>[...stack.slice(-29),current]); setRedoStack([]); setDirty(true); setAutosaveState('saving'); return { ...current, ...value } })
+  function undoDesign(){setUndoStack(stack=>{if(!stack.length)return stack;const previous=stack[stack.length-1];setRedoStack(redo=>[...redo.slice(-29),design]);setDesign(previous);setDirty(true);setAutosaveState('saving');return stack.slice(0,-1)})}
+  function redoDesign(){setRedoStack(stack=>{if(!stack.length)return stack;const next=stack[stack.length-1];setUndoStack(undo=>[...undo.slice(-29),design]);setDesign(next);setDirty(true);setAutosaveState('saving');return stack.slice(0,-1)})}
   const adjustScale = (field:'headlineScale'|'sublineScale'|'ctaScale'|'priceScale',delta:number,min:number,max:number) => setDesign(current => ({...current,[field]:clampScale(current[field]+delta,min,max)}))
 
   async function loadPresets(){
@@ -134,8 +137,9 @@ export function VisualStudio({ restaurant, posts, menuItems, setNotice }: { rest
     setNotice(`Auto Design je izabrao ${templateNames[nextTemplate]} stil, kadar i logo poziciju.`)
   }
 
-  async function saveDesign() {
-    setSaving(true)
+  async function saveDesign(silent=false) {
+    if(!selected)return
+    if(silent)setAutosaveState('saving');else setSaving(true)
     const meta = { ...(selected.generation_meta || {}), image_url: design.imageUrl, visual_design: {
       template:design.template, format:design.format, headline:design.headline, subline:design.subline, cta:design.cta,
       image_url:design.imageUrl, photo_position:design.photoPosition, overlay:design.overlay,
@@ -146,9 +150,10 @@ export function VisualStudio({ restaurant, posts, menuItems, setNotice }: { rest
       headline_tracking:design.headlineTracking, headline_line_height:design.headlineLineHeight, text_align:design.textAlign,
       saved_at:new Date().toISOString(),
     }}
-    const { error } = await supabase.from('posts').update({ generation_meta: meta }).eq('id', selected.id)
-    setNotice(error ? error.message : 'Dizajn je sačuvan: layout, boje, logo, veličine slova, pozicija i kadar vraćaju se identično.')
-    setSaving(false)
+    const { error } = await supabase.from('posts').update({ generation_meta: meta }).eq('id', selected.id).eq('restaurant_id',restaurant.id)
+    if(error){setAutosaveState('error');if(!silent)setNotice(error.message)}
+    else{setDirty(false);setAutosaveState('saved');if(!silent)setNotice('Dizajn je sačuvan: layout, boje, logo, tipografija, pozicija i kadar vraćaju se identično.');await onChanged()}
+    if(!silent)setSaving(false)
   }
 
   async function saveAsBrandDefault() {
@@ -203,7 +208,7 @@ export function VisualStudio({ restaurant, posts, menuItems, setNotice }: { rest
   const copyPreviewStyle:CSSProperties={textAlign:design.textAlign,marginLeft:design.textAlign==='left'?undefined:'auto',marginRight:design.textAlign==='right'?undefined:'auto'}
 
   return <>
-    <header className="page-header studio-header studio-header-pro"><div><p className="eyebrow">VISUAL STUDIO</p><h1>Objava mora da izgleda kao da ju je radio dizajner.</h1><p className="muted">Realna fotografija, logo, brend boje, hijerarhija i CTA — sve menjaš uživo.</p></div><div className="studio-header-actions"><button className="secondary" onClick={saveDesign} disabled={saving}><Save size={17}/>{saving?'Čuvam…':'Sačuvaj objavu'}</button><button className="primary" onClick={downloadPng} disabled={working}><Download size={18}/>{working?'Renderujem…':`Preuzmi ${design.format==='story'?'1080×1920':design.format==='square'?'1080×1080':'1080×1350'}`}</button></div></header>
+    <header className="page-header studio-header studio-header-pro"><div><p className="eyebrow">VISUAL STUDIO</p><h1>Objava mora da izgleda kao da ju je radio dizajner.</h1><p className="muted">Realna fotografija, logo, brend boje, hijerarhija i CTA — sve menjaš uživo.</p></div><div className="studio-header-actions"><span className={`studio-autosave ${autosaveState}`}>{autosaveState==='saving'?'Čuvam izmene…':autosaveState==='error'?'Greška pri čuvanju':dirty?'Izmene nisu sačuvane':'Automatski sačuvano'}</span><button className="secondary" onClick={()=>void saveDesign(false)} disabled={saving}><Save size={17}/>{saving?'Čuvam…':dirty?'Sačuvaj sada':'Sačuvano'}</button><button className="primary" onClick={downloadPng} disabled={working}><Download size={18}/>{working?'Renderujem…':`Preuzmi ${design.format==='story'?'1080×1920':design.format==='square'?'1080×1080':'1080×1350'}`}</button></div></header>
     <div className="studio-shell studio-shell-pro">
       <aside className="studio-controls panel studio-controls-pro">
         <div className="studio-score-row"><div className="studio-control-head"><LayoutTemplate size={19}/><div><strong>Finalni dizajn</strong><span>Sve izmene se vide odmah.</span></div></div><div className={`design-score ${designScore>=85?'great':designScore>=70?'good':''}`}><strong>{designScore}</strong><span>/100</span></div></div><div className="studio-history"><button type="button" className="secondary" disabled={!undoStack.length} onClick={undoDesign}><Undo2 size={14}/> Poništi</button><button type="button" className="secondary" disabled={!redoStack.length} onClick={redoDesign}><Redo2 size={14}/> Ponovi</button><span>{undoStack.length?`${undoStack.length} koraka`:'Početno stanje'}</span></div>
