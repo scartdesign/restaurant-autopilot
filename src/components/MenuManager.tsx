@@ -67,15 +67,23 @@ export function MenuManager({ restaurant, userId, items, onChanged, setNotice }:
         price: form.price ? Number(form.price) : null,
         currency: form.currency,
         image_url: imageUrl,
-        marketing_priority: Number(form.marketing_priority||0),
+        marketing_priority: Number(form.marketing_priority||0) === 3 ? 2 : Number(form.marketing_priority||0),
       }).select('id,name,image_url').single()
       if (error) throw error
       const requestedPriority=Number(form.marketing_priority||0)
       let heroDemoted=false
       if(requestedPriority===3&&data?.id){
-        const{error:demoteError}=await supabase.from('menu_items').update({marketing_priority:2}).eq('restaurant_id',restaurant.id).eq('marketing_priority',3).neq('id',data.id)
-        if(demoteError)setNotice(`Jelo je dodato kao HERO, ali prethodni HERO nije automatski spušten: ${demoteError.message}`)
-        else heroDemoted=Boolean(currentHero&&currentHero.id!==data.id)
+        const previousHeroes=items.filter((entry)=>entry.id!==data.id&&Number(entry.marketing_priority||0)===3)
+        if(previousHeroes.length){
+          const{error:demoteError}=await supabase.from('menu_items').update({marketing_priority:2}).eq('restaurant_id',restaurant.id).in('id',previousHeroes.map((entry)=>entry.id))
+          if(demoteError)throw demoteError
+          heroDemoted=true
+        }
+        const{error:promoteError}=await supabase.from('menu_items').update({marketing_priority:3}).eq('id',data.id).eq('restaurant_id',restaurant.id)
+        if(promoteError){
+          if(previousHeroes.length)await supabase.from('menu_items').update({marketing_priority:3}).eq('restaurant_id',restaurant.id).in('id',previousHeroes.map((entry)=>entry.id))
+          throw promoteError
+        }
       }
       setForm({ name: '', description: '', category: '', price: '', currency: 'RSD', marketing_priority: '0' })
       setImage(null)
