@@ -8,6 +8,7 @@ type Template = 'editorial' | 'bold' | 'minimal' | 'split' | 'poster' | 'luxe' |
 type PhotoPosition = 'left' | 'center' | 'right'
 type CopyPosition = 'top' | 'center' | 'bottom'
 type FontPair = 'modern' | 'editorial' | 'impact'
+type DesignPreset = { id:string; name:string; design:Partial<DesignState>; created_at:string }
 type DesignState = {
   template: Template; headline: string; subline: string; cta: string; format: Format
   imageUrl: string | null; photoPosition: PhotoPosition; overlay: number
@@ -31,8 +32,12 @@ export function VisualStudio({ restaurant, posts, menuItems, setNotice }: { rest
   const [savingDefaults, setSavingDefaults] = useState(false)
   const [undoStack,setUndoStack]=useState<DesignState[]>([])
   const [redoStack,setRedoStack]=useState<DesignState[]>([])
+  const [presets,setPresets]=useState<DesignPreset[]>([])
+  const [presetName,setPresetName]=useState('')
+  const [presetWorking,setPresetWorking]=useState(false)
 
   useEffect(() => { if (selected) { setDesign(designFromPost(selected, menuItems, restaurant)); setUndoStack([]); setRedoStack([]) } }, [selectedId, restaurant.id])
+  useEffect(()=>{void loadPresets()},[restaurant.id])
 
   const item = selected ? menuItems.find(i => i.id === selected.menu_item_id) : undefined
   const promoItems = useMemo(() => {
@@ -52,6 +57,40 @@ export function VisualStudio({ restaurant, posts, menuItems, setNotice }: { rest
   function undoDesign(){setUndoStack(stack=>{if(!stack.length)return stack;const previous=stack[stack.length-1];setRedoStack(redo=>[...redo.slice(-29),design]);setDesign(previous);return stack.slice(0,-1)})}
   function redoDesign(){setRedoStack(stack=>{if(!stack.length)return stack;const next=stack[stack.length-1];setUndoStack(undo=>[...undo.slice(-29),design]);setDesign(next);return stack.slice(0,-1)})}
   const adjustScale = (field:'headlineScale'|'sublineScale'|'ctaScale'|'priceScale',delta:number,min:number,max:number) => setDesign(current => ({...current,[field]:clampScale(current[field]+delta,min,max)}))
+
+  async function loadPresets(){
+    const{data,error}=await supabase.from('design_presets').select('id,name,design,created_at').eq('restaurant_id',restaurant.id).order('created_at',{ascending:false})
+    if(!error)setPresets((data||[]) as DesignPreset[])
+  }
+
+  function stylePreset(){
+    const {template,format,photoPosition,overlay,primaryColor,accentColor,logoVisible,logoPosition,logoSize,logoBadge,copyPosition,fontPair,priceVisible,headlineScale,sublineScale,ctaScale,priceScale,headlineTracking,headlineLineHeight}=design
+    return {template,format,photoPosition,overlay,primaryColor,accentColor,logoVisible,logoPosition,logoSize,logoBadge,copyPosition,fontPair,priceVisible,headlineScale,sublineScale,ctaScale,priceScale,headlineTracking,headlineLineHeight}
+  }
+
+  async function savePreset(){
+    const name=presetName.trim()
+    if(name.length<2){setNotice('Upiši naziv preseta.');return}
+    setPresetWorking(true)
+    const{data:userData}=await supabase.auth.getUser()
+    const uid=userData.user?.id
+    if(!uid){setNotice('Sesija je istekla.');setPresetWorking(false);return}
+    const{error}=await supabase.from('design_presets').upsert({user_id:uid,restaurant_id:restaurant.id,name,design:stylePreset()},{onConflict:'restaurant_id,name'})
+    if(error)setNotice(error.message)
+    else{setPresetName('');setNotice(`Preset „${name}“ je sačuvan.`);await loadPresets()}
+    setPresetWorking(false)
+  }
+
+  function applyPreset(preset:DesignPreset){
+    patch(preset.design)
+    setNotice(`Primijenjen je preset „${preset.name}“.`)
+  }
+
+  async function deletePreset(preset:DesignPreset){
+    if(!window.confirm(`Obriši preset „${preset.name}“?`))return
+    const{error}=await supabase.from('design_presets').delete().eq('id',preset.id).eq('restaurant_id',restaurant.id)
+    if(error)setNotice(error.message);else{setNotice('Preset je obrisan.');await loadPresets()}
+  }
 
   function fitTypography(){
     const headlineLength=(design.headline||'').trim().length
@@ -168,6 +207,7 @@ export function VisualStudio({ restaurant, posts, menuItems, setNotice }: { rest
         <div className="studio-score-row"><div className="studio-control-head"><LayoutTemplate size={19}/><div><strong>Finalni dizajn</strong><span>Sve izmene se vide odmah.</span></div></div><div className={`design-score ${designScore>=85?'great':designScore>=70?'good':''}`}><strong>{designScore}</strong><span>/100</span></div></div><div className="studio-history"><button type="button" className="secondary" disabled={!undoStack.length} onClick={undoDesign}><Undo2 size={14}/> Poništi</button><button type="button" className="secondary" disabled={!redoStack.length} onClick={redoDesign}><Redo2 size={14}/> Ponovi</button><span>{undoStack.length?`${undoStack.length} koraka`:'Početno stanje'}</span></div>
         <label>Objava<select value={selected.id} onChange={e=>setSelectedId(e.target.value)}>{usablePosts.map(p=><option key={p.id} value={p.id}>{p.title||'Objava'} · {p.post_type}</option>)}</select></label>
         <button type="button" className="magic-design-button" onClick={autoDesign}><WandSparkles size={18}/><div><strong>Auto Design</strong><span>Layout + kadar + logo pozicija</span></div></button>
+        <div className="studio-fieldset preset-library"><span><LayoutTemplate size={14}/> Moji dizajn preseti</span><div className="preset-save-row"><input value={presetName} onChange={e=>setPresetName(e.target.value)} placeholder="npr. Vikend promo" maxLength={60}/><button type="button" className="secondary" onClick={()=>void savePreset()} disabled={presetWorking}><Save size={14}/>{presetWorking?'Čuvam…':'Sačuvaj'}</button></div>{presets.length?<div className="preset-list">{presets.map(preset=><div key={preset.id} className="preset-chip"><button type="button" onClick={()=>applyPreset(preset)}><span>{preset.name}</span><small>{templateNames[(preset.design.template as Template)||'editorial']||'Preset'}</small></button><button type="button" className="preset-delete" title="Obriši preset" onClick={()=>void deletePreset(preset)}><Minus size={13}/></button></div>)}</div>:<small className="preset-empty">Sačuvaj omiljeni stil i primeni ga na bilo koju objavu jednim klikom.</small>}</div>
         <div className="studio-fieldset"><span>Format</span><div className="segmented"><button type="button" className={design.format==='feed'?'active':''} onClick={()=>patch({format:'feed'})}>Feed 4:5</button><button type="button" className={design.format==='story'?'active':''} onClick={()=>patch({format:'story'})}>Story 9:16</button></div></div>
         <div className="studio-fieldset"><span><Palette size={14}/> Stil</span><div className="template-picker template-picker-six">{(Object.keys(templateNames) as Template[]).map(value=><button type="button" key={value} className={design.template===value?'active':''} onClick={()=>patch({template:value})}><i className={`template-dot ${value}`}/><span>{templateNames[value]}</span></button>)}</div></div>
         <div className="studio-fieldset typography-controls"><span><AlignLeft size={14}/> Tipografija i raspored</span><div className="studio-brand-grid"><label>Font<select value={design.fontPair} onChange={e=>patch({fontPair:e.target.value as FontPair})}><option value="modern">Modern Sans</option><option value="editorial">Editorial Serif</option><option value="impact">Impact / Promo</option></select></label><label>Pozicija teksta<select value={design.copyPosition} onChange={e=>patch({copyPosition:e.target.value as CopyPosition})}><option value="top">Gore</option><option value="center">Centar</option><option value="bottom">Dole</option></select></label></div>
