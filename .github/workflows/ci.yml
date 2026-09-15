@@ -20,3 +20,13 @@ jobs:
           node-version: 24
       - run: npm install
       - run: npm run build
+      - name: Smoke test Vercel preview
+        shell: bash
+        run: |
+          set -euo pipefail
+          URL="https://restaurant-autopilot-ados6u3x6-office-5450s-projects.vercel.app/?demo=1"
+          curl --retry 12 --retry-delay 5 --retry-all-errors -fsSL -D /tmp/headers.txt "$URL" -o /tmp/app.html
+          tr -d '\r' < /tmp/headers.txt > /tmp/headers.clean
+          cat /tmp/headers.clean
+          grep -Eiq '^content-type: *text/html' /tmp/headers.clean
+          grep -Fq '<div id="root"></div>' /tmp/app.html
