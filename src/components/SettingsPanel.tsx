@@ -7,6 +7,7 @@ import { AccountSecurity } from './AccountSecurity'
 import { OpeningHoursEditor, normalizeOpeningHours } from './OpeningHoursEditor'
 import { optimizeImage } from '../lib/image'
 import { InstallAppCard } from './InstallAppCard'
+import { browserTimeZone, commonTimeZones, isValidTimeZone } from '../lib/timezone'
 
 export function SettingsPanel({ restaurant, onSaved, setNotice }: {
   restaurant: Restaurant
@@ -18,7 +19,7 @@ export function SettingsPanel({ restaurant, onSaved, setNotice }: {
     city: restaurant.city || '',
     neighborhood: restaurant.neighborhood || '',
     country: restaurant.country || 'Serbia',
-    timezone: restaurant.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || 'Europe/Belgrade',
+    timezone: restaurant.timezone || browserTimeZone(),
     cuisine_type: restaurant.cuisine_type || '',
     phone: restaurant.phone || '',
     website: restaurant.website || '',
@@ -88,6 +89,7 @@ export function SettingsPanel({ restaurant, onSaved, setNotice }: {
 
   async function submit(event: FormEvent) {
     event.preventDefault()
+    if(!isValidTimeZone(form.timezone)){setNotice('Vremenska zona nije validna. Izaberi npr. Europe/Belgrade.');return}
     setWorking(true)
     setNotice('')
     try {
@@ -160,7 +162,7 @@ export function SettingsPanel({ restaurant, onSaved, setNotice }: {
             <label>Grad<input value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} placeholder="Beograd" /></label>
             <label>Kraj / naselje<input value={form.neighborhood} onChange={(e) => setForm({ ...form, neighborhood: e.target.value })} placeholder="Vračar, Centar..." /></label>
             <label>Država<input value={form.country} onChange={(e) => setForm({ ...form, country: e.target.value })} /></label>
-            <label>Vremenska zona<input value={form.timezone} onChange={(e) => setForm({ ...form, timezone: e.target.value })} placeholder="Europe/Belgrade" /></label>
+            <label>Vremenska zona<input list="restaurant-timezones" value={form.timezone} onChange={(e) => setForm({ ...form, timezone: e.target.value })} placeholder="Europe/Belgrade" /><datalist id="restaurant-timezones">{commonTimeZones.map(zone=><option key={zone} value={zone}/>)}</datalist></label>
             <label>Ciljna publika<input value={form.target_audience} onChange={(e) => setForm({ ...form, target_audience: e.target.value })} placeholder="Parovi 25–45, porodice, turisti..." /></label>
           </div>
           <div className="smart-note"><Hash size={17} /><div><strong>Smart Discovery v2</strong><span>Autopilot kombinuje brend + grad/kraj + tip kuhinje + konkretno jelo. Instagram dobija fokusiran set relevantnih tagova, Facebook samo 2–3 najkorisnija.</span></div></div>
