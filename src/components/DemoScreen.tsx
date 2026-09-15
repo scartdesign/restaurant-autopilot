@@ -37,8 +37,8 @@ const demoRestaurant: Restaurant = {
 }
 
 const demoMenu: MenuItem[] = [
-  { id: 'demo-pizza', restaurant_id: 'demo-restaurant', name: 'Pizza Capricciosa', description: 'Pelat, mozzarella, šunka, pečurke i masline.', category: 'Pizza', price: 890, currency: 'RSD', image_url: food.pizza, is_active: true },
-  { id: 'demo-carbonara', restaurant_id: 'demo-restaurant', name: 'Carbonara', description: 'Guanciale, jaje, pecorino i sveže mleven biber.', category: 'Pasta', price: 940, currency: 'RSD', image_url: food.pasta, is_active: true },
+  { id: 'demo-pizza', restaurant_id: 'demo-restaurant', name: 'Pizza Capricciosa', description: 'Pelat, mozzarella, šunka, pečurke i masline.', category: 'Pizza', price: 890, currency: 'RSD', image_url: food.pizza, marketing_priority: 5, is_active: true },
+  { id: 'demo-carbonara', restaurant_id: 'demo-restaurant', name: 'Carbonara', description: 'Guanciale, jaje, pecorino i sveže mleven biber.', category: 'Pasta', price: 940, currency: 'RSD', image_url: food.pasta, marketing_priority: 4, is_active: true },
 ]
 
 const demoVisualPosts: Post[] = [
