@@ -165,7 +165,7 @@ export function PublishCenter({ restaurant, posts, onChanged, setNotice }: {
         </div>}
       </section>
 
-      <div className="meta-roadmap"><div><ExternalLink size={18} /><div><strong>Spremno za ručni publishing workflow</strong><span>Plan, termin, dizajn, caption, hashtagovi, quality check, CSV i kalendar rade. Direktan Meta autopost zahteva povezivanje poslovnog naloga i dozvole.</span></div></div><span className="roadmap-badge">MVP READY</span></div>
+      <div className="meta-roadmap"><div><ExternalLink size={18} /><div><strong>Spremno za ručni publishing workflow</strong><span>Plan, termin, dizajn, caption, hashtagovi, quality check, CSV i kalendar rade. Direktan Meta autopost zahteva povezivanje poslovnog naloga i dozvole.</span></div></div><span className="roadmap-badge">WORKFLOW READY</span></div>
     </>
   )
 }
