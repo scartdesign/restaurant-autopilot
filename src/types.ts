@@ -58,7 +58,7 @@ export type PlatformPostContent = {
 
 export type VisualDesignMeta = {
   template?: 'editorial' | 'bold' | 'minimal' | 'split' | 'poster' | 'luxe' | 'premium-grid' | 'hero-menu' | 'bold-offer' | 'lunch-time' | 'family' | 'promo-badge'
-  format?: 'feed' | 'story'
+  format?: 'feed' | 'square' | 'story'
   headline?: string
   subline?: string
   cta?: string
