@@ -3,6 +3,7 @@ import { Eye, EyeOff, Hash, Image as ImageIcon, MapPin, Palette, Save, Settings,
 import { supabase } from '../lib/supabase'
 import type { LogoBadge, LogoPosition, LogoSize, Restaurant } from '../types'
 import { AccountDataTools } from './AccountDataTools'
+import { AccountSecurity } from './AccountSecurity'
 
 export function SettingsPanel({ restaurant, onSaved, setNotice }: {
   restaurant: Restaurant
@@ -221,6 +222,7 @@ export function SettingsPanel({ restaurant, onSaved, setNotice }: {
 
         <div className="settings-savebar"><div><strong>Autopilot profil restorana</strong><span>Sačuvaj i sledeća generacija odmah koristi nova pravila.</span></div><button className="primary" disabled={working}><Save size={17} /> {working ? 'Čuvam…' : 'Sačuvaj sva podešavanja'}</button></div>
       </form>
+      <AccountSecurity setNotice={setNotice}/>
       <AccountDataTools setNotice={setNotice}/>
     </>
   )
