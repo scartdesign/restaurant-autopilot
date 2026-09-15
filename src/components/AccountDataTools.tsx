@@ -11,7 +11,7 @@ export function AccountDataTools({setNotice}:{setNotice:(v:string)=>void}){
     const userRes=await supabase.auth.getUser()
     if(!userRes.data.user){setNotice('Sesija je istekla.');setWorking(false);return}
     const uid=userRes.data.user.id
-    const [profile,restaurants,menu,posts,promotions,subs,orders,assets,support,notifications]=await Promise.all([
+    const [profile,restaurants,menu,posts,promotions,subs,orders,assets,support,notifications,performance,aiUsage]=await Promise.all([
       supabase.from('customer_profiles').select('*').eq('user_id',uid).maybeSingle(),
       supabase.from('restaurants').select('*').eq('owner_id',uid),
       supabase.from('menu_items').select('*'),
@@ -22,10 +22,12 @@ export function AccountDataTools({setNotice}:{setNotice:(v:string)=>void}){
       supabase.from('creative_assets').select('id,restaurant_id,menu_item_id,kind,style,public_url,provider,model,created_at').eq('user_id',uid),
       supabase.from('support_tickets').select('*').eq('user_id',uid),
       supabase.from('notification_outbox').select('*').eq('user_id',uid),
+      supabase.from('post_performance').select('*'),
+      supabase.from('ai_usage_events').select('*').eq('user_id',uid),
     ])
-    const error=[profile,restaurants,menu,posts,promotions,subs,orders,assets,support,notifications].find(x=>x.error)?.error
+    const error=[profile,restaurants,menu,posts,promotions,subs,orders,assets,support,notifications,performance,aiUsage].find(x=>x.error)?.error
     if(error){setNotice(error.message);setWorking(false);return}
-    const payload={exported_at:new Date().toISOString(),account:{id:uid,email:userRes.data.user.email},profile:profile.data,restaurants:restaurants.data||[],menu_items:menu.data||[],posts:posts.data||[],promotions:promotions.data||[],subscriptions:subs.data||[],orders:orders.data||[],creative_assets:assets.data||[],support_tickets:support.data||[],notifications:notifications.data||[]}
+    const payload={exported_at:new Date().toISOString(),account:{id:uid,email:userRes.data.user.email},profile:profile.data,restaurants:restaurants.data||[],menu_items:menu.data||[],posts:posts.data||[],promotions:promotions.data||[],post_performance:performance.data||[],subscriptions:subs.data||[],orders:orders.data||[],creative_assets:assets.data||[],ai_usage_events:aiUsage.data||[],support_tickets:support.data||[],notifications:notifications.data||[]}
     const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json;charset=utf-8'})
     const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`restaurant-autopilot-data-${new Date().toISOString().slice(0,10)}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)
     setNotice('Izvoz podataka je spreman.')
@@ -43,5 +45,5 @@ export function AccountDataTools({setNotice}:{setNotice:(v:string)=>void}){
     setDeleteWorking(false)
   }
 
-  return <section className="settings-section panel account-data-tools"><div className="settings-section-head"><div className="settings-icon"><ShieldCheck size={19}/></div><div><h2>Tvoji podaci</h2><p>Izvezi podatke naloga ili pošalji kontrolisan zahtev za gašenje naloga.</p></div></div><div className="account-data-grid"><article><FileJson size={23}/><div><strong>Izvoz podataka</strong><span>Restorani, meni, sadržaj, narudžbine, AI asseti, podrška i obaveštenja u jednom JSON fajlu.</span></div><button type="button" className="secondary" onClick={()=>void exportData()} disabled={working}><Download size={15}/>{working?'Pripremam…':'Preuzmi moje podatke'}</button></article><article className="account-delete-card"><Trash2 size={23}/><div><strong>Gašenje naloga</strong><span>Šalje zahtev OWNER-u. Finansijski dokumenti se ne brišu automatski ako postoji obaveza čuvanja.</span></div><button type="button" className="danger-soft" onClick={()=>void requestDeletion()} disabled={deleteWorking}><Trash2 size={15}/>{deleteWorking?'Šaljem…':'Zatraži gašenje'}</button></article></div></section>
+  return <section className="settings-section panel account-data-tools"><div className="settings-section-head"><div className="settings-icon"><ShieldCheck size={19}/></div><div><h2>Tvoji podaci</h2><p>Izvezi podatke naloga ili pošalji kontrolisan zahtev za gašenje naloga.</p></div></div><div className="account-data-grid"><article><FileJson size={23}/><div><strong>Izvoz podataka</strong><span>Restorani, meni, sadržaj, performance, narudžbine, AI potrošnja, asseti, podrška i obaveštenja u jednom JSON fajlu.</span></div><button type="button" className="secondary" onClick={()=>void exportData()} disabled={working}><Download size={15}/>{working?'Pripremam…':'Preuzmi moje podatke'}</button></article><article className="account-delete-card"><Trash2 size={23}/><div><strong>Gašenje naloga</strong><span>Šalje zahtev OWNER-u. Finansijski dokumenti se ne brišu automatski ako postoji obaveza čuvanja.</span></div><button type="button" className="danger-soft" onClick={()=>void requestDeletion()} disabled={deleteWorking}><Trash2 size={15}/>{deleteWorking?'Šaljem…':'Zatraži gašenje'}</button></article></div></section>
 }
