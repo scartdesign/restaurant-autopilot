@@ -49,6 +49,7 @@ export function VisualStudio({ restaurant, posts, menuItems, setNotice }: { rest
     let nextTemplate: Template = 'editorial'
     if (selected.post_type === 'promotion') nextTemplate = 'bold'
     else if (selected.post_type === 'story') nextTemplate = 'poster'
+    else if (selected.generation_meta?.pillar === 'local_discovery') nextTemplate = 'split'
     else if (restaurant.brand_style === 'premium') nextTemplate = 'luxe'
     else if (!design.imageUrl) nextTemplate = 'minimal'
     patch({
