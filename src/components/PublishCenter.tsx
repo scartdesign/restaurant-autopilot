@@ -25,7 +25,7 @@ export function PublishCenter({ restaurant, posts, onChanged, setNotice }: {
   const overdue = approved.filter((post) => post.scheduled_for && new Date(post.scheduled_for).getTime() < Date.now())
   const readyPercent = posts.length ? Math.round(((approved.length + published.length) / posts.length) * 100) : 0
   const nextPost = ordered.find((post) => post.scheduled_for && new Date(post.scheduled_for).getTime() > Date.now() && post.status !== 'published') || ordered.find((post) => post.scheduled_for && post.status !== 'published')
-  const calendarDays=useMemo(()=>buildCalendarDays(restaurant.timezone,14),[restaurant.timezone])
+  const calendarDays=useMemo(()=>buildCalendarDays(restaurant,14),[restaurant.id,restaurant.timezone,restaurant.opening_hours])
   const calendarMap=useMemo(()=>{
     const map=new Map<string,Post[]>()
     for(const post of ordered){if(!post.scheduled_for)continue;const p=zonedParts(post.scheduled_for,restaurant.timezone);const key=`${p.year}-${p.month}-${p.day}`;map.set(key,[...(map.get(key)||[]),post])}
@@ -250,14 +250,16 @@ function localDateString(date:Date,timeZone:string){
   const get=(type:string)=>parts.find(p=>p.type===type)?.value||''
   return `${get('year')}-${get('month')}-${get('day')}`
 }
-function buildCalendarDays(timeZone:string,count:number){
-  const today=localDateString(new Date(),timeZone)
+function buildCalendarDays(restaurant:Restaurant,count:number){
+  const today=localDateString(new Date(),restaurant.timezone)
   return Array.from({length:count},(_,i)=>{
     const key=addLocalDays(today,i)
     const d=new Date(key+'T12:00:00Z')
     const weekday=new Intl.DateTimeFormat('sr-RS',{weekday:'short',timeZone:'UTC'}).format(d)
     const label=new Intl.DateTimeFormat('sr-RS',{day:'2-digit',month:'2-digit',timeZone:'UTC'}).format(d)
-    return{key,weekday,label,today:key===today,open:true}
+    const weekdayKey=weekdayKeys[d.getUTCDay()]
+    const row=restaurant.opening_hours?.[weekdayKey]
+    return{key,weekday,label,today:key===today,open:row?.enabled!==false}
   })
 }
 function preferredMinutes(post:Post){
