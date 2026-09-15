@@ -11,7 +11,7 @@ export function AccountSecurity({setNotice}:{setNotice:(v:string)=>void}){
 
   async function changePassword(e:FormEvent){
     e.preventDefault()
-    if(next.length<10){setNotice('Nova lozinka treba da ima najmanje 10 karaktera.');return}
+    if(!strong(next)){setNotice('Nova lozinka treba da ima 10+ karaktera, veliko i malo slovo i broj.');return}
     if(next!==confirm){setNotice('Nova lozinka i potvrda se ne poklapaju.');return}
     setWorking(true)
     const{data:userData}=await supabase.auth.getUser()
@@ -42,3 +42,5 @@ export function AccountSecurity({setNotice}:{setNotice:(v:string)=>void}){
   </section>
 }
 function confirmWindow(){return window.confirm('Odjavi sve ostale uređaje sa ovog naloga?')}
+
+function strong(v:string){return v.length>=10&&/[a-z]/.test(v)&&/[A-Z]/.test(v)&&/\d/.test(v)}
