@@ -1,5 +1,5 @@
 import { ChangeEvent, FormEvent, useMemo, useState } from 'react'
-import { Download, FileSpreadsheet, Image as ImageIcon, Plus, Sparkles, Trash2, Upload, WandSparkles } from 'lucide-react'
+import { CheckCircle2, Download, FileSpreadsheet, Image as ImageIcon, Plus, Sparkles, Trash2, Upload, WandSparkles, X } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import type { MenuItem, Restaurant } from '../types'
 
@@ -15,6 +15,7 @@ export function MenuManager({ restaurant, userId, items, onChanged, setNotice }:
   const [working, setWorking] = useState(false)
   const [workingId, setWorkingId] = useState('')
   const [aiWorkingId, setAiWorkingId] = useState('')
+  const [variantPicker,setVariantPicker]=useState<{item:MenuItem;assets:{id:string;image_url:string}[]}|null>(null)
   const photoCoverage = useMemo(() => items.length ? Math.round((items.filter((item) => item.image_url).length / items.length) * 100) : 0, [items])
 
   async function uploadImage(file: File) {
@@ -61,6 +62,40 @@ export function MenuManager({ restaurant, userId, items, onChanged, setNotice }:
     else if (data?.error) setNotice(data.error)
     else {
       setNotice(`AI fotografija za „${item.name}“ je napravljena i sačuvana u meniju.`)
+      await onChanged()
+    }
+    setAiWorkingId('')
+  }
+
+  async function generateAiVariants(item: MenuItem, style = 'photoreal') {
+    setAiWorkingId(item.id)
+    setNotice(`AI pravi tri različite food varijante za „${item.name}“…`)
+    const { data, error } = await supabase.functions.invoke('creative-image', {
+      body: { action: 'variants', restaurantId: restaurant.id, menuItemId: item.id, style },
+    })
+    if (error) setNotice(error.message)
+    else if (data?.error) setNotice(data.error)
+    else {
+      const assets=(data?.assets||[]) as {id:string;image_url:string}[]
+      if (assets.length) {
+        setVariantPicker({item,assets})
+        setNotice(`Izaberi najbolju AI fotografiju za „${item.name}“.`)
+      }
+    }
+    setAiWorkingId('')
+  }
+
+  async function chooseAiVariant(asset:{id:string;image_url:string}) {
+    if (!variantPicker) return
+    setAiWorkingId(variantPicker.item.id)
+    const { data, error } = await supabase.functions.invoke('creative-image', {
+      body: { action: 'select_variant', restaurantId: restaurant.id, menuItemId: variantPicker.item.id, assetId: asset.id },
+    })
+    if (error) setNotice(error.message)
+    else if (data?.error) setNotice(data.error)
+    else {
+      setNotice(`Izabrana AI fotografija je postavljena na „${variantPicker.item.name}“.`)
+      setVariantPicker(null)
       await onChanged()
     }
     setAiWorkingId('')
@@ -181,6 +216,7 @@ export function MenuManager({ restaurant, userId, items, onChanged, setNotice }:
                   <div className="price">{item.price ? `${item.price} ${item.currency}` : '—'}</div>
                   <div className="row-actions">
                     <button className={`mini-button ai-photo-button ${item.image_url ? 'has-photo' : ''}`} disabled={aiWorkingId === item.id} onClick={() => generateAiImage(item)} type="button"><WandSparkles size={13}/>{aiWorkingId === item.id ? 'AI radi…' : item.image_url ? 'AI nova' : 'AI slika'}</button>
+                    <button className="mini-button ai-variants-button" disabled={aiWorkingId === item.id} onClick={() => generateAiVariants(item)} type="button"><Sparkles size={13}/> 3 varijante</button>
                     <button className="mini-button" disabled={workingId === item.id} onClick={() => toggleItem(item)} type="button">{item.is_active ? 'Aktivno' : 'Pauzirano'}</button>
                     <button className="danger-icon" disabled={workingId === item.id} onClick={() => deleteItem(item)} type="button" title="Obriši"><Trash2 size={15} /></button>
                   </div>
@@ -190,6 +226,7 @@ export function MenuManager({ restaurant, userId, items, onChanged, setNotice }:
           </div>
         </section>
       </div>
+      {variantPicker&&<div className="modal-backdrop ai-variant-backdrop" onMouseDown={()=>setVariantPicker(null)}><div className="modal-card ai-variant-modal" onMouseDown={e=>e.stopPropagation()}><div className="modal-head"><div><p className="eyebrow">AI FOOD PHOTO</p><h2>Izaberi fotografiju · {variantPicker.item.name}</h2><p className="muted">Sve varijante su sačuvane u tvojoj AI biblioteci. Samo izabrana postaje glavna slika jela.</p></div><button className="icon-button" onClick={()=>setVariantPicker(null)}><X size={18}/></button></div><div className="ai-variant-grid">{variantPicker.assets.map((asset,index)=><button type="button" key={asset.id} className="ai-variant-card" onClick={()=>void chooseAiVariant(asset)} disabled={aiWorkingId===variantPicker.item.id}><img src={asset.image_url} alt={`AI varijanta ${index+1}`}/><span><CheckCircle2 size={15}/> Izaberi varijantu {index+1}</span></button>)}</div></div></div>}
     </>
   )
 }
