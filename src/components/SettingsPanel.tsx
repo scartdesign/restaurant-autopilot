@@ -2,6 +2,7 @@ import { ChangeEvent, FormEvent, useMemo, useState } from 'react'
 import { Eye, EyeOff, Hash, Image as ImageIcon, MapPin, Palette, Save, Settings, Share2, Target, Trash2, Upload } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import type { LogoBadge, LogoPosition, LogoSize, Restaurant } from '../types'
+import { AccountDataTools } from './AccountDataTools'
 
 export function SettingsPanel({ restaurant, onSaved, setNotice }: {
   restaurant: Restaurant
@@ -217,6 +218,7 @@ export function SettingsPanel({ restaurant, onSaved, setNotice }: {
 
         <div className="settings-savebar"><div><strong>Autopilot profil restorana</strong><span>Sačuvaj i sledeća generacija odmah koristi nova pravila.</span></div><button className="primary" disabled={working}><Save size={17} /> {working ? 'Čuvam…' : 'Sačuvaj sva podešavanja'}</button></div>
       </form>
+      <AccountDataTools setNotice={setNotice}/>
     </>
   )
 }
