@@ -62,6 +62,8 @@ export function CreativeHub({ restaurant, menuItems, entitlement, onChanged, set
 
   const selected = suggestions.find(item=>item.id===selectedId) || suggestions[0]
   const activeItems = useMemo(()=>menuItems.filter(i=>i.is_active).sort((a,b)=>(b.marketing_priority||0)-(a.marketing_priority||0)),[menuItems])
+  const heroMenuItem = useMemo(()=>activeItems.find(i=>(i.marketing_priority||0)>=3)||null,[activeItems])
+  const prioritySnapshot = useMemo(()=>activeItems.map(item=>({id:item.id,marketing_priority:item.marketing_priority||0})),[activeItems])
   const previewItems = useMemo(()=>{
     const first = selected?.menu_item_id ? activeItems.find(i=>i.id===selected.menu_item_id) : undefined
     const rest = activeItems.filter(i=>i.id!==first?.id)
@@ -85,15 +87,17 @@ export function CreativeHub({ restaurant, menuItems, entitlement, onChanged, set
   async function loadAdvisor(){
     setLoading(true)
     const [advisorResult,imageResult]=await Promise.all([
-      supabase.functions.invoke('creative-advisor',{body:{action:'recommend',restaurantId:restaurant.id,timezoneOffsetMinutes:new Date().getTimezoneOffset()}}),
+      supabase.functions.invoke('creative-advisor',{body:{action:'recommend',restaurantId:restaurant.id,timezoneOffsetMinutes:new Date().getTimezoneOffset(),heroMenuItemId:heroMenuItem?.id||null,prioritySnapshot}}),
       loadImageStatus(),
     ])
     if(advisorResult.error) setNotice(advisorResult.error.message)
     else if(advisorResult.data?.error) setNotice(advisorResult.data.error)
     else {
       const list=(advisorResult.data?.suggestions||[]) as Suggestion[]
-      setSuggestions(list)
-      setSelectedId(current=>list.some(item=>item.id===current)?current:list[0]?.id||'')
+      const priorityById=new Map(activeItems.map(item=>[item.id,Number(item.marketing_priority||0)]))
+      const ordered=[...list].sort((a,b)=>(priorityById.get(b.menu_item_id||'')||0)-(priorityById.get(a.menu_item_id||'')||0))
+      setSuggestions(ordered)
+      setSelectedId(current=>ordered.some(item=>item.id===current)?current:ordered[0]?.id||'')
       const imageData=imageResult.data
       setStatus(current=>({
         ai_image_ready:Boolean(imageData?.ai_image_ready),
@@ -171,7 +175,7 @@ export function CreativeHub({ restaurant, menuItems, entitlement, onChanged, set
     if(!campaignFeature){ setNotice('Kompletan Campaign Pack je uključen u Pro i Business paket.'); return }
     setWorking('pack')
     setNotice('Autopilot pravi kompletnu kampanju: Feed + Story + ponuda + raspored…')
-    const {data,error}=await supabase.functions.invoke('creative-engine',{body:{action:'campaign_pack',restaurantId:restaurant.id,focusType:selected.type,style:collection,timezoneOffsetMinutes:new Date().getTimezoneOffset()}})
+    const {data,error}=await supabase.functions.invoke('creative-engine',{body:{action:'campaign_pack',restaurantId:restaurant.id,focusType:selected.type,focusMenuItemId:selected.menu_item_id||heroMenuItem?.id||null,heroMenuItemId:heroMenuItem?.id||null,prioritySnapshot,style:collection,timezoneOffsetMinutes:new Date().getTimezoneOffset()}})
     if(error) setNotice(error.message)
     else if(data?.error) setNotice(data.error)
     else {
@@ -232,7 +236,7 @@ export function CreativeHub({ restaurant, menuItems, entitlement, onChanged, set
           <span className="creative-kicker"><Megaphone size={14}/> CAMPAIGN BUILDER</span>
           <h2>{selected?.title||'Izaberi preporuku'}</h2>
           <p>{selected?.reason||'AI kombinuje preporuku sa izabranim dizajnerskim sistemom.'}</p>
-          <div className="campaign-checklist"><span><Sparkles size={14}/> 5 usklađenih objava</span><span><CalendarClock size={14}/> termini automatski raspoređeni</span><span><Target size={14}/> Feed + Story + promo CTA</span><span><LayoutGrid size={14}/> logo i boje restorana</span></div>
+          <div className="campaign-checklist"><span><Sparkles size={14}/> 5 usklađenih objava</span><span><CalendarClock size={14}/> termini automatski raspoređeni</span><span><Target size={14}/> Feed + Story + promo CTA</span><span><LayoutGrid size={14}/> logo i boje restorana</span>{heroMenuItem&&<span className="campaign-hero-focus"><ChefHat size={14}/> HERO fokus: {heroMenuItem.name}</span>}</div>
           {missingPreviewPhotos.length>0&&<div className="missing-photo-card"><ImagePlus size={20}/><div><strong>{missingPreviewPhotos.length} {missingPreviewPhotos.length===1?'jelo nema':'jela nemaju'} fotografiju</strong><span>Možeš napraviti AI food fotografije pre generisanja paketa, da svaki vizual izgleda kao prava reklama.</span></div><button type="button" onClick={()=>void generateMissingPreviewPhotos()} disabled={working==='batch-images'||!status.ai_image_ready}>{working==='batch-images'?'AI generiše paket…':status.ai_image_ready?'AI napravi slike koje fale':'AI nije aktiviran'}</button></div>}
           {selected?.menu_item_id && selected.image_url && <button type="button" className="creative-secondary full" onClick={()=>void generateImage(selected.menu_item_id!,collection)} disabled={working.startsWith('image-')}><WandSparkles size={16}/>{working===`image-${selected.menu_item_id}`?'Generišem novu…':'Napravi novu AI varijantu glavne fotografije'}</button>}
           <button type="button" className="creative-primary full big" onClick={()=>void createPack()} disabled={working==='pack'||!selected}><Sparkles size={18}/>{working==='pack'?'Pravim kampanju…':campaignFeature?'Napravi ovu kampanju':'Campaign Pack · PRO / BUSINESS'}</button>
