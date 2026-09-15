@@ -42,6 +42,20 @@ export function VisualStudio({ restaurant, posts, menuItems, setNotice, onChange
   useEffect(() => { if (selected) { setDesign(designFromPost(selected, menuItems, restaurant)); setUndoStack([]); setRedoStack([]); setDirty(false); setAutosaveState('saved') } }, [selectedId, restaurant.id])
   useEffect(()=>{void loadPresets()},[restaurant.id])
   useEffect(()=>{if(!dirty||!selected)return;const timer=window.setTimeout(()=>void saveDesign(true),1800);return()=>window.clearTimeout(timer)},[design,dirty,selected?.id])
+  useEffect(()=>{
+    const onKey=(event:KeyboardEvent)=>{
+      const mod=event.ctrlKey||event.metaKey
+      if(!mod)return
+      const target=event.target as HTMLElement|null
+      const typing=Boolean(target&&(target.tagName==='INPUT'||target.tagName==='TEXTAREA'||target.tagName==='SELECT'||target.isContentEditable))
+      if(event.key.toLowerCase()==='s'){event.preventDefault();void saveDesign(false);return}
+      if(typing)return
+      if(event.key.toLowerCase()==='z'&&event.shiftKey){event.preventDefault();redoDesign();return}
+      if(event.key.toLowerCase()==='z'){event.preventDefault();undoDesign()}
+    }
+    window.addEventListener('keydown',onKey)
+    return()=>window.removeEventListener('keydown',onKey)
+  },[design,undoStack.length,redoStack.length,dirty,selected?.id])
 
   const item = selected ? menuItems.find(i => i.id === selected.menu_item_id) : undefined
   const promoItems = useMemo(() => {
@@ -211,7 +225,7 @@ export function VisualStudio({ restaurant, posts, menuItems, setNotice, onChange
     <header className="page-header studio-header studio-header-pro"><div><p className="eyebrow">VISUAL STUDIO</p><h1>Objava mora da izgleda kao da ju je radio dizajner.</h1><p className="muted">Realna fotografija, logo, brend boje, hijerarhija i CTA — sve menjaš uživo.</p></div><div className="studio-header-actions"><span className={`studio-autosave ${autosaveState}`}>{autosaveState==='saving'?'Čuvam izmene…':autosaveState==='error'?'Greška pri čuvanju':dirty?'Izmene nisu sačuvane':'Automatski sačuvano'}</span><button className="secondary" onClick={()=>void saveDesign(false)} disabled={saving}><Save size={17}/>{saving?'Čuvam…':dirty?'Sačuvaj sada':'Sačuvano'}</button><button className="primary" onClick={downloadPng} disabled={working}><Download size={18}/>{working?'Renderujem…':`Preuzmi ${design.format==='story'?'1080×1920':design.format==='square'?'1080×1080':'1080×1350'}`}</button></div></header>
     <div className="studio-shell studio-shell-pro">
       <aside className="studio-controls panel studio-controls-pro">
-        <div className="studio-score-row"><div className="studio-control-head"><LayoutTemplate size={19}/><div><strong>Finalni dizajn</strong><span>Sve izmene se vide odmah.</span></div></div><div className={`design-score ${designScore>=85?'great':designScore>=70?'good':''}`}><strong>{designScore}</strong><span>/100</span></div></div><div className="studio-history"><button type="button" className="secondary" disabled={!undoStack.length} onClick={undoDesign}><Undo2 size={14}/> Poništi</button><button type="button" className="secondary" disabled={!redoStack.length} onClick={redoDesign}><Redo2 size={14}/> Ponovi</button><span>{undoStack.length?`${undoStack.length} koraka`:'Početno stanje'}</span></div>
+        <div className="studio-score-row"><div className="studio-control-head"><LayoutTemplate size={19}/><div><strong>Finalni dizajn</strong><span>Sve izmene se vide odmah.</span></div></div><div className={`design-score ${designScore>=85?'great':designScore>=70?'good':''}`}><strong>{designScore}</strong><span>/100</span></div></div><div className="studio-history"><button type="button" className="secondary" disabled={!undoStack.length} onClick={undoDesign}><Undo2 size={14}/> Poništi</button><button type="button" className="secondary" disabled={!redoStack.length} onClick={redoDesign}><Redo2 size={14}/> Ponovi</button><span title="Ctrl/Cmd+Z · Shift+Ctrl/Cmd+Z · Ctrl/Cmd+S">{undoStack.length?`${undoStack.length} koraka`:'Prečice: Ctrl+Z / Ctrl+S'}</span></div>
         <label>Objava<select value={selected.id} onChange={e=>setSelectedId(e.target.value)}>{usablePosts.map(p=><option key={p.id} value={p.id}>{p.title||'Objava'} · {p.post_type}</option>)}</select></label>
         <button type="button" className="magic-design-button" onClick={autoDesign}><WandSparkles size={18}/><div><strong>Auto Design</strong><span>Layout + kadar + logo pozicija</span></div></button>
         <div className="studio-fieldset preset-library"><span><LayoutTemplate size={14}/> Moji dizajn preseti</span><div className="preset-save-row"><input value={presetName} onChange={e=>setPresetName(e.target.value)} placeholder="npr. Vikend promo" maxLength={60}/><button type="button" className="secondary" onClick={()=>void savePreset()} disabled={presetWorking}><Save size={14}/>{presetWorking?'Čuvam…':'Sačuvaj'}</button></div>{presets.length?<div className="preset-list">{presets.map(preset=><div key={preset.id} className="preset-chip"><button type="button" onClick={()=>applyPreset(preset)}><span>{preset.name}</span><small>{templateNames[(preset.design.template as Template)||'editorial']||'Preset'}</small></button><button type="button" className="preset-delete" title="Obriši preset" onClick={()=>void deletePreset(preset)}><Minus size={13}/></button></div>)}</div>:<small className="preset-empty">Sačuvaj omiljeni stil i primeni ga na bilo koju objavu jednim klikom.</small>}</div>
