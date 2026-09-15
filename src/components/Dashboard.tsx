@@ -21,6 +21,8 @@ export function Dashboard({ restaurant, menuItems, posts, onChanged, setNotice }
   const averageDiscovery = useMemo(() => posts.length ? Math.round(posts.reduce((sum, post) => sum + (post.discovery_score || 0), 0) / posts.length) : 0, [posts])
   const photoCoverage = useMemo(() => activeItems.length ? Math.round((activeItems.filter((item) => item.image_url).length / activeItems.length) * 100) : 0, [activeItems])
   const priorityCount = useMemo(() => activeItems.filter((item) => (item.marketing_priority || 0) >= 2).length, [activeItems])
+  const heroItem = useMemo(() => activeItems.find((item) => (item.marketing_priority || 0) >= 3) || null, [activeItems])
+  const marketingFocus = useMemo(() => activeItems.filter((item) => (item.marketing_priority || 0) > 0).slice(0, 3), [activeItems])
   const orderedPosts = useMemo(() => [...posts].sort((a, b) => new Date(a.scheduled_for || 0).getTime() - new Date(b.scheduled_for || 0).getTime()), [posts])
   const filteredPosts=useMemo(()=>{
     const q=contentQuery.trim().toLocaleLowerCase('sr')
@@ -46,7 +48,7 @@ export function Dashboard({ restaurant, menuItems, posts, onChanged, setNotice }
     setGenerating(true)
     setNotice('Autopilot pravi strukturu nedelje…')
     const { data, error } = await supabase.functions.invoke('content-engine', {
-      body: { action: 'week', restaurantId: restaurant.id },
+      body: { action: 'week', restaurantId: restaurant.id, prioritySnapshot: activeItems.map((item) => ({ id: item.id, marketing_priority: item.marketing_priority || 0 })) },
     })
     if (error) {
       setNotice(error.message)
@@ -216,6 +218,23 @@ export function Dashboard({ restaurant, menuItems, posts, onChanged, setNotice }
         <Kpi icon={<CalendarDays size={18} />} label="Sadržaj" value={String(posts.length)} detail="feed · story · promo" />
         <Kpi icon={<Clock3 size={18} />} label="Sledeći termin" value={nextScheduled?.scheduled_for ? formatTime(nextScheduled.scheduled_for, restaurant.timezone) : '—'} detail={nextScheduled?.scheduled_for ? formatDateShort(nextScheduled.scheduled_for, restaurant.timezone) : 'čeka generaciju'} />
         <Kpi icon={<CheckCircle2 size={18} />} label="Spremno" value={String(approvedCount)} detail={posts.length ? `${Math.round((approvedCount / posts.length) * 100)}% od plana` : 'čeka generaciju'} />
+      </section>
+
+      <section className="marketing-focus-panel panel">
+        <div className="marketing-focus-copy">
+          <p className="eyebrow">MARKETING FOKUS</p>
+          <h2>{heroItem ? `HERO: ${heroItem.name}` : 'Izaberi HERO jelo'}</h2>
+          <p>{heroItem ? 'Ovo je glavno jelo koje treba da nosi najjače kampanje i premium vizuale. Ostali prioriteti ga dopunjuju bez monotonog ponavljanja.' : 'Označi jedno aktivno jelo kao HERO u Meniju. Autopilot će ga koristiti kao glavni kreativni pravac kada backend priority engine bude aktivan.'}</p>
+        </div>
+        <div className="marketing-focus-items">
+          {marketingFocus.length ? marketingFocus.map((item) => (
+            <div className={`marketing-focus-item priority-${item.marketing_priority || 0}`} key={item.id}>
+              <span>{item.marketing_priority === 3 ? 'HERO' : item.marketing_priority === 2 ? 'VISOK' : 'PRIORITET'}</span>
+              <strong>{item.name}</strong>
+              <small>{item.price ? `${item.price} ${item.currency || 'RSD'}` : item.category || 'Aktivno jelo'}</small>
+            </div>
+          )) : <div className="marketing-focus-empty"><Sparkles size={18} /><span>Još nema marketinški prioritetnih jela.</span></div>}
+        </div>
       </section>
 
       <section className="wow-dashboard-grid">
