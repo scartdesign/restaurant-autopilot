@@ -16,10 +16,11 @@ export function Dashboard({ restaurant, menuItems, posts, onChanged, setNotice }
   const [contentQuery,setContentQuery]=useState('')
   const [contentStatus,setContentStatus]=useState<'all'|Post['status']>('all')
   const [contentType,setContentType]=useState<'all'|Post['post_type']>('all')
-  const activeItems = useMemo(() => menuItems.filter((item) => item.is_active), [menuItems])
+  const activeItems = useMemo(() => menuItems.filter((item) => item.is_active).sort((a, b) => (b.marketing_priority || 0) - (a.marketing_priority || 0)), [menuItems])
   const approvedCount = useMemo(() => posts.filter((post) => post.status === 'approved' || post.status === 'published').length, [posts])
   const averageDiscovery = useMemo(() => posts.length ? Math.round(posts.reduce((sum, post) => sum + (post.discovery_score || 0), 0) / posts.length) : 0, [posts])
   const photoCoverage = useMemo(() => activeItems.length ? Math.round((activeItems.filter((item) => item.image_url).length / activeItems.length) * 100) : 0, [activeItems])
+  const priorityCount = useMemo(() => activeItems.filter((item) => (item.marketing_priority || 0) >= 2).length, [activeItems])
   const orderedPosts = useMemo(() => [...posts].sort((a, b) => new Date(a.scheduled_for || 0).getTime() - new Date(b.scheduled_for || 0).getTime()), [posts])
   const filteredPosts=useMemo(()=>{
     const q=contentQuery.trim().toLocaleLowerCase('sr')
@@ -211,7 +212,7 @@ export function Dashboard({ restaurant, menuItems, posts, onChanged, setNotice }
       </section>
 
       <section className="wow-kpi-grid">
-        <Kpi icon={<UtensilsCrossed size={18} />} label="Aktivna jela" value={String(activeItems.length)} detail={`${photoCoverage}% sa fotografijom`} />
+        <Kpi icon={<UtensilsCrossed size={18} />} label="Aktivna jela" value={String(activeItems.length)} detail={priorityCount ? `${priorityCount} prioritetna · ${photoCoverage}% sa fotografijom` : `${photoCoverage}% sa fotografijom`} />
         <Kpi icon={<CalendarDays size={18} />} label="Sadržaj" value={String(posts.length)} detail="feed · story · promo" />
         <Kpi icon={<Clock3 size={18} />} label="Sledeći termin" value={nextScheduled?.scheduled_for ? formatTime(nextScheduled.scheduled_for, restaurant.timezone) : '—'} detail={nextScheduled?.scheduled_for ? formatDateShort(nextScheduled.scheduled_for, restaurant.timezone) : 'čeka generaciju'} />
         <Kpi icon={<CheckCircle2 size={18} />} label="Spremno" value={String(approvedCount)} detail={posts.length ? `${Math.round((approvedCount / posts.length) * 100)}% od plana` : 'čeka generaciju'} />
