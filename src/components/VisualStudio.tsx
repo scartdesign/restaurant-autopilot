@@ -83,7 +83,7 @@ export function VisualStudio({ restaurant, posts, menuItems, setNotice }: { rest
 
   function applyPreset(preset:DesignPreset){
     patch(preset.design)
-    setNotice(`Primijenjen je preset „${preset.name}“.`)
+    setNotice(`Primenjen je preset „${preset.name}“.`)
   }
 
   async function deletePreset(preset:DesignPreset){
