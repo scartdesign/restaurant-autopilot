@@ -46,7 +46,7 @@ function App() {
   const [notice, setNotice] = useState('')
   const [unreadNotifications,setUnreadNotifications]=useState(0)
   const [activeTab, setActiveTab] = useState<Tab>('launch')
-  const [demo, setDemo] = useState(false)
+  const [demo, setDemo] = useState(() => new URLSearchParams(window.location.search).get('demo') === '1')
   const [showAuth,setShowAuth]=useState(false)
   const [mobileMenuOpen,setMobileMenuOpen]=useState(false)
   const [addingRestaurant, setAddingRestaurant] = useState(false)
@@ -173,7 +173,7 @@ function App() {
   const generationUsage = useMemo(() => entitlement?.generation_limit == null ? null : `${entitlement.generated_this_month || 0}/${entitlement.generation_limit}`, [entitlement])
 
   if (legalParam && ['terms','privacy','ai','refund'].includes(legalParam)) return <LegalScreen kind={legalParam} onBack={()=>{window.history.replaceState({},'',window.location.pathname);window.location.reload()}} />
-  if (demo) return <DemoScreen onExit={() => setDemo(false)} />
+  if (demo) return <DemoScreen onExit={() => { const next = new URL(window.location.href); next.searchParams.delete('demo'); window.history.replaceState({}, '', `${next.pathname}${next.search}${next.hash}`); setDemo(false) }} />
   if (loading || (session && !accountReady)) return <div className="screen-center"><div className="loader" />Učitavanje Restaurant Autopilota…</div>
   if (recoveryMode && session) return <PasswordRecovery onDone={recoveryDone}/>
   if (!session) {
