@@ -312,7 +312,7 @@ async function urlToDataUrl(url:string){if(url.startsWith('data:'))return url;co
 function logoBox(width:number,height:number,pos:LogoPosition,size:LogoSize,story:boolean){const s=size==='s'?(story?92:72):size==='l'?(story?148:116):(story?118:92),m=story?72:56;let x=m,y=m;if(pos.includes('right'))x=width-m-s;if(pos==='top-center')x=(width-s)/2;if(pos.includes('bottom'))y=height-m-s;return{x,y,s}}
 type PromoGridExportItem={name:string;price:string;imageData:string|null}
 function buildPromoGridSvg({width,height,design,restaurantName,location,logoData,items}:{width:number;height:number;design:DesignState;restaurantName:string;location:string;logoData:string|null;items:PromoGridExportItem[]}){
-  const story=height>1500,m=56,gap=16
+  const story=height>1500,square=height===1080,m=56,gap=16
   const list=items.length?Array.from({length:5},(_,i)=>items[i%items.length]):Array.from({length:5},(_,i)=>({name:i===0?'Glavna ponuda':'Jelo '+(i+1),price:'',imageData:null}))
   const card=(item:PromoGridExportItem,x:number,y:number,w:number,h:number,index:number)=>{
     const img=item.imageData?`<image href="${item.imageData}" x="${x}" y="${y}" width="${w}" height="${h}" preserveAspectRatio="xMidYMid slice"/>`:`<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="${design.primaryColor}"/><circle cx="${x+w*.75}" cy="${y+h*.3}" r="${Math.min(w,h)*.32}" fill="${design.accentColor}" opacity=".18"/>`
@@ -330,19 +330,23 @@ function buildPromoGridSvg({width,height,design,restaurantName,location,logoData
     cards+=card(list[0],m,heroY,heroW,heroH,0)
     const smallY=heroY+heroH+gap,smallW=(heroW-gap)/2,smallH=265
     for(let i=1;i<5;i++){const col=(i-1)%2,row=Math.floor((i-1)/2);cards+=card(list[i],m+col*(smallW+gap),smallY+row*(smallH+gap),smallW,smallH,i)}
+  }else if(square){
+    const heroY=165,heroH=650,heroW=570,smallX=m+heroW+gap,smallW=width-m-smallX,smallH=(heroH-gap*3)/4
+    cards+=card(list[0],m,heroY,heroW,heroH,0)
+    for(let i=1;i<5;i++)cards+=card(list[i],smallX,heroY+(i-1)*(smallH+gap),smallW,smallH,i)
   }else{
     const heroY=185,heroH=860,heroW=594,smallX=m+heroW+gap,smallW=width-m-smallX,smallH=(heroH-gap*3)/4
     cards+=card(list[0],m,heroY,heroW,heroH,0)
     for(let i=1;i<5;i++)cards+=card(list[i],smallX,heroY+(i-1)*(smallH+gap),smallW,smallH,i)
   }
-  const footerY=story?1560:1080, footerH=height-footerY
+  const footerY=story?1560:square?840:1080, footerH=height-footerY
   const logo=design.logoVisible&&logoData?`<rect x="${width-140}" y="40" width="88" height="88" rx="20" fill="#fff" opacity=".96"/><image href="${logoData}" x="${width-129}" y="51" width="66" height="66" preserveAspectRatio="xMidYMid meet"/>`:''
-  const footerHeadlineSize=(story?58:46)*design.headlineScale
-  const footerLineGap=(story?60:50)*design.headlineScale*design.headlineLineHeight
+  const footerHeadlineSize=(story?58:square?38:46)*design.headlineScale
+  const footerLineGap=(story?60:square?42:50)*design.headlineScale*design.headlineLineHeight
   const footerTracking=footerHeadlineSize*design.headlineTracking
   const headline=wrap(design.headline||'Ukus koji se pamti.',story?24:30,2).map((line,i)=>`<text x="${m}" y="${footerY+88+i*footerLineGap}" font-family="Arial Black,Arial" font-size="${footerHeadlineSize}" font-weight="900" letter-spacing="${footerTracking}" fill="#fff">${esc(line)}</text>`).join('')
-  const ctaW=(story?330:275)*Math.min(1.25,design.ctaScale),ctaH=(story?72:60)*design.ctaScale,ctaX=width-m-ctaW,ctaY=footerY+(story?96:70)
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}"><defs><linearGradient id="gridShade" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#000" stop-opacity=".04"/><stop offset=".55" stop-color="#000" stop-opacity=".12"/><stop offset="1" stop-color="#000" stop-opacity=".82"/></linearGradient></defs><rect width="${width}" height="${height}" fill="${design.primaryColor}"/><rect x="0" y="0" width="${width}" height="150" fill="${design.primaryColor}"/><text x="${m}" y="72" font-family="Arial" font-size="${story?32:28}" font-weight="900" fill="#fff">${esc(restaurantName)}</text><text x="${m}" y="108" font-family="Arial" font-size="${story?18:16}" fill="#fff" opacity=".65">${esc(location)}</text>${logo}${cards}<rect x="0" y="${footerY}" width="${width}" height="${footerH}" fill="${design.primaryColor}"/><rect x="${m}" y="${footerY+34}" width="98" height="8" rx="4" fill="${design.accentColor}"/><text x="${m}" y="${footerY+64}" font-family="Arial" font-size="13" font-weight="900" letter-spacing="4" fill="${design.accentColor}">PREMIUM MENU</text>${headline}<rect x="${ctaX}" y="${ctaY}" width="${ctaW}" height="${ctaH}" rx="${ctaH/2}" fill="${design.accentColor}"/><text x="${ctaX+ctaW/2}" y="${ctaY+ctaH*.66}" text-anchor="middle" font-family="Arial" font-size="${(story?25:21)*design.ctaScale}" font-weight="900" fill="${design.primaryColor}">${esc(design.cta||'Svrati danas')} →</text></svg>`
+  const ctaW=(story?330:square?235:275)*Math.min(1.25,design.ctaScale),ctaH=(story?72:square?52:60)*design.ctaScale,ctaX=width-m-ctaW,ctaY=footerY+(story?96:square?76:70)
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}"><defs><linearGradient id="gridShade" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#000" stop-opacity=".04"/><stop offset=".55" stop-color="#000" stop-opacity=".12"/><stop offset="1" stop-color="#000" stop-opacity=".82"/></linearGradient></defs><rect width="${width}" height="${height}" fill="${design.primaryColor}"/><rect x="0" y="0" width="${width}" height="150" fill="${design.primaryColor}"/><text x="${m}" y="72" font-family="Arial" font-size="${story?32:28}" font-weight="900" fill="#fff">${esc(restaurantName)}</text><text x="${m}" y="108" font-family="Arial" font-size="${story?18:16}" fill="#fff" opacity=".65">${esc(location)}</text>${logo}${cards}<rect x="0" y="${footerY}" width="${width}" height="${footerH}" fill="${design.primaryColor}"/><rect x="${m}" y="${footerY+34}" width="98" height="8" rx="4" fill="${design.accentColor}"/><text x="${m}" y="${footerY+64}" font-family="Arial" font-size="13" font-weight="900" letter-spacing="4" fill="${design.accentColor}">PREMIUM MENU</text>${headline}<rect x="${ctaX}" y="${ctaY}" width="${ctaW}" height="${ctaH}" rx="${ctaH/2}" fill="${design.accentColor}"/><text x="${ctaX+ctaW/2}" y="${ctaY+ctaH*.66}" text-anchor="middle" font-family="Arial" font-size="${(story?25:square?18:21)*design.ctaScale}" font-weight="900" fill="${design.primaryColor}">${esc(design.cta||'Svrati danas')} →</text></svg>`
 }
 
 function buildSvg({width,height,design,restaurantName,location,price,backgroundData,logoData}:{width:number;height:number;design:DesignState;restaurantName:string;location:string;price:string;backgroundData:string|null;logoData:string|null}){
