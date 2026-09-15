@@ -25,22 +25,26 @@ export function Onboarding({ userId, onCreated, onCancel, additional = false }: 
     event.preventDefault(); setWorking(true); setMessage('')
     try {
       const { data: restaurant, error } = await supabase.from('restaurants').insert({
-        owner_id: userId, name: form.name, city: form.city || null, neighborhood: form.neighborhood || null, country: form.country || 'Serbia', cuisine_type: form.cuisine_type || null,
-        target_audience: form.target_audience || null, social_goal: form.social_goal, hashtag_mode: form.hashtag_mode, brand_style: form.brand_style, tone: form.tone,
-        phone: form.phone || null, instagram: form.instagram || null, posting_frequency: Number(form.posting_frequency), primary_color: form.primary_color, secondary_color: form.secondary_color,
+        owner_id: userId, name: form.name.trim(), city: form.city.trim() || null, neighborhood: form.neighborhood.trim() || null, country: form.country.trim() || 'Serbia', cuisine_type: form.cuisine_type.trim() || null,
+        target_audience: form.target_audience.trim() || null, social_goal: form.social_goal, hashtag_mode: form.hashtag_mode, brand_style: form.brand_style, tone: form.tone,
+        phone: form.phone.trim() || null, instagram: form.instagram.trim() || null, posting_frequency: Number(form.posting_frequency), primary_color: form.primary_color, secondary_color: form.secondary_color,
         default_logo_visible: true, default_logo_position: 'top-right', default_logo_size: 'm', default_logo_badge: 'white', default_overlay_strength: .68, onboarding_completed: true,
       }).select('id').single()
       if (error) throw error
+      let logoWarning = ''
       if (logoFile && restaurant?.id) {
         const ext = logoFile.name.split('.').pop()?.toLowerCase() || 'png'
         const path = `${userId}/${restaurant.id}/brand/logo-${Date.now()}.${ext}`
         const { error: uploadError } = await supabase.storage.from('restaurant-assets').upload(path, logoFile, { upsert: false, contentType: logoFile.type || undefined })
-        if (uploadError) throw uploadError
-        const logoUrl = supabase.storage.from('restaurant-assets').getPublicUrl(path).data.publicUrl
-        const { error: logoError } = await supabase.from('restaurants').update({ logo_url: logoUrl }).eq('id', restaurant.id)
-        if (logoError) throw logoError
+        if (uploadError) logoWarning = 'Restoran je kreiran, ali logo nije uploadovan. Dodaj ga kasnije u Brend.'
+        else {
+          const logoUrl = supabase.storage.from('restaurant-assets').getPublicUrl(path).data.publicUrl
+          const { error: logoError } = await supabase.from('restaurants').update({ logo_url: logoUrl }).eq('id', restaurant.id)
+          if (logoError) logoWarning = 'Restoran je kreiran, ali logo nije sačuvan. Dodaj ga kasnije u Brend.'
+        }
       }
       localStorage.setItem('restaurant-autopilot-active-restaurant', restaurant.id)
+      if (logoWarning) sessionStorage.setItem('restaurant-autopilot-onboarding-warning', logoWarning)
       await onCreated()
     } catch (error) { setMessage(error instanceof Error ? humanError(error.message) : 'Nisam uspeo da kreiram restoran.') }
     setWorking(false)
