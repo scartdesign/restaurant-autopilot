@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabase'
 
 export function Onboarding({ userId, onCreated, onCancel, additional = false }: { userId: string; onCreated: () => Promise<void>; onCancel?: () => void; additional?: boolean }) {
   const [form, setForm] = useState({
-    name: '', city: '', neighborhood: '', country: 'Serbia', cuisine_type: '', target_audience: '',
+    name: '', city: '', neighborhood: '', country: 'Serbia', timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'Europe/Belgrade', cuisine_type: '', target_audience: '',
     social_goal: 'reservations', hashtag_mode: 'smart', brand_style: 'modern', tone: 'friendly',
     phone: '', instagram: '', posting_frequency: '5', primary_color: '#17211b', secondary_color: '#b9df72',
   })
@@ -25,7 +25,7 @@ export function Onboarding({ userId, onCreated, onCancel, additional = false }: 
     event.preventDefault(); setWorking(true); setMessage('')
     try {
       const { data: restaurant, error } = await supabase.from('restaurants').insert({
-        owner_id: userId, name: form.name.trim(), city: form.city.trim() || null, neighborhood: form.neighborhood.trim() || null, country: form.country.trim() || 'Serbia', cuisine_type: form.cuisine_type.trim() || null,
+        owner_id: userId, name: form.name.trim(), city: form.city.trim() || null, neighborhood: form.neighborhood.trim() || null, country: form.country.trim() || 'Serbia', timezone: form.timezone.trim() || 'Europe/Belgrade', cuisine_type: form.cuisine_type.trim() || null,
         target_audience: form.target_audience.trim() || null, social_goal: form.social_goal, hashtag_mode: form.hashtag_mode, brand_style: form.brand_style, tone: form.tone,
         phone: form.phone.trim() || null, instagram: form.instagram.trim() || null, posting_frequency: Number(form.posting_frequency), primary_color: form.primary_color, secondary_color: form.secondary_color,
         default_logo_visible: true, default_logo_position: 'top-right', default_logo_size: 'm', default_logo_badge: 'white', default_overlay_strength: .68, onboarding_completed: true,
