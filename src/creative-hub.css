@@ -22,3 +22,5 @@
 .creative-quota-warning{margin:0 0 18px;display:flex;align-items:flex-start;gap:10px;border:1px solid #e7c385;background:#fff7e9;color:#7e5318;border-radius:14px;padding:13px 14px}
 .creative-quota-warning>svg{margin-top:2px}.creative-quota-warning strong,.creative-quota-warning span{display:block}.creative-quota-warning strong{font-size:13px}.creative-quota-warning span{font-size:11px;line-height:1.45;margin-top:3px;color:#8d6a3f}
 @media(max-width:720px){.creative-quota-warning strong{font-size:14px}.creative-quota-warning span{font-size:12px}}
+
+.campaign-checklist .campaign-hero-focus{margin-top:3px;padding:9px 10px;border-radius:10px;background:#edf6df;color:#45602d;border:1px solid #d9e9c3}.campaign-checklist .campaign-hero-focus svg{color:#5f842f}
