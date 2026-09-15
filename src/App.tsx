@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { BadgeEuro, Bell, Building2, CalendarDays, ChefHat, Image as ImageIcon, LifeBuoy, LockKeyhole, LogOut, Megaphone, Palette, Plus, Rocket, Send, Settings, ShieldCheck, Sparkles, UtensilsCrossed, X } from 'lucide-react'
+import { BadgeEuro, Bell, Building2, CalendarDays, ChefHat, Image as ImageIcon, LifeBuoy, LockKeyhole, LogOut, Megaphone, Menu as MenuIcon, Palette, Plus, Rocket, Send, Settings, ShieldCheck, Sparkles, UtensilsCrossed, X } from 'lucide-react'
 import type { Session } from '@supabase/supabase-js'
 import { supabase } from './lib/supabase'
 import type { Entitlement, MenuItem, Post, Restaurant } from './types'
@@ -45,6 +45,7 @@ function App() {
   const [activeTab, setActiveTab] = useState<Tab>('launch')
   const [demo, setDemo] = useState(false)
   const [showAuth,setShowAuth]=useState(false)
+  const [mobileMenuOpen,setMobileMenuOpen]=useState(false)
   const [addingRestaurant, setAddingRestaurant] = useState(false)
   const [recoveryMode,setRecoveryMode]=useState(false)
   const adminSetupRequested = new URLSearchParams(window.location.search).get('superadmin') === 'setup'
@@ -154,7 +155,8 @@ function App() {
 
   async function accessChanged() { await loadAccountState(); await loadAppControls(); if (session) await loadRestaurants(session.user.id, restaurant?.id); setActiveTab('launch') }
   async function adminActivated() { window.history.replaceState({}, '', window.location.pathname); await loadAccountState(); await loadAppControls(); setActiveTab('admin') }
-  async function signOut() { await supabase.auth.signOut() }
+  async function signOut() { setMobileMenuOpen(false); await supabase.auth.signOut() }
+  function mobileGo(tab:Tab){setMobileMenuOpen(false);void openTab(tab)}
   async function recoveryDone(){setRecoveryMode(false);await boot()}
 
   const canUseCampaigns = isSuperadmin || entitlement?.features?.campaigns === true
@@ -194,17 +196,29 @@ function App() {
         <button className={activeTab==='dashboard'?'nav-active':''} onClick={()=>void openTab('dashboard')}><CalendarDays size={18}/> Sadržaj</button>
         <button className={activeTab==='creative'?'nav-active creative-nav':''} onClick={()=>void openTab('creative')}><Sparkles size={18}/> Creative AI <span className="nav-beta">NEW</span></button>
         <button className={activeTab==='studio'?'nav-active':''} onClick={()=>void openTab('studio')}><ImageIcon size={18}/> Visual Studio</button>
-        <button className={activeTab==='brand'?'nav-active brand-nav':'brand-nav'} onClick={()=>void openTab('brand')}><Palette size={18}/> Brend <span className="nav-beta">LOGO</span></button>
+        <button className={(activeTab==='brand'?'nav-active brand-nav':'brand-nav')+' mobile-hide'} onClick={()=>void openTab('brand')}><Palette size={18}/> Brend <span className="nav-beta">LOGO</span></button>
         <button className={activeTab==='publish'?'nav-active':''} onClick={()=>void openTab('publish')}><Send size={18}/> Publish Center</button>
-        <button className={activeTab==='menu'?'nav-active':''} onClick={()=>void openTab('menu')}><UtensilsCrossed size={18}/> Meni</button>
-        <button className={`${activeTab==='promotions'?'nav-active ':''}${canUseCampaigns?'':'locked-nav'}`} onClick={()=>void openTab('promotions')}><Megaphone size={18}/> Akcije {!canUseCampaigns&&<span className="nav-beta"><LockKeyhole size={9}/> PRO</span>}</button>
-        <button className={activeTab==='billing'?'nav-active billing-nav':'billing-nav'} onClick={()=>void openTab('billing')}><BadgeEuro size={18}/> Paket / licenca</button>
-        <button className={activeTab==='settings'?'nav-active':''} onClick={()=>void openTab('settings')}><Settings size={18}/> Podešavanja</button>
-        <button className={activeTab==='support'?'nav-active support-nav':'support-nav'} onClick={()=>void openTab('support')}><LifeBuoy size={18}/> Podrška</button>
-        <button className={activeTab==='notifications'?'nav-active':''} onClick={()=>void openTab('notifications')}><Bell size={18}/> Obaveštenja {unreadNotifications>0&&<span className="nav-beta">{unreadNotifications>99?'99+':unreadNotifications}</span>}</button>
-        {isSuperadmin&&<button className={activeTab==='admin'?'nav-active admin-nav':'admin-nav'} onClick={()=>void openTab('admin')}><ShieldCheck size={18}/> Superadmin <span className="nav-beta">OWNER</span></button>}
+        <button className={(activeTab==='menu'?'nav-active':'')+' mobile-hide'} onClick={()=>void openTab('menu')}><UtensilsCrossed size={18}/> Meni</button>
+        <button className={`${activeTab==='promotions'?'nav-active ':''}${canUseCampaigns?'':'locked-nav'} mobile-hide`} onClick={()=>void openTab('promotions')}><Megaphone size={18}/> Akcije {!canUseCampaigns&&<span className="nav-beta"><LockKeyhole size={9}/> PRO</span>}</button>
+        <button className={(activeTab==='billing'?'nav-active billing-nav':'billing-nav')+' mobile-hide'} onClick={()=>void openTab('billing')}><BadgeEuro size={18}/> Paket / licenca</button>
+        <button className={(activeTab==='settings'?'nav-active':'')+' mobile-hide'} onClick={()=>void openTab('settings')}><Settings size={18}/> Podešavanja</button>
+        <button className={(activeTab==='support'?'nav-active support-nav':'support-nav')+' mobile-hide'} onClick={()=>void openTab('support')}><LifeBuoy size={18}/> Podrška</button>
+        <button className={(activeTab==='notifications'?'nav-active':'')+' mobile-hide'} onClick={()=>void openTab('notifications')}><Bell size={18}/> Obaveštenja {unreadNotifications>0&&<span className="nav-beta">{unreadNotifications>99?'99+':unreadNotifications}</span>}</button>
+        {isSuperadmin&&<button className={(activeTab==='admin'?'nav-active admin-nav':'admin-nav')+' mobile-hide'} onClick={()=>void openTab('admin')}><ShieldCheck size={18}/> Superadmin <span className="nav-beta">OWNER</span></button>}
+        <button className="mobile-nav-more" onClick={()=>setMobileMenuOpen(true)}><MenuIcon size={18}/> Više</button>
       </nav>
     </div><button className="logout" onClick={signOut}><LogOut size={18}/> Odjavi se</button></aside>
+
+    {mobileMenuOpen&&<div className="mobile-drawer-backdrop" onMouseDown={()=>setMobileMenuOpen(false)}><div className="mobile-drawer" onMouseDown={e=>e.stopPropagation()}><div className="mobile-drawer-head"><div><strong>{restaurant.name}</strong><small>Restaurant Autopilot</small></div><button className="icon-button" onClick={()=>setMobileMenuOpen(false)}><X size={19}/></button></div><div className="mobile-drawer-grid">
+      <button onClick={()=>mobileGo('brand')}><Palette size={19}/><span>Brend</span><small>logo i boje</small></button>
+      <button onClick={()=>mobileGo('menu')}><UtensilsCrossed size={19}/><span>Meni</span><small>jela i slike</small></button>
+      <button onClick={()=>mobileGo('promotions')} className={!canUseCampaigns?'locked':''}><Megaphone size={19}/><span>Akcije</span><small>{canUseCampaigns?'kampanje':'PRO / BUSINESS'}</small></button>
+      <button onClick={()=>mobileGo('billing')}><BadgeEuro size={19}/><span>Paket</span><small>licenca i naplata</small></button>
+      <button onClick={()=>mobileGo('settings')}><Settings size={19}/><span>Podešavanja</span><small>restoran i mreže</small></button>
+      <button onClick={()=>mobileGo('support')}><LifeBuoy size={19}/><span>Podrška</span><small>pošalji zahtev</small></button>
+      <button onClick={()=>mobileGo('notifications')}><Bell size={19}/><span>Obaveštenja</span><small>{unreadNotifications?unreadNotifications+' novo':'sve pročitano'}</small></button>
+      {isSuperadmin&&<button onClick={()=>mobileGo('admin')} className="owner"><ShieldCheck size={19}/><span>Superadmin</span><small>OWNER Control</small></button>}
+    </div><button className="mobile-drawer-logout" onClick={signOut}><LogOut size={17}/> Odjavi se</button></div></div>}
 
     <main className={`main-area ${activeTab==='admin'?'admin-main-area':''}`}>
       {appControls.announcement_enabled&&appControls.announcement_text&&<div className={`global-announcement ${appControls.announcement_tone}`}><Megaphone size={15}/><span>{appControls.announcement_text}</span></div>}
