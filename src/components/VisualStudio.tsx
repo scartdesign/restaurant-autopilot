@@ -44,6 +44,7 @@ export function VisualStudio({ restaurant, posts, menuItems, setNotice }: { rest
   const location = [restaurant.neighborhood, restaurant.city].filter(Boolean).join(' · ') || restaurant.cuisine_type || 'Restaurant'
   const lowContrast = contrastRatio(design.primaryColor, design.accentColor) < 2.2
   const designScore = calculateScore(design, restaurant, price, lowContrast)
+  const textFits = estimateTextFit(design)
 
   if (!selected) return <><header className="page-header"><div><p className="eyebrow">VISUAL STUDIO</p><h1>Gotovi vizuali</h1><p className="muted">Prvo generiši nedelju sadržaja, pa ovde pravi finalne objave.</p></div></header><div className="empty-state"><ImageIcon size={34}/><h3>Nema objava za dizajn</h3><p>Dodaj jela sa fotografijama i generiši sadržaj.</p></div></>
 
@@ -51,6 +52,18 @@ export function VisualStudio({ restaurant, posts, menuItems, setNotice }: { rest
   function undoDesign(){setUndoStack(stack=>{if(!stack.length)return stack;const previous=stack[stack.length-1];setRedoStack(redo=>[...redo.slice(-29),design]);setDesign(previous);return stack.slice(0,-1)})}
   function redoDesign(){setRedoStack(stack=>{if(!stack.length)return stack;const next=stack[stack.length-1];setUndoStack(undo=>[...undo.slice(-29),design]);setDesign(next);return stack.slice(0,-1)})}
   const adjustScale = (field:'headlineScale'|'sublineScale'|'ctaScale'|'priceScale',delta:number,min:number,max:number) => setDesign(current => ({...current,[field]:clampScale(current[field]+delta,min,max)}))
+
+  function fitTypography(){
+    const headlineLength=(design.headline||'').trim().length
+    const sublineLength=(design.subline||'').trim().length
+    const nextHeadline=headlineLength>48?.76:headlineLength>38?.84:headlineLength>30?.92:headlineLength<18?1.18:1
+    const nextSubline=sublineLength>150?.78:sublineLength>115?.86:sublineLength>85?.94:1
+    const nextCta=(design.cta||'').length>24?.86:(design.cta||'').length>18?.94:1
+    const nextTracking=design.fontPair==='impact'?-0.035:design.fontPair==='editorial'?-0.025:-0.045
+    const nextLineHeight=design.fontPair==='impact'?.88:design.fontPair==='editorial'?1:.94
+    patch({headlineScale:nextHeadline,sublineScale:nextSubline,ctaScale:nextCta,headlineTracking:nextTracking,headlineLineHeight:nextLineHeight})
+    setNotice('Tekst je automatski uklopljen prema dužini naslova, fontu i formatu.')
+  }
 
   function resetBrand() {
     patch(brandDefaults(restaurant))
@@ -165,7 +178,7 @@ export function VisualStudio({ restaurant, posts, menuItems, setNotice }: { rest
             {price&&<FontScaleControl label="Cena" value={design.priceScale} min={.8} max={1.5} onChange={value=>patch({priceScale:value})} onMinus={()=>adjustScale('priceScale',-.1,.8,1.5)} onPlus={()=>adjustScale('priceScale',.1,.8,1.5)}/>}
             <RangeControl label="Razmak slova" value={design.headlineTracking} min={-.08} max={.12} step={.01} display={Math.round(design.headlineTracking*100)+'%'} onChange={headlineTracking=>patch({headlineTracking})}/>
             <RangeControl label="Razmak redova" value={design.headlineLineHeight} min={.78} max={1.3} step={.02} display={Math.round(design.headlineLineHeight*100)+'%'} onChange={headlineLineHeight=>patch({headlineLineHeight})}/>
-            <button type="button" className="secondary typography-reset" onClick={()=>patch({headlineScale:1,sublineScale:1,ctaScale:1,priceScale:1,headlineTracking:-.055,headlineLineHeight:.92})}><RotateCcw size={13}/> Vrati tipografiju</button>
+            <div className="typography-quick-actions"><button type="button" className="secondary" onClick={fitTypography}><WandSparkles size={13}/> Auto uklopi tekst</button><button type="button" className="secondary typography-reset" onClick={()=>patch({headlineScale:1,sublineScale:1,ctaScale:1,priceScale:1,headlineTracking:-.055,headlineLineHeight:.92})}><RotateCcw size={13}/> Reset</button></div>
           </div>
           {price&&<button type="button" className={design.priceVisible?'price-toggle active':'price-toggle'} onClick={()=>patch({priceVisible:!design.priceVisible})}>{design.priceVisible?<Eye size={14}/>:<EyeOff size={14}/>} {design.priceVisible?'Cena se prikazuje':'Cena je sakrivena'}</button>}
         </div>
@@ -183,7 +196,7 @@ export function VisualStudio({ restaurant, posts, menuItems, setNotice }: { rest
         <div className="studio-fieldset"><span><Move size={14}/> Fokus fotografije</span><div className="segmented segmented-three">{(['left','center','right'] as PhotoPosition[]).map(pos=><button type="button" key={pos} className={design.photoPosition===pos?'active':''} onClick={()=>patch({photoPosition:pos})}>{pos==='left'?'Levo':pos==='right'?'Desno':'Centar'}</button>)}</div></div>
         <div className="studio-fieldset overlay-control"><span>Jačina zatamnjenja <strong>{Math.round(design.overlay*100)}%</strong></span><input type="range" min="20" max="90" value={Math.round(design.overlay*100)} onChange={e=>patch({overlay:Number(e.target.value)/100})}/></div>
         <div className="studio-copy-fields"><label><span><AlignLeft size={14}/> Glavni naslov</span><input value={design.headline} onChange={e=>patch({headline:e.target.value})} maxLength={58}/></label><label>Podnaslov<textarea rows={3} value={design.subline} onChange={e=>patch({subline:e.target.value})} maxLength={170}/></label><label>CTA<input value={design.cta} onChange={e=>patch({cta:e.target.value})} maxLength={30}/></label></div>
-        <div className="design-checks"><DesignCheck ok={Boolean(design.imageUrl)} text="realna fotografija"/><DesignCheck ok={!design.logoVisible||Boolean(restaurant.logo_url)} text="logo spreman" soft/><DesignCheck ok={design.headline.length>3&&design.headline.length<=42} text="jak kratak naslov"/><DesignCheck ok={!lowContrast} text="dobar kontrast"/></div>
+        <div className="design-checks"><DesignCheck ok={Boolean(design.imageUrl)} text="realna fotografija"/><DesignCheck ok={!design.logoVisible||Boolean(restaurant.logo_url)} text="logo spreman" soft/><DesignCheck ok={design.headline.length>3&&design.headline.length<=42} text="jak kratak naslov"/><DesignCheck ok={textFits} text={textFits?'tekst staje u kadar':'smanji tekst'} soft={!textFits}/><DesignCheck ok={!lowContrast} text="dobar kontrast"/></div>
         <button type="button" className="secondary full" onClick={copyPost}><Copy size={16}/> Kopiraj Instagram tekst + hashtagove</button>
       </aside>
 
@@ -248,6 +261,7 @@ function isLogoSize(v:unknown):v is LogoSize{return v==='s'||v==='m'||v==='l'}
 function isLogoBadge(v:unknown):v is LogoBadge{return typeof v==='string'&&['none','white','dark','blur'].includes(v)}
 function isCopyPosition(v:unknown):v is CopyPosition{return v==='top'||v==='center'||v==='bottom'}
 function isFontPair(v:unknown):v is FontPair{return v==='modern'||v==='editorial'||v==='impact'}
+function estimateTextFit(d:DesignState){const headlineWeight=Math.max(1,d.headline.length/28)*d.headlineScale*(.92/d.headlineLineHeight);const sublineWeight=Math.max(.5,d.subline.length/120)*d.sublineScale;const ctaWeight=Math.max(.5,d.cta.length/22)*d.ctaScale;return headlineWeight<1.65&&sublineWeight<1.35&&ctaWeight<1.4}
 function calculateScore(d:DesignState,r:Restaurant,price:string,low:boolean){let s=36;if(d.imageUrl)s+=24;if(!d.logoVisible||r.logo_url)s+=8;if(d.headline.length>=4&&d.headline.length<=42)s+=10;if(d.subline.length>=20&&d.subline.length<=125)s+=6;if(d.cta)s+=6;if(price&&d.priceVisible)s+=4;if(!low)s+=6;return Math.min(100,s)}
 function contrastRatio(a:string,b:string){const lum=(hex:string)=>{const c=hex.replace('#','');if(!/^[0-9a-fA-F]{6}$/.test(c))return .5;const x=[0,2,4].map(i=>parseInt(c.slice(i,i+2),16)/255).map(v=>v<=.03928?v/12.92:Math.pow((v+.055)/1.055,2.4));return .2126*x[0]+.7152*x[1]+.0722*x[2]};const x=lum(a),y=lum(b);return(Math.max(x,y)+.05)/(Math.min(x,y)+.05)}
 function shorten(v:string,max:number){const c=v.replace(/\s+/g,' ').trim();return c.length<=max?c:`${c.slice(0,max-1).trim()}…`}
