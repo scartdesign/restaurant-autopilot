@@ -11,6 +11,7 @@ export function LaunchCenter({restaurant,menuItems,posts,onNavigate}:{restaurant
   const activeItems=menuItems.filter(i=>i.is_active)
   const photos=activeItems.filter(i=>i.image_url).length
   const photoCoverage=activeItems.length?Math.round((photos/activeItems.length)*100):0
+  const heroDish=activeItems.find(i=>(i.marketing_priority||0)>=3)
   const future=posts.filter(p=>p.scheduled_for&&new Date(p.scheduled_for).getTime()>Date.now()).length
   const approved=posts.filter(p=>p.status==='approved'||p.status==='published').length
   const hoursConfigured=Boolean(restaurant.opening_hours&&Object.keys(restaurant.opening_hours).length>=7)
@@ -19,6 +20,7 @@ export function LaunchCenter({restaurant,menuItems,posts,onNavigate}:{restaurant
     {id:'profile',title:'Dopuni restoran',detail:'Grad, cilj, telefon i društvene mreže daju bolji AI kontekst.',done:Boolean(restaurant.city&&(restaurant.instagram||restaurant.facebook||restaurant.phone||restaurant.reservation_url)),tab:'settings' as LaunchTab,icon:Settings},
     {id:'hours',title:'Podesi radno vreme',detail:'Autopilot tada ne predlaže dolazak kada je restoran zatvoren.',done:hoursConfigured,tab:'settings' as LaunchTab,icon:Clock3},
     {id:'menu',title:'Dodaj najmanje 3 jela',detail:'Više jela daje bolji nedeljni plan i kampanje.',done:activeItems.length>=3,tab:'menu' as LaunchTab,icon:UtensilsCrossed},
+    {id:'priority',title:'Izaberi HERO jelo',detail:heroDish?`${heroDish.name} vodi kampanje i premium preview.`:'Označi najvažnije jelo prioritetom HERO da Campaign Builder zna šta je glavni fokus.',done:Boolean(heroDish),tab:'menu' as LaunchTab,icon:Megaphone},
     {id:'photos',title:'Pokrij meni fotografijama',detail:photoCoverage>=70?`${photoCoverage}% menija ima fotografiju.`:`Trenutno ${photoCoverage}%. Dodaj realne ili AI slike hrane.`,done:photoCoverage>=70,tab:'creative' as LaunchTab,icon:ImageIcon},
     {id:'content',title:'Napravi prvi sadržaj',detail:'Autopilot treba bar 3 predloga za radni plan.',done:posts.length>=3,tab:'dashboard' as LaunchTab,icon:Sparkles},
     {id:'schedule',title:'Odobri i zakaži objave',detail:future?`${future} budućih termina · ${approved} odobreno.`:'Još nema budućih termina.',done:future>=1&&approved>=1,tab:'publish' as LaunchTab,icon:Send},
