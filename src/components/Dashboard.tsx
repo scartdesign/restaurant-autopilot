@@ -63,6 +63,7 @@ export function Dashboard({ restaurant, menuItems, posts, onChanged, setNotice }
 
     const generated = (data?.posts || []) as Post[]
     const performanceSamples=Number(data?.learning?.performance_samples||0)
+    const heroGenerated=generated.filter((post)=>Number(post.generation_meta?.learning_signal?.marketing_priority||0)>=3).length
     let aiEnhanced = 0
     try {
       const { data: aiStatus } = await supabase.functions.invoke('creative-advisor', {
@@ -85,8 +86,8 @@ export function Dashboard({ restaurant, menuItems, posts, onChanged, setNotice }
     await onChanged()
     const count = generated.length || restaurant.posting_frequency || 0
     setNotice(aiEnhanced
-      ? `Nedelja je spremna: ${count} objava, AI je doradio ${aiEnhanced}/${count} tekstova${performanceSamples?` i učio iz ${performanceSamples} stvarnih rezultata`:''}. Dizajn, datum i vreme su sačuvani.`
-      : `Autopilot je napravio ${count} dizajniranih predloga sa datumom i vremenom${performanceSamples?` i koristio ${performanceSamples} stvarnih performance rezultata`:''}. Tekst koristi Smart fallback gde AI nije dostupan.`)
+      ? `Nedelja je spremna: ${count} objava, AI je doradio ${aiEnhanced}/${count} tekstova${heroGenerated?` · HERO fokus u ${heroGenerated} ${heroGenerated===1?'objavi':'objave'}`:''}${performanceSamples?` · učenje iz ${performanceSamples} stvarnih rezultata`:''}. Dizajn, datum i vreme su sačuvani.`
+      : `Autopilot je napravio ${count} dizajniranih predloga sa datumom i vremenom${heroGenerated?` · HERO fokus u ${heroGenerated} ${heroGenerated===1?'objavi':'objave'}`:''}${performanceSamples?` · korišćeno ${performanceSamples} stvarnih performance rezultata`:''}. Tekst koristi Smart fallback gde AI nije dostupan.`)
     setGenerating(false)
   }
 
@@ -222,9 +223,9 @@ export function Dashboard({ restaurant, menuItems, posts, onChanged, setNotice }
 
       <section className="marketing-focus-panel panel">
         <div className="marketing-focus-copy">
-          <p className="eyebrow">MARKETING FOKUS</p>
+          <div className="marketing-focus-kicker"><p className="eyebrow">MARKETING FOKUS</p><span className="priority-engine-badge"><Zap size={12}/> PRIORITY ENGINE ACTIVE</span></div>
           <h2>{heroItem ? `HERO: ${heroItem.name}` : 'Izaberi HERO jelo'}</h2>
-          <p>{heroItem ? 'Ovo je glavno jelo koje treba da nosi najjače kampanje i premium vizuale. Ostali prioriteti ga dopunjuju bez monotonog ponavljanja.' : 'Označi jedno aktivno jelo kao HERO u Meniju. Autopilot će ga koristiti kao glavni kreativni pravac kada backend priority engine bude aktivan.'}</p>
+          <p>{heroItem ? 'Ovo je glavno jelo koje nosi najjače kampanje i premium vizuale. Priority Engine ga gura češće, ali ograničava ponavljanje da feed ne postane monoton.' : 'Označi jedno aktivno jelo kao HERO u Meniju. Autopilot će ga automatski uključivati u glavne kampanje i nedeljni plan bez preteranog ponavljanja.'}</p>
         </div>
         <div className="marketing-focus-items">
           {marketingFocus.length ? marketingFocus.map((item) => (
