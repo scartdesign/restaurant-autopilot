@@ -108,14 +108,29 @@ export function PublishCenter({ restaurant, posts, onChanged, setNotice }: {
   }
 
   function openSchedule(post: Post) {
-    const initial = post.scheduled_for ? dateParts(post.scheduled_for, restaurant.timezone) : defaultDraft(post, restaurant.timezone)
+    const initial = post.scheduled_for ? dateParts(post.scheduled_for, restaurant.timezone) : defaultDraft(post, restaurant)
     setScheduleDraft(initial)
     setEditingId(post.id)
   }
 
   function useAutopilotTime(post: Post) {
-    const draft = scheduleDraft.date ? scheduleDraft : defaultDraft(post, restaurant.timezone)
-    setScheduleDraft({ ...draft, time: recommendedTime(post) })
+    const base = scheduleDraft.date ? scheduleDraft : defaultDraft(post, restaurant)
+    setScheduleDraft(autopilotDraft(post, base.date, restaurant))
+  }
+
+  async function copyPlatform(post:Post,platform:'instagram'|'facebook'){
+    const pack=post.platform_content?.[platform]
+    const caption=pack?.caption||post.caption||''
+    const tags=(pack?.hashtags||(platform==='instagram'?post.hashtags:[])||[]).join(' ')
+    const text=[caption,tags].filter(Boolean).join('\n\n')
+    if(!text){setNotice('Nema teksta za kopiranje.');return}
+    try{await navigator.clipboard.writeText(text);setNotice(`${platform==='instagram'?'Instagram':'Facebook'} tekst je kopiran.`)}
+    catch{setNotice('Browser nije dozvolio kopiranje.')}
+  }
+
+  async function openBusinessSuite(post:Post){
+    await copyPlatform(post,'facebook')
+    window.open('https://business.facebook.com/latest/composer','_blank','noopener,noreferrer')
   }
 
   async function saveSchedule(post: Post) {
@@ -172,11 +187,11 @@ export function PublishCenter({ restaurant, posts, onChanged, setNotice }: {
 
               {editingId === post.id && <div className="schedule-editor">
                 <div className="schedule-fields"><label>Datum <small>{restaurant.timezone}</small><input type="date" value={scheduleDraft.date} onChange={(e) => setScheduleDraft({ ...scheduleDraft, date: e.target.value })} /></label><label>Vreme<input type="time" step="300" value={scheduleDraft.time} onChange={(e) => setScheduleDraft({ ...scheduleDraft, time: e.target.value })} /></label></div>
-                <div className="schedule-suggestion"><Sparkles size={14} /><span>Autopilot termin za ovaj format: <strong>{recommendedTime(post)}</strong></span><button type="button" onClick={() => useAutopilotTime(post)}>Primeni</button></div>
-                <div className="schedule-editor-actions"><button type="button" className="secondary" onClick={() => setEditingId('')}><X size={14} /> Otkaži</button><button type="button" className="secondary" onClick={() => setScheduleDraft(defaultDraft(post, restaurant.timezone))}><RotateCcw size={14} /> Reset</button><button type="button" className="primary" disabled={workingId === post.id} onClick={() => void saveSchedule(post)}><Save size={14} /> Sačuvaj termin</button></div>
+                <div className="schedule-suggestion"><Sparkles size={14} /><span>Autopilot proverava format + radno vreme restorana.</span><button type="button" onClick={() => useAutopilotTime(post)}>Predloži termin</button></div>
+                <div className="schedule-editor-actions"><button type="button" className="secondary" onClick={() => setEditingId('')}><X size={14} /> Otkaži</button><button type="button" className="secondary" onClick={() => setScheduleDraft(defaultDraft(post, restaurant))}><RotateCcw size={14} /> Reset</button><button type="button" className="primary" disabled={workingId === post.id} onClick={() => void saveSchedule(post)}><Save size={14} /> Sačuvaj termin</button></div>
               </div>}
             </div>
-            <div className="queue-state"><span className={`status ${post.status}`}>{post.status}</span><button className="mini-schedule" onClick={() => openSchedule(post)}><CalendarClock size={14} /> Datum i vreme</button><button className="mini-quality" disabled={workingId === post.id} onClick={() => qualityCheck(post)}><ShieldCheck size={14} /> Quality check</button>{post.status === 'approved' && <button className="mini-publish" disabled={workingId === post.id} onClick={() => markPublished(post)}><CheckCircle2 size={14} /> Označi objavljeno</button>}{post.status === 'published' && <span className="published-ok"><CheckCircle2 size={15} /> završeno</span>}</div>
+            <div className="queue-state"><span className={`status ${post.status}`}>{post.status}</span><button className="mini-schedule" onClick={() => openSchedule(post)}><CalendarClock size={14} /> Datum i vreme</button><button className="mini-quality" disabled={workingId === post.id} onClick={() => qualityCheck(post)}><ShieldCheck size={14} /> Quality check</button><div className="platform-copy-actions"><button type="button" onClick={()=>void copyPlatform(post,'instagram')}><Instagram size={13}/> IG copy</button><button type="button" onClick={()=>void copyPlatform(post,'facebook')}><Facebook size={13}/> FB copy</button></div>{post.status === 'approved' && <><button className="mini-meta-suite" onClick={()=>void openBusinessSuite(post)}><ExternalLink size={14}/> Meta Business Suite</button><button className="mini-publish" disabled={workingId === post.id} onClick={() => markPublished(post)}><CheckCircle2 size={14} /> Označi objavljeno</button></>}{post.status === 'published' && <span className="published-ok"><CheckCircle2 size={15} /> završeno</span>}</div>
           </div>)}
         </div>}
       </section>
@@ -186,14 +201,33 @@ export function PublishCenter({ restaurant, posts, onChanged, setNotice }: {
   )
 }
 
-function recommendedTime(post: Post) {
-  if (post.post_type === 'promotion') return '17:30'
-  if (post.post_type === 'story') return '11:30'
-  const pillar = String(post.generation_meta?.pillar || '')
-  if (pillar === 'local_discovery') return '18:30'
-  if (pillar === 'hero_dish') return '18:30'
-  if (pillar === 'social_prompt') return '19:30'
-  return '18:30'
+function preferredMinutes(post:Post){
+  if(post.post_type==='promotion')return 17*60+30
+  if(post.post_type==='story')return 11*60+30
+  const pillar=String(post.generation_meta?.pillar||'')
+  if(pillar==='social_prompt')return 19*60+30
+  return 18*60+30
+}
+const weekdayKeys=['sun','mon','tue','wed','thu','fri','sat']
+function openingRow(restaurant:Restaurant,date:string){
+  const noon=zonedInputToIso(date+'T12:00',restaurant.timezone)
+  const weekday=new Date(noon).toLocaleDateString('en-US',{timeZone:restaurant.timezone,weekday:'short'}).toLowerCase().slice(0,3)
+  const row=restaurant.opening_hours?.[weekday]
+  return row||{enabled:true,open:'09:00',close:'23:00'}
+}
+function toMinutes(value:string){const[h,m]=value.split(':').map(Number);return (Number.isFinite(h)?h:0)*60+(Number.isFinite(m)?m:0)}
+function hhmm(value:number){const minutes=Math.max(0,Math.min(23*60+59,Math.round(value)));return String(Math.floor(minutes/60)).padStart(2,'0')+':'+String(minutes%60).padStart(2,'0')}
+function addLocalDays(date:string,days:number){const d=new Date(date+'T12:00:00Z');d.setUTCDate(d.getUTCDate()+days);return d.toISOString().slice(0,10)}
+function autopilotDraft(post:Post,date:string,restaurant:Restaurant):ScheduleDraft{
+  let chosenDate=date
+  let row=openingRow(restaurant,chosenDate)
+  for(let i=0;i<7&&!row.enabled;i++){chosenDate=addLocalDays(chosenDate,1);row=openingRow(restaurant,chosenDate)}
+  const preferred=preferredMinutes(post)
+  const open=toMinutes(row.open||'09:00')
+  const close=toMinutes(row.close||'23:00')
+  const earliest=Math.max(7*60,open-60)
+  const latest=Math.max(earliest,close-60)
+  return{date:chosenDate,time:hhmm(Math.min(latest,Math.max(earliest,preferred)))}
 }
 function timeZoneOffsetMinutes(timeZone: string, date: Date) {
   try {
@@ -218,11 +252,11 @@ function zonedInputToIso(value: string, timeZone: string) {
   const corrected=timeZoneOffsetMinutes(timeZone,new Date(utc)); if(corrected!==offset)utc=desired-corrected*60000
   return new Date(utc).toISOString()
 }
-function defaultDraft(post: Post, timeZone: string): ScheduleDraft {
-  if (post.scheduled_for) return dateParts(post.scheduled_for,timeZone)
+function defaultDraft(post: Post, restaurant: Restaurant): ScheduleDraft {
+  if (post.scheduled_for) return dateParts(post.scheduled_for,restaurant.timezone)
   const tomorrow = new Date(Date.now()+86400000)
-  const p=zonedParts(tomorrow.toISOString(),timeZone)
-  return { date: `${p.year}-${p.month}-${p.day}`, time: recommendedTime(post) }
+  const p=zonedParts(tomorrow.toISOString(),restaurant.timezone)
+  return autopilotDraft(post,`${p.year}-${p.month}-${p.day}`,restaurant)
 }
 function dateParts(iso: string, timeZone: string): ScheduleDraft {
   const p=zonedParts(iso,timeZone)
