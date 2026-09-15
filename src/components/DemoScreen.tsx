@@ -32,7 +32,7 @@ const demoMenuCards = [
 ]
 
 const demoRestaurant: Restaurant = {
-  id: 'demo-restaurant', owner_id: 'demo', name: 'Bella Napoli', city: 'Beograd', neighborhood: 'Vračar', country: 'Serbia', phone: '+381 11 555 2026', website: 'https://example.com', instagram: '@bellanapoli', facebook: 'Bella Napoli Beograd', cuisine_type: 'Italijanska', brand_style: 'premium', primary_color: '#173a2b', secondary_color: '#e7c35f', logo_url: demoLogo, description: 'Prava italijanska priča u tvom gradu.', target_audience: 'Parovi, porodice i ljubitelji italijanske kuhinje', social_goal: 'reservations', hashtag_mode: 'smart', language: 'sr', tone: 'premium', posting_frequency: 5, reservation_url: 'https://example.com/reservations', onboarding_completed: true,
+  id: 'demo-restaurant', owner_id: 'demo', name: 'Bella Napoli', city: 'Beograd', neighborhood: 'Vračar', country: 'Serbia', timezone: 'Europe/Belgrade', phone: '+381 11 555 2026', website: 'https://example.com', instagram: '@bellanapoli', facebook: 'Bella Napoli Beograd', cuisine_type: 'Italijanska', brand_style: 'premium', primary_color: '#173a2b', secondary_color: '#e7c35f', logo_url: demoLogo, description: 'Prava italijanska priča u tvom gradu.', target_audience: 'Parovi, porodice i ljubitelji italijanske kuhinje', social_goal: 'reservations', hashtag_mode: 'smart', language: 'sr', tone: 'premium', posting_frequency: 5, reservation_url: 'https://example.com/reservations', onboarding_completed: true,
   default_logo_visible: true, default_logo_position: 'top-right', default_logo_size: 'm', default_logo_badge: 'white', default_overlay_strength: .64,
 }
 
