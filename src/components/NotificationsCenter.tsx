@@ -3,13 +3,13 @@ import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import type { NotificationOutbox } from '../types'
 
-export function NotificationsCenter({setNotice}:{setNotice:(v:string)=>void}){
+export function NotificationsCenter({setNotice,onUnreadChanged}:{setNotice:(v:string)=>void;onUnreadChanged?:(count:number)=>void}){
   const[items,setItems]=useState<NotificationOutbox[]>([])
   const[working,setWorking]=useState(false)
   useEffect(()=>{void load()},[])
-  async function load(){setWorking(true);const{data,error}=await supabase.from('notification_outbox').select('*').eq('visible_in_app',true).order('created_at',{ascending:false}).limit(100);if(error)setNotice(error.message);else setItems((data||[]) as NotificationOutbox[]);setWorking(false)}
-  async function markRead(id:number){const{error}=await supabase.from('notification_outbox').update({read_at:new Date().toISOString()}).eq('id',id);if(error)setNotice(error.message);else setItems(cur=>cur.map(x=>x.id===id?{...x,read_at:new Date().toISOString()}:x))}
-  async function markAll(){const ids=items.filter(x=>!x.read_at).map(x=>x.id);if(!ids.length)return;const{error}=await supabase.from('notification_outbox').update({read_at:new Date().toISOString()}).in('id',ids);if(error)setNotice(error.message);else{setItems(cur=>cur.map(x=>({...x,read_at:x.read_at||new Date().toISOString()})));setNotice('Sva obaveštenja su označena kao pročitana.')}}
+  async function load(){setWorking(true);const{data,error}=await supabase.from('notification_outbox').select('*').eq('visible_in_app',true).order('created_at',{ascending:false}).limit(100);if(error)setNotice(error.message);else{const rows=(data||[]) as NotificationOutbox[];setItems(rows);onUnreadChanged?.(rows.filter(x=>!x.read_at).length)}setWorking(false)}
+  async function markRead(id:number){const{error}=await supabase.from('notification_outbox').update({read_at:new Date().toISOString()}).eq('id',id);if(error)setNotice(error.message);else setItems(cur=>{const next=cur.map(x=>x.id===id?{...x,read_at:new Date().toISOString()}:x);onUnreadChanged?.(next.filter(x=>!x.read_at).length);return next})}
+  async function markAll(){const ids=items.filter(x=>!x.read_at).map(x=>x.id);if(!ids.length)return;const{error}=await supabase.from('notification_outbox').update({read_at:new Date().toISOString()}).in('id',ids);if(error)setNotice(error.message);else{setItems(cur=>cur.map(x=>({...x,read_at:x.read_at||new Date().toISOString()})));onUnreadChanged?.(0);setNotice('Sva obaveštenja su označena kao pročitana.')}}
   const unread=useMemo(()=>items.filter(x=>!x.read_at).length,[items])
   return <div className="notifications-page">
     <header className="email-admin-head"><div><p className="eyebrow">NALOG · OBAVEŠTENJA</p><h1>Centar obaveštenja</h1><p>Uplate, aktivacije, produženja, podrška i važna sistemska obaveštenja na jednom mestu.</p></div><div className="notification-actions"><button className="secondary" onClick={()=>void load()} disabled={working}><RefreshCw size={15}/> Osveži</button><button className="primary" onClick={()=>void markAll()} disabled={!unread}><CheckCheck size={15}/> Pročitaj sve ({unread})</button></div></header>
