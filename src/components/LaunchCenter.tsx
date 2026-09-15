@@ -1,9 +1,13 @@
-import { CheckCircle2, Circle, Clock3, Image as ImageIcon, Instagram, LayoutDashboard, Megaphone, Palette, Send, Settings, Sparkles, UtensilsCrossed } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { BarChart3, CheckCircle2, Circle, Clock3, Image as ImageIcon, Instagram, LayoutDashboard, Megaphone, Palette, Send, Settings, Sparkles, UtensilsCrossed } from 'lucide-react'
+import { supabase } from '../lib/supabase'
 import type { MenuItem, Post, Restaurant } from '../types'
 
-type LaunchTab = 'dashboard'|'creative'|'studio'|'brand'|'publish'|'menu'|'promotions'|'settings'
+type LaunchTab = 'dashboard'|'creative'|'studio'|'brand'|'publish'|'insights'|'menu'|'promotions'|'settings'
 
 export function LaunchCenter({restaurant,menuItems,posts,onNavigate}:{restaurant:Restaurant;menuItems:MenuItem[];posts:Post[];onNavigate:(tab:LaunchTab)=>void}){
+  const[performanceCount,setPerformanceCount]=useState(0)
+  useEffect(()=>{void supabase.from('post_performance').select('id',{count:'exact',head:true}).eq('restaurant_id',restaurant.id).then(({count})=>setPerformanceCount(count||0))},[restaurant.id,posts.length])
   const activeItems=menuItems.filter(i=>i.is_active)
   const photos=activeItems.filter(i=>i.image_url).length
   const photoCoverage=activeItems.length?Math.round((photos/activeItems.length)*100):0
@@ -18,6 +22,7 @@ export function LaunchCenter({restaurant,menuItems,posts,onNavigate}:{restaurant
     {id:'photos',title:'Pokrij meni fotografijama',detail:photoCoverage>=70?`${photoCoverage}% menija ima fotografiju.`:`Trenutno ${photoCoverage}%. Dodaj realne ili AI slike hrane.`,done:photoCoverage>=70,tab:'creative' as LaunchTab,icon:ImageIcon},
     {id:'content',title:'Napravi prvi sadržaj',detail:'Autopilot treba bar 3 predloga za radni plan.',done:posts.length>=3,tab:'dashboard' as LaunchTab,icon:Sparkles},
     {id:'schedule',title:'Odobri i zakaži objave',detail:future?`${future} budućih termina · ${approved} odobreno.`:'Još nema budućih termina.',done:future>=1&&approved>=1,tab:'publish' as LaunchTab,icon:Send},
+    {id:'results',title:'Zatvori performance loop',detail:performanceCount>=3?`${performanceCount} objave imaju stvarne rezultate.`:`Unesi rezultate za još ${Math.max(0,3-performanceCount)} objave da AI počne da uči iz tvog restorana.`,done:performanceCount>=3,tab:'insights' as LaunchTab,icon:BarChart3},
   ]
   const completed=tasks.filter(t=>t.done).length
   const score=Math.round((completed/tasks.length)*100)
