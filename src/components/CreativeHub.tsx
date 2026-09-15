@@ -61,7 +61,7 @@ export function CreativeHub({ restaurant, menuItems, entitlement, onChanged, set
   const [savingProvider,setSavingProvider] = useState(false)
 
   const selected = suggestions.find(item=>item.id===selectedId) || suggestions[0]
-  const activeItems = useMemo(()=>menuItems.filter(i=>i.is_active),[menuItems])
+  const activeItems = useMemo(()=>menuItems.filter(i=>i.is_active).sort((a,b)=>(b.marketing_priority||0)-(a.marketing_priority||0)),[menuItems])
   const previewItems = useMemo(()=>{
     const first = selected?.menu_item_id ? activeItems.find(i=>i.id===selected.menu_item_id) : undefined
     const rest = activeItems.filter(i=>i.id!==first?.id)
