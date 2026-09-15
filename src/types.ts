@@ -69,6 +69,9 @@ export type VisualDesignMeta = {
   logo_position?: LogoPosition
   logo_size?: LogoSize
   logo_badge?: LogoBadge
+  copy_position?: 'top' | 'center' | 'bottom'
+  font_pair?: 'modern' | 'editorial' | 'impact'
+  price_visible?: boolean
   saved_at?: string
 }
 
