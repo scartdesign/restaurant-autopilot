@@ -31,16 +31,46 @@ export function Dashboard({ restaurant, menuItems, posts, onChanged, setNotice }
       return
     }
     setGenerating(true)
-    setNotice('')
+    setNotice('Autopilot pravi strukturu nedelje…')
     const { data, error } = await supabase.functions.invoke('content-engine', {
       body: { action: 'week', restaurantId: restaurant.id },
     })
-    if (error) setNotice(error.message)
-    else if (data?.error) setNotice(data.error)
-    else {
-      setNotice(`Autopilot je napravio ${data?.posts?.length || restaurant.posting_frequency} dizajniranih predloga sa datumom i vremenom.`)
-      await onChanged()
+    if (error) {
+      setNotice(error.message)
+      setGenerating(false)
+      return
     }
+    if (data?.error) {
+      setNotice(data.error)
+      setGenerating(false)
+      return
+    }
+
+    const generated = (data?.posts || []) as Post[]
+    let aiEnhanced = 0
+    try {
+      const { data: aiStatus } = await supabase.functions.invoke('creative-advisor', {
+        body: { action: 'status', restaurantId: restaurant.id },
+      })
+      if (aiStatus?.ai_text_ready && generated.length) {
+        for (let i = 0; i < generated.length; i += 1) {
+          const post = generated[i]
+          setNotice(`AI doteruje tekst ${i + 1}/${generated.length} · ${post.title || 'objava'}…`)
+          const { data: aiData, error: aiError } = await supabase.functions.invoke('creative-advisor', {
+            body: { action: 'post_copy', restaurantId: restaurant.id, postId: post.id },
+          })
+          if (!aiError && !aiData?.error) aiEnhanced += 1
+        }
+      }
+    } catch {
+      // Deterministički sadržaj ostaje validan fallback ako AI provider trenutno nije dostupan.
+    }
+
+    await onChanged()
+    const count = generated.length || restaurant.posting_frequency || 0
+    setNotice(aiEnhanced
+      ? `Nedelja je spremna: ${count} objava, a AI je finalno doradio ${aiEnhanced}/${count} tekstova. Dizajn, datum i vreme su sačuvani.`
+      : `Autopilot je napravio ${count} dizajniranih predloga sa datumom i vremenom. AI nije bio dostupan, pa je zadržan Smart fallback.`)
     setGenerating(false)
   }
 
@@ -108,7 +138,7 @@ export function Dashboard({ restaurant, menuItems, posts, onChanged, setNotice }
           <h1>{restaurant.description || 'Sadržaj koji izgleda kao tvoj restoran.'}</h1>
           <p>{restaurant.cuisine_type ? `${restaurant.cuisine_type} · ` : ''}{restaurant.neighborhood || restaurant.city || 'Tvoj grad'} · planirano, brendirano i spremno za objavu.</p>
           <div className="wow-hero-actions">
-            <button className="wow-primary" onClick={generateWeek} disabled={generating}><Sparkles size={18} /> {generating ? 'Autopilot radi…' : 'Kreiraj novu nedelju'}</button>
+            <button className="wow-primary" onClick={generateWeek} disabled={generating}><Sparkles size={18} /> {generating ? 'AI Autopilot radi…' : 'Kreiraj AI nedelju'}</button>
             <div className="wow-hero-meta"><span><MapPin size={14} /> {restaurant.neighborhood || restaurant.city || 'lokalni discovery'}</span><span><Hash size={14} /> Smart Discovery</span></div>
           </div>
         </div>
