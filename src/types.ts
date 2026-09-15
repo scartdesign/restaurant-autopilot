@@ -10,6 +10,7 @@ export type Restaurant = {
   neighborhood: string | null
   country: string
   timezone: string
+  opening_hours?: Record<string,{enabled:boolean;open:string;close:string}>
   phone: string | null
   website: string | null
   instagram: string | null
