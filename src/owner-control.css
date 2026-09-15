@@ -12,3 +12,7 @@
 .customer-detail-sections b{color:#263229}
 @media(max-width:760px){.customer-detail-kpis{grid-template-columns:1fr 1fr}.customer-detail-sections{grid-template-columns:1fr}.customer-detail-modal{max-height:94vh!important}}
 @media(max-width:480px){.customer-detail-kpis{grid-template-columns:1fr}}
+
+.owner-email-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.owner-email-actions .primary,.owner-email-actions .secondary{flex:1 1 180px;justify-content:center}
+@media(max-width:700px){.owner-email-actions{display:grid;grid-template-columns:1fr}.owner-email-actions .primary,.owner-email-actions .secondary{width:100%}}
