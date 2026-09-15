@@ -76,12 +76,16 @@ export function MenuManager({ restaurant, userId, items, onChanged, setNotice }:
         const previousHeroes=items.filter((entry)=>entry.id!==data.id&&Number(entry.marketing_priority||0)===3)
         if(previousHeroes.length){
           const{error:demoteError}=await supabase.from('menu_items').update({marketing_priority:2}).eq('restaurant_id',restaurant.id).in('id',previousHeroes.map((entry)=>entry.id))
-          if(demoteError)throw demoteError
+          if(demoteError){
+            await supabase.from('menu_items').delete().eq('id',data.id).eq('restaurant_id',restaurant.id)
+            throw demoteError
+          }
           heroDemoted=true
         }
         const{error:promoteError}=await supabase.from('menu_items').update({marketing_priority:3}).eq('id',data.id).eq('restaurant_id',restaurant.id)
         if(promoteError){
           if(previousHeroes.length)await supabase.from('menu_items').update({marketing_priority:3}).eq('restaurant_id',restaurant.id).in('id',previousHeroes.map((entry)=>entry.id))
+          await supabase.from('menu_items').delete().eq('id',data.id).eq('restaurant_id',restaurant.id)
           throw promoteError
         }
       }
