@@ -7,3 +7,5 @@
 .ai-variant-card img{width:100%;aspect-ratio:1/1;object-fit:cover;display:block}
 .ai-variant-card span{padding:13px 14px;display:flex;align-items:center;justify-content:center;gap:7px;font-size:13px;font-weight:900;color:#4f692d}
 @media(max-width:760px){.ai-variant-grid{grid-template-columns:1fr}.ai-variant-modal{border-radius:20px 20px 0 0!important}.ai-variant-card{grid-template-columns:104px 1fr;align-items:center}.ai-variant-card img{width:104px;height:104px}.ai-variant-card span{justify-content:flex-start;font-size:14px}}
+
+.menu-ai-tip.ai-disabled{background:#f7f7f4!important;border-color:#dedfd9!important}.menu-ai-tip.ai-disabled>svg{color:#92978f!important}.menu-ai-tip strong small{margin-left:8px;font-size:9px;font-weight:900;color:#799253;background:#eef5e4;border-radius:999px;padding:4px 7px}.menu-ai-tip.ai-disabled strong small{color:#7c827c;background:#eceeea}.ai-photo-button:disabled,.ai-variants-button:disabled{opacity:.48;cursor:not-allowed}
