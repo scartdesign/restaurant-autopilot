@@ -19,6 +19,8 @@ export function PublishCenter({ restaurant, posts, onChanged, setNotice }: {
   const ordered = useMemo(() => [...posts].sort((a, b) => new Date(a.scheduled_for || 0).getTime() - new Date(b.scheduled_for || 0).getTime()), [posts])
   const approved = posts.filter((post) => post.status === 'approved')
   const published = posts.filter((post) => post.status === 'published')
+  const drafts = posts.filter((post) => post.status === 'draft' || post.status === 'rejected')
+  const overdue = approved.filter((post) => post.scheduled_for && new Date(post.scheduled_for).getTime() < Date.now())
   const readyPercent = posts.length ? Math.round(((approved.length + published.length) / posts.length) * 100) : 0
   const nextPost = ordered.find((post) => post.scheduled_for && new Date(post.scheduled_for).getTime() > Date.now() && post.status !== 'published') || ordered.find((post) => post.scheduled_for && post.status !== 'published')
 
@@ -81,6 +83,19 @@ export function PublishCenter({ restaurant, posts, onChanged, setNotice }: {
     setWorkingId('')
   }
 
+  async function approveAll() {
+    if (!drafts.length) { setNotice('Nema draft objava za odobravanje.'); return }
+    setWorkingId('bulk-approve')
+    const ids = drafts.map((post) => post.id)
+    const { error } = await supabase.from('posts').update({ status: 'approved' }).in('id', ids).eq('restaurant_id', restaurant.id)
+    if (error) setNotice(error.message)
+    else {
+      setNotice(`Odobreno je ${ids.length} objava. Publish Center je spreman za završnu proveru.`)
+      await onChanged()
+    }
+    setWorkingId('')
+  }
+
   async function markPublished(post: Post) {
     setWorkingId(post.id)
     const { error } = await supabase.from('posts').update({ status: 'published' }).eq('id', post.id)
@@ -126,7 +141,7 @@ export function PublishCenter({ restaurant, posts, onChanged, setNotice }: {
     <>
       <header className="page-header publish-header">
         <div><p className="eyebrow">PUBLISH CENTER</p><h1>Tačan dan. Tačno vreme. Sve spremno.</h1><p className="muted">Svaka objava ima termin u vremenskoj zoni restorana: <strong>{restaurant.timezone}</strong>.</p></div>
-        <div className="publish-actions"><button className="secondary" onClick={exportCalendar}><CalendarClock size={16} /> .ICS kalendar</button><button className="primary" onClick={exportCsv}><Download size={16} /> Export CSV</button></div>
+        <div className="publish-actions">{drafts.length>0&&<button className="secondary" onClick={()=>void approveAll()} disabled={workingId==='bulk-approve'}><CheckCircle2 size={16}/>{workingId==='bulk-approve'?'Odobravam…':`Odobri sve (${drafts.length})`}</button>}<button className="secondary" onClick={exportCalendar}><CalendarClock size={16} /> .ICS kalendar</button><button className="primary" onClick={exportCsv}><Download size={16} /> Export CSV</button></div>
       </header>
 
       {nextPost && <section className="next-publish-card">
@@ -142,7 +157,8 @@ export function PublishCenter({ restaurant, posts, onChanged, setNotice }: {
         <button className="copy-bundle" onClick={copyReadyBundle}><ClipboardCopy size={18} /><div><strong>Kopiraj odobrene</strong><span>termin + caption + hashtagovi</span></div></button>
       </section>
 
-      <div className="publishing-note"><Sparkles size={17} /><div><strong>Autopilot raspoređuje, ti kontrolišeš</strong><span>Početni termini se generišu automatski prema tipu sadržaja. Svaki datum i vreme možeš ručno da promeniš pre objave.</span></div></div>
+      {overdue.length>0&&<div className="publish-overdue-note"><Clock3 size={17}/><div><strong>{overdue.length} odobrenih objava ima termin u prošlosti.</strong><span>Promeni termin pre objavljivanja da red za objavu ostane tačan.</span></div></div>}
+      <div className="publishing-note"><Sparkles size={17} /><div><strong>Autopilot raspoređuje, ti kontrolišeš</strong><span>Početni termini se generišu automatski prema tipu sadržaja i radnom vremenu. Svaki datum i vreme možeš ručno da promeniš.</span></div></div>
 
       <section className="publish-queue panel">
         <div className="panel-heading"><h2><Send size={18} /> Red za objavu</h2><small>{ordered.length} stavki · datum + vreme</small></div>
