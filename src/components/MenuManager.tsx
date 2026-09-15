@@ -1,5 +1,5 @@
 import { ChangeEvent, FormEvent, useEffect, useMemo, useState } from 'react'
-import { CheckCircle2, Download, FileSpreadsheet, Image as ImageIcon, Plus, Search, Sparkles, Trash2, Upload, WandSparkles, X } from 'lucide-react'
+import { CheckCircle2, Download, FileSpreadsheet, Image as ImageIcon, Plus, Search, Sparkles, Star, Trash2, Upload, WandSparkles, X } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import type { MenuItem, Restaurant } from '../types'
 import { optimizeImage } from '../lib/image'
@@ -11,7 +11,7 @@ export function MenuManager({ restaurant, userId, items, onChanged, setNotice }:
   onChanged: () => Promise<void>
   setNotice: (value: string) => void
 }) {
-  const [form, setForm] = useState({ name: '', description: '', category: '', price: '', currency: 'RSD' })
+  const [form, setForm] = useState({ name: '', description: '', category: '', price: '', currency: 'RSD', marketing_priority: '0' })
   const [image, setImage] = useState<File | null>(null)
   const [working, setWorking] = useState(false)
   const [workingId, setWorkingId] = useState('')
@@ -20,7 +20,7 @@ export function MenuManager({ restaurant, userId, items, onChanged, setNotice }:
   const [aiStatus,setAiStatus]=useState<{ready:boolean;enabled:boolean;used:number;limit:number|null}|null>(null)
   const [query,setQuery]=useState('')
   const [categoryFilter,setCategoryFilter]=useState('all')
-  const [stateFilter,setStateFilter]=useState<'all'|'active'|'paused'|'missing-photo'>('all')
+  const [stateFilter,setStateFilter]=useState<'all'|'active'|'paused'|'missing-photo'|'priority'>('all')
   const categories=useMemo(()=>[...new Set(items.map(item=>item.category?.trim()).filter(Boolean) as string[])].sort((a,b)=>a.localeCompare(b,'sr')),[items])
   const filteredItems=useMemo(()=>{
     const q=query.trim().toLocaleLowerCase('sr')
@@ -29,6 +29,7 @@ export function MenuManager({ restaurant, userId, items, onChanged, setNotice }:
       if(stateFilter==='active'&&!item.is_active)return false
       if(stateFilter==='paused'&&item.is_active)return false
       if(stateFilter==='missing-photo'&&item.image_url)return false
+      if(stateFilter==='priority'&&Number(item.marketing_priority||0)<=0)return false
       if(q&&!([item.name,item.description||'',item.category||''].join(' ').toLocaleLowerCase('sr').includes(q)))return false
       return true
     })
@@ -65,9 +66,10 @@ export function MenuManager({ restaurant, userId, items, onChanged, setNotice }:
         price: form.price ? Number(form.price) : null,
         currency: form.currency,
         image_url: imageUrl,
+        marketing_priority: Number(form.marketing_priority||0),
       }).select('id,name,image_url').single()
       if (error) throw error
-      setForm({ name: '', description: '', category: '', price: '', currency: 'RSD' })
+      setForm({ name: '', description: '', category: '', price: '', currency: 'RSD', marketing_priority: '0' })
       setImage(null)
       setNotice(data?.image_url ? 'Jelo je dodato u meni.' : `Jelo „${data?.name || 'novo jelo'}“ je dodato. Ako nemaš fotografiju, klikni AI slika pored jela.`)
       await onChanged()
@@ -150,6 +152,7 @@ export function MenuManager({ restaurant, userId, items, onChanged, setNotice }:
         price: row.price === '' ? null : Number(row.price),
         currency: row.currency || 'RSD',
         is_active: true,
+        marketing_priority: 0,
       }))
       if (payload.some((row) => row.price !== null && Number.isNaN(row.price))) throw new Error('Jedna ili više cena nisu broj. Koristi npr. 890 ili 12.50.')
       const { error } = await supabase.from('menu_items').insert(payload)
