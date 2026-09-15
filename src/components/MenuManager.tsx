@@ -2,6 +2,7 @@ import { ChangeEvent, FormEvent, useMemo, useState } from 'react'
 import { CheckCircle2, Download, FileSpreadsheet, Image as ImageIcon, Plus, Sparkles, Trash2, Upload, WandSparkles, X } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import type { MenuItem, Restaurant } from '../types'
+import { optimizeImage } from '../lib/image'
 
 export function MenuManager({ restaurant, userId, items, onChanged, setNotice }: {
   restaurant: Restaurant
@@ -19,9 +20,10 @@ export function MenuManager({ restaurant, userId, items, onChanged, setNotice }:
   const photoCoverage = useMemo(() => items.length ? Math.round((items.filter((item) => item.image_url).length / items.length) * 100) : 0, [items])
 
   async function uploadImage(file: File) {
-    const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg'
+    const optimized = await optimizeImage(file,{maxSide:1800,quality:.88})
+    const ext = optimized.name.split('.').pop()?.toLowerCase() || 'webp'
     const path = `${userId}/${restaurant.id}/${crypto.randomUUID()}.${ext}`
-    const { error } = await supabase.storage.from('restaurant-assets').upload(path, file, { upsert: false, contentType: file.type || undefined })
+    const { error } = await supabase.storage.from('restaurant-assets').upload(path, optimized, { upsert: false, contentType: optimized.type || undefined })
     if (error) throw error
     return supabase.storage.from('restaurant-assets').getPublicUrl(path).data.publicUrl
   }
@@ -174,6 +176,7 @@ export function MenuManager({ restaurant, userId, items, onChanged, setNotice }:
       return
     }
     setImage(file)
+    if(file.size>2*1024*1024)setNotice('Fotografija će se automatski optimizovati pre slanja.')
   }
 
   return (
