@@ -25,6 +25,7 @@ export function BillingPage({ email, onAccessChanged, onSignOut }: { email: stri
 
   async function load(){
     await supabase.rpc('sync_account_notifications')
+    await supabase.functions.invoke('email-dispatch',{body:{action:'send_my_queue',limit:10}}).catch(()=>null)
     const [a,b,c,d,e,f,g]=await Promise.all([
       supabase.from('sales_plans').select('*').eq('active',true).eq('public',true).order('sort_order'),
       supabase.from('customer_subscriptions').select('*, sales_plans(*)').order('created_at',{ascending:false}),
