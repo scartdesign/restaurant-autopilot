@@ -1,4 +1,4 @@
-import { CheckCircle2, Circle, Image as ImageIcon, Instagram, LayoutDashboard, Megaphone, Palette, Send, Settings, Sparkles, UtensilsCrossed } from 'lucide-react'
+import { CheckCircle2, Circle, Clock3, Image as ImageIcon, Instagram, LayoutDashboard, Megaphone, Palette, Send, Settings, Sparkles, UtensilsCrossed } from 'lucide-react'
 import type { MenuItem, Post, Restaurant } from '../types'
 
 type LaunchTab = 'dashboard'|'creative'|'studio'|'brand'|'publish'|'menu'|'promotions'|'settings'
@@ -9,9 +9,11 @@ export function LaunchCenter({restaurant,menuItems,posts,onNavigate}:{restaurant
   const photoCoverage=activeItems.length?Math.round((photos/activeItems.length)*100):0
   const future=posts.filter(p=>p.scheduled_for&&new Date(p.scheduled_for).getTime()>Date.now()).length
   const approved=posts.filter(p=>p.status==='approved'||p.status==='published').length
+  const hoursConfigured=Boolean(restaurant.opening_hours&&Object.keys(restaurant.opening_hours).length>=7)
   const tasks=[
     {id:'brand',title:'Postavi logo i boje',detail:'Brand Kit definiše izgled svih objava.',done:Boolean(restaurant.logo_url&&restaurant.primary_color&&restaurant.secondary_color),tab:'brand' as LaunchTab,icon:Palette},
     {id:'profile',title:'Dopuni restoran',detail:'Grad, cilj, telefon i društvene mreže daju bolji AI kontekst.',done:Boolean(restaurant.city&&(restaurant.instagram||restaurant.facebook||restaurant.phone||restaurant.reservation_url)),tab:'settings' as LaunchTab,icon:Settings},
+    {id:'hours',title:'Podesi radno vreme',detail:'Autopilot tada ne predlaže dolazak kada je restoran zatvoren.',done:hoursConfigured,tab:'settings' as LaunchTab,icon:Clock3},
     {id:'menu',title:'Dodaj najmanje 3 jela',detail:'Više jela daje bolji nedeljni plan i kampanje.',done:activeItems.length>=3,tab:'menu' as LaunchTab,icon:UtensilsCrossed},
     {id:'photos',title:'Pokrij meni fotografijama',detail:photoCoverage>=70?`${photoCoverage}% menija ima fotografiju.`:`Trenutno ${photoCoverage}%. Dodaj realne ili AI slike hrane.`,done:photoCoverage>=70,tab:'creative' as LaunchTab,icon:ImageIcon},
     {id:'content',title:'Napravi prvi sadržaj',detail:'Autopilot treba bar 3 predloga za radni plan.',done:posts.length>=3,tab:'dashboard' as LaunchTab,icon:Sparkles},
