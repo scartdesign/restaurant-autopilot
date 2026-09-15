@@ -134,6 +134,7 @@ function App() {
     if (error) setNotice(error.message); else setMenuItems((data || []) as MenuItem[])
   }
   async function loadUnreadNotifications() {
+    await supabase.rpc('sync_account_notifications')
     const { count } = await supabase.from('notification_outbox').select('id',{count:'exact',head:true}).eq('visible_in_app',true).is('read_at',null)
     setUnreadNotifications(count || 0)
   }
