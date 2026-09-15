@@ -1,4 +1,4 @@
-import { ChangeEvent, FormEvent, useMemo, useState } from 'react'
+import { ChangeEvent, FormEvent, useEffect, useMemo, useState } from 'react'
 import { CheckCircle2, Download, FileSpreadsheet, Image as ImageIcon, Plus, Sparkles, Trash2, Upload, WandSparkles, X } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import type { MenuItem, Restaurant } from '../types'
@@ -17,7 +17,15 @@ export function MenuManager({ restaurant, userId, items, onChanged, setNotice }:
   const [workingId, setWorkingId] = useState('')
   const [aiWorkingId, setAiWorkingId] = useState('')
   const [variantPicker,setVariantPicker]=useState<{item:MenuItem;assets:{id:string;image_url:string}[]}|null>(null)
+  const [aiStatus,setAiStatus]=useState<{ready:boolean;enabled:boolean;used:number;limit:number|null}|null>(null)
   const photoCoverage = useMemo(() => items.length ? Math.round((items.filter((item) => item.image_url).length / items.length) * 100) : 0, [items])
+  const aiBlocked=Boolean(aiStatus&&(!aiStatus.ready||(aiStatus.limit!==null&&aiStatus.used>=aiStatus.limit)))
+
+  useEffect(()=>{void loadAiStatus()},[restaurant.id])
+  async function loadAiStatus(){
+    const{data}=await supabase.functions.invoke('creative-image',{body:{action:'status',restaurantId:restaurant.id}})
+    if(data?.ok)setAiStatus({ready:Boolean(data.ai_image_ready),enabled:Boolean(data.ai_images_enabled),used:Number(data.ai_images_used||0),limit:data.ai_images_limit===null?null:Number(data.ai_images_limit||0)})
+  }
 
   async function uploadImage(file: File) {
     const optimized = await optimizeImage(file,{maxSide:1800,quality:.88})
@@ -65,6 +73,7 @@ export function MenuManager({ restaurant, userId, items, onChanged, setNotice }:
     else {
       setNotice(`AI fotografija za „${item.name}“ je napravljena i sačuvana u meniju.`)
       await onChanged()
+      await loadAiStatus()
     }
     setAiWorkingId('')
   }
@@ -80,6 +89,7 @@ export function MenuManager({ restaurant, userId, items, onChanged, setNotice }:
     else {
       const assets=(data?.assets||[]) as {id:string;image_url:string}[]
       if (assets.length) {
+        await loadAiStatus()
         setVariantPicker({item,assets})
         setNotice(`Izaberi najbolju AI fotografiju za „${item.name}“.`)
       }
@@ -191,7 +201,7 @@ export function MenuManager({ restaurant, userId, items, onChanged, setNotice }:
         <div className="menu-import-actions"><button type="button" className="secondary" onClick={downloadTemplate}><Download size={16} /> CSV šablon</button><label className="primary csv-upload"><Upload size={16} /> Uvezi CSV<input type="file" accept=".csv,text/csv" onChange={importCsv} /></label></div>
       </div>
 
-      <div className="menu-ai-tip"><Sparkles size={18}/><div><strong>AI Food Photo</strong><span>Za svako jelo bez slike možeš jednim klikom napraviti realističnu fotografiju hrane. Slika se automatski čuva i odmah postaje dostupna u Visual Studiju i kampanjama.</span></div></div>
+      <div className={`menu-ai-tip ${aiBlocked?'ai-disabled':''}`}><Sparkles size={18}/><div><strong>AI Food Photo {aiStatus&&<small>{aiStatus.limit===null?`${aiStatus.used} korišćeno`:`${aiStatus.used}/${aiStatus.limit} ovog meseca`}</small>}</strong><span>{!aiStatus?'Proveravam AI generator…':!aiStatus.enabled?'AI slike su trenutno pauzirane od OWNER-a.':!aiStatus.ready?'AI generator još nije aktiviran. OWNER ga uključuje u Superadmin panelu.':aiStatus.limit!==null&&aiStatus.used>=aiStatus.limit?'Mesečni limit AI fotografija je potrošen.':'Za svako jelo možeš napraviti realističnu AI fotografiju ili 3 varijante i izabrati najbolju.'}</span></div></div>
 
       <div className="menu-layout">
         <form className="panel add-menu-form" onSubmit={addItem}>
@@ -218,8 +228,8 @@ export function MenuManager({ restaurant, userId, items, onChanged, setNotice }:
                 <div className="menu-right">
                   <div className="price">{item.price ? `${item.price} ${item.currency}` : '—'}</div>
                   <div className="row-actions">
-                    <button className={`mini-button ai-photo-button ${item.image_url ? 'has-photo' : ''}`} disabled={aiWorkingId === item.id} onClick={() => generateAiImage(item)} type="button"><WandSparkles size={13}/>{aiWorkingId === item.id ? 'AI radi…' : item.image_url ? 'AI nova' : 'AI slika'}</button>
-                    <button className="mini-button ai-variants-button" disabled={aiWorkingId === item.id} onClick={() => generateAiVariants(item)} type="button"><Sparkles size={13}/> 3 varijante</button>
+                    <button className={`mini-button ai-photo-button ${item.image_url ? 'has-photo' : ''}`} disabled={aiWorkingId === item.id||aiBlocked} onClick={() => generateAiImage(item)} type="button"><WandSparkles size={13}/>{aiWorkingId === item.id ? 'AI radi…' : item.image_url ? 'AI nova' : 'AI slika'}</button>
+                    <button className="mini-button ai-variants-button" disabled={aiWorkingId === item.id||aiBlocked} onClick={() => generateAiVariants(item)} type="button"><Sparkles size={13}/> 3 varijante</button>
                     <button className="mini-button" disabled={workingId === item.id} onClick={() => toggleItem(item)} type="button">{item.is_active ? 'Aktivno' : 'Pauzirano'}</button>
                     <button className="danger-icon" disabled={workingId === item.id} onClick={() => deleteItem(item)} type="button" title="Obriši"><Trash2 size={15} /></button>
                   </div>
