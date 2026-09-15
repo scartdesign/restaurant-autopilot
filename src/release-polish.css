@@ -131,3 +131,13 @@ label{font-size:13px!important;gap:8px!important}
   .mobile-drawer-logout{width:100%;margin-top:12px;min-height:48px;border:1px solid #e2d8d5;background:#fff8f6;color:#8d4134;border-radius:13px;font-size:13px;font-weight:900;display:flex;align-items:center;justify-content:center;gap:8px}
 }
 @media(max-width:420px){.mobile-drawer-grid{grid-template-columns:1fr}.mobile-drawer-grid>button{min-height:70px}}
+
+.account-data-tools{margin-top:18px}
+.account-data-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.account-data-grid article{border:1px solid #dfe4dc;background:#f8faf6;border-radius:15px;padding:16px;display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:start}
+.account-data-grid article>svg{color:#718f45;margin-top:2px}
+.account-data-grid article>div strong,.account-data-grid article>div span{display:block}
+.account-data-grid article>div strong{font-size:14px}.account-data-grid article>div span{font-size:12px;color:#707a72;line-height:1.5;margin-top:4px}
+.account-data-grid article>button{grid-column:2;justify-self:start}
+.account-data-grid .account-delete-card{background:#fff8f6;border-color:#eadbd6}.account-data-grid .account-delete-card>svg{color:#a65b4e}
+@media(max-width:720px){.account-data-grid{grid-template-columns:1fr}.account-data-grid article{grid-template-columns:auto 1fr}.account-data-grid article>button{width:100%;justify-self:stretch}.account-data-grid article>div span{font-size:13px}}
