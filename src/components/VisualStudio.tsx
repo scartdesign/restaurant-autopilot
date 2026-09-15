@@ -46,7 +46,7 @@ export function VisualStudio({ restaurant, posts, menuItems, setNotice }: { rest
   if (!selected) return <><header className="page-header"><div><p className="eyebrow">VISUAL STUDIO</p><h1>Gotovi vizuali</h1><p className="muted">Prvo generiši nedelju sadržaja, pa ovde pravi finalne objave.</p></div></header><div className="empty-state"><ImageIcon size={34}/><h3>Nema objava za dizajn</h3><p>Dodaj jela sa fotografijama i generiši sadržaj.</p></div></>
 
   const patch = (value:Partial<DesignState>) => setDesign(current => ({ ...current, ...value }))
-  const adjustScale = (field:'headlineScale'|'sublineScale'|'ctaScale',delta:number,min:number,max:number) => setDesign(current => ({...current,[field]:clampScale(current[field]+delta,min,max)}))
+  const adjustScale = (field:'headlineScale'|'sublineScale'|'ctaScale'|'priceScale',delta:number,min:number,max:number) => setDesign(current => ({...current,[field]:clampScale(current[field]+delta,min,max)}))
 
   function resetBrand() {
     patch(brandDefaults(restaurant))
@@ -200,6 +200,10 @@ export function VisualStudio({ restaurant, posts, menuItems, setNotice }: { rest
   </>
 }
 
+function RangeControl({label,value,min,max,step,display,onChange}:{label:string;value:number;min:number;max:number;step:number;display:string;onChange:(value:number)=>void}){
+  return <div className="range-control"><strong>{label}</strong><input type="range" min={min} max={max} step={step} value={value} onChange={e=>onChange(Number(e.target.value))}/><span>{display}</span></div>
+}
+
 function FontScaleControl({label,value,min,max,onChange,onMinus,onPlus}:{label:string;value:number;min:number;max:number;onChange:(value:number)=>void;onMinus:()=>void;onPlus:()=>void}){
   const buttonStyle:CSSProperties={width:34,height:34,minWidth:34,border:'1px solid #dfe5dc',background:'#fff',borderRadius:9,display:'grid',placeItems:'center',cursor:'pointer',padding:0}
   return <div style={{display:'grid',gridTemplateColumns:'96px 34px minmax(0,1fr) 46px 34px',alignItems:'center',gap:6,border:'1px solid #e5e9e2',background:'#f8faf6',borderRadius:11,padding:'8px 9px'}}>
@@ -218,10 +222,10 @@ function PremiumGridPreview({design,restaurant,items,location}:{design:DesignSta
     <div className="promo-grid-canvas">
       {cards.length?<>{cards.map((menuItem,index)=><article key={index} className={index===0?'promo-grid-hero':'promo-grid-small'} style={{backgroundImage:menuItem.image_url?`url(${menuItem.image_url})`:undefined}}>
         <div className="promo-grid-shade"/>
-        <div className="promo-grid-card-copy"><span>{index===0?'CHEF PICK':index===1?'LUNCH':index===2?'DINNER':index===3?'FRESH':'SWEET'}</span><strong>{menuItem.name}</strong>{design.priceVisible&&menuItem.price?<b>{menuItem.price} {menuItem.currency||'RSD'}</b>:null}</div>
+        <div className="promo-grid-card-copy"><span>{index===0?'CHEF PICK':index===1?'LUNCH':index===2?'DINNER':index===3?'FRESH':'SWEET'}</span><strong style={{letterSpacing:`${design.headlineTracking}em`,lineHeight:design.headlineLineHeight}}>{menuItem.name}</strong>{design.priceVisible&&menuItem.price?<b style={{fontSize:`${10*design.priceScale}px`,padding:`${5*design.priceScale}px ${8*design.priceScale}px`}}>{menuItem.price} {menuItem.currency||'RSD'}</b>:null}</div>
       </article>)}</>:<div className="promo-grid-empty"><ImageIcon size={28}/><span>Dodaj jela u meni da Premium Grid prikaže više kartica.</span></div>}
     </div>
-    <div className="promo-grid-footer"><div><span>PREMIUM MENU</span><h2 style={{fontSize:`clamp(${18*design.headlineScale}px,${3.2*design.headlineScale}vw,${38*design.headlineScale}px)`}}>{design.headline||'Ukus koji se pamti.'}</h2><p style={{fontSize:`clamp(${7*design.sublineScale}px,${.9*design.sublineScale}vw,${13*design.sublineScale}px)`}}>{shorten(design.subline||'Izaberi favorita i svrati danas.',76)}</p></div><div className="promo-grid-cta" style={{fontSize:`${11*design.ctaScale}px`,padding:`${9*design.ctaScale}px ${13*design.ctaScale}px`}}>{design.cta||'Svrati danas'} <span>→</span></div></div>
+    <div className="promo-grid-footer"><div><span>PREMIUM MENU</span><h2 style={{fontSize:`clamp(${18*design.headlineScale}px,${3.2*design.headlineScale}vw,${38*design.headlineScale}px)`,letterSpacing:`${design.headlineTracking}em`,lineHeight:design.headlineLineHeight}}>{design.headline||'Ukus koji se pamti.'}</h2><p style={{fontSize:`clamp(${7*design.sublineScale}px,${.9*design.sublineScale}vw,${13*design.sublineScale}px)`}}>{shorten(design.subline||'Izaberi favorita i svrati danas.',76)}</p></div><div className="promo-grid-cta" style={{fontSize:`${11*design.ctaScale}px`,padding:`${9*design.ctaScale}px ${13*design.ctaScale}px`}}>{design.cta||'Svrati danas'} <span>→</span></div></div>
   </div>
 }
 
