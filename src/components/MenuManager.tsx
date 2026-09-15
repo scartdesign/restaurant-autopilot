@@ -1,5 +1,5 @@
 import { ChangeEvent, FormEvent, useEffect, useMemo, useState } from 'react'
-import { CheckCircle2, Download, FileSpreadsheet, Image as ImageIcon, Plus, Sparkles, Trash2, Upload, WandSparkles, X } from 'lucide-react'
+import { CheckCircle2, Download, FileSpreadsheet, Image as ImageIcon, Plus, Search, Sparkles, Trash2, Upload, WandSparkles, X } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import type { MenuItem, Restaurant } from '../types'
 import { optimizeImage } from '../lib/image'
@@ -18,6 +18,21 @@ export function MenuManager({ restaurant, userId, items, onChanged, setNotice }:
   const [aiWorkingId, setAiWorkingId] = useState('')
   const [variantPicker,setVariantPicker]=useState<{item:MenuItem;assets:{id:string;image_url:string}[]}|null>(null)
   const [aiStatus,setAiStatus]=useState<{ready:boolean;enabled:boolean;used:number;limit:number|null}|null>(null)
+  const [query,setQuery]=useState('')
+  const [categoryFilter,setCategoryFilter]=useState('all')
+  const [stateFilter,setStateFilter]=useState<'all'|'active'|'paused'|'missing-photo'>('all')
+  const categories=useMemo(()=>[...new Set(items.map(item=>item.category?.trim()).filter(Boolean) as string[])].sort((a,b)=>a.localeCompare(b,'sr')),[items])
+  const filteredItems=useMemo(()=>{
+    const q=query.trim().toLocaleLowerCase('sr')
+    return items.filter(item=>{
+      if(categoryFilter!=='all'&&(item.category||'')!==categoryFilter)return false
+      if(stateFilter==='active'&&!item.is_active)return false
+      if(stateFilter==='paused'&&item.is_active)return false
+      if(stateFilter==='missing-photo'&&item.image_url)return false
+      if(q&&!([item.name,item.description||'',item.category||''].join(' ').toLocaleLowerCase('sr').includes(q)))return false
+      return true
+    })
+  },[items,query,categoryFilter,stateFilter])
   const photoCoverage = useMemo(() => items.length ? Math.round((items.filter((item) => item.image_url).length / items.length) * 100) : 0, [items])
   const aiBlocked=Boolean(aiStatus&&(!aiStatus.ready||(aiStatus.limit!==null&&aiStatus.used>=aiStatus.limit)))
 
@@ -220,8 +235,9 @@ export function MenuManager({ restaurant, userId, items, onChanged, setNotice }:
 
         <section className="panel">
           <div className="panel-heading"><h2>Trenutni meni <span className="pill">{items.length}</span></h2><small>{items.filter((item) => item.is_active).length} aktivno</small></div>
+          {items.length>0&&<div className="menu-filterbar"><label className="menu-search"><Search size={15}/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Pretraži jelo, opis ili kategoriju…"/></label><select value={categoryFilter} onChange={e=>setCategoryFilter(e.target.value)}><option value="all">Sve kategorije</option>{categories.map(category=><option key={category} value={category}>{category}</option>)}</select><select value={stateFilter} onChange={e=>setStateFilter(e.target.value as typeof stateFilter)}><option value="all">Sve stavke</option><option value="active">Aktivne</option><option value="paused">Pauzirane</option><option value="missing-photo">Bez fotografije</option></select><span>{filteredItems.length} prikazano</span></div>}
           <div className="menu-list">
-            {items.length === 0 ? <div className="empty-small">Još nema jela. Možeš ručno da dodaš prvo ili da uvezeš ceo CSV.</div> : items.map((item) => (
+            {items.length === 0 ? <div className="empty-small">Još nema jela. Možeš ručno da dodaš prvo ili da uvezeš ceo CSV.</div> : filteredItems.length===0?<div className="empty-small">Nema stavki koje odgovaraju filteru.</div>:filteredItems.map((item) => (
               <div className={`menu-row ${item.is_active ? '' : 'inactive'}`} key={item.id}>
                 {item.image_url ? <img className="food-thumb" src={item.image_url} alt="" /> : <div className="food-icon"><ImageIcon size={18} /></div>}
                 <div className="menu-copy"><strong>{item.name}</strong><small>{item.category || 'Bez kategorije'}{item.description ? ` · ${item.description}` : ''}</small>{!item.image_url && <span className="no-photo-label">Nema slike · AI može da je napravi</span>}</div>
