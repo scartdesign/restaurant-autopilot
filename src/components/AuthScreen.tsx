@@ -1,5 +1,5 @@
 import { FormEvent, useState } from 'react'
-import { ArrowRight, CalendarDays, Camera, ChefHat, CheckCircle2, Eye, Hash, KeyRound, MapPin, Sparkles } from 'lucide-react'
+import { ArrowRight, CalendarDays, Camera, ChefHat, CheckCircle2, Eye, Hash, KeyRound, MapPin, ShieldCheck, Sparkles } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 
 const LOGIN_FOOD = 'https://images.unsplash.com/photo-1574071318508-1cdbab80d002?auto=format&fit=crop&w=1800&q=88'
@@ -12,9 +12,12 @@ export function AuthScreen({ onDemo, onBack, signupOpen=true }: { onDemo: () => 
   const [working, setWorking] = useState(false)
   const [recoveryWorking,setRecoveryWorking]=useState(false)
 
+  const strength=passwordStrength(password)
+
   async function submit(event: FormEvent) {
     event.preventDefault()
     if(mode==='signup'&&!signupOpen){setMessage('Nove registracije su trenutno zatvorene. Kontaktiraj Restaurant Autopilot prodaju za aktivaciju.');return}
+    if(mode==='signup'&&strength<4){setMessage('Lozinka treba da ima najmanje 10 karaktera, veliko i malo slovo i broj.');return}
     setWorking(true)
     setMessage('')
     const result = mode === 'login'
@@ -46,7 +49,7 @@ export function AuthScreen({ onDemo, onBack, signupOpen=true }: { onDemo: () => 
         <div className="auth-card auth-card-pro auth-card-wow">{onBack&&<button type="button" className="auth-back-home" onClick={onBack}>← Nazad na početnu</button>}
           <div className="auth-logo"><ChefHat size={28} /></div><p className="eyebrow">MARKETING BEZ CIMANJA</p><h1>{mode === 'login' ? <>Dobrodošao<br />nazad.</> : <>Pokreni svoj<br />Autopilot.</>}</h1><p className="muted">{mode === 'login' ? 'Uđi u komandni centar svog restorana.' : signupOpen?'Napravi nalog i pripremi prvi sadržaj za nekoliko minuta.':'Registracije su trenutno zatvorene od strane OWNER-a.'}</p>
           <div className="auth-benefits"><span><Sparkles size={13} /> sadržaj</span><span><MapPin size={13} /> local reach</span><span><Hash size={13} /> discovery</span></div>
-          <form onSubmit={submit}><label>Email<input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required placeholder="restoran@email.com" autoComplete="email" /></label><label>Lozinka<input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={mode==='signup'?8:6} placeholder={mode==='signup'?'Najmanje 8 karaktera':'Tvoja lozinka'} autoComplete={mode==='login'?'current-password':'new-password'} /></label><button className="primary full auth-submit" disabled={working||(mode==='signup'&&!signupOpen)}>{working ? 'Sačekaj…' : mode === 'login' ? 'Prijavi se' : signupOpen?'Napravi nalog':'Registracije zatvorene'} <ArrowRight size={17} /></button></form>
+          <form onSubmit={submit}><label>Email<input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required placeholder="restoran@email.com" autoComplete="email" /></label><label>Lozinka<input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={mode==='signup'?10:6} placeholder={mode==='signup'?'10+ karaktera, slova i broj':'Tvoja lozinka'} autoComplete={mode==='login'?'current-password':'new-password'} /></label>{mode==='signup'&&<div className="password-strength"><div><i className={strength>=1?'on':''}/><i className={strength>=2?'on':''}/><i className={strength>=3?'on':''}/><i className={strength>=4?'on':''}/></div><span><ShieldCheck size={12}/> {strength<2?'Slaba':strength<4?'Dobra':'Jaka'} lozinka</span></div>}<button className="primary full auth-submit" disabled={working||(mode==='signup'&&(!signupOpen||strength<4))}>{working ? 'Sačekaj…' : mode === 'login' ? 'Prijavi se' : signupOpen?'Napravi nalog':'Registracije zatvorene'} <ArrowRight size={17} /></button></form>
           {mode==='login'&&<button className="auth-recovery-link" type="button" onClick={sendRecovery} disabled={recoveryWorking}><KeyRound size={14}/>{recoveryWorking?'Šaljem link…':'Zaboravljena lozinka?'}</button>}
           {message && <p className="form-message">{message}</p>}
           {signupOpen?<button className="text-button" onClick={() => setMode(mode === 'login' ? 'signup' : 'login')}>{mode === 'login' ? 'Nemaš nalog? Registruj restoran' : 'Već imaš nalog? Prijavi se'}</button>:mode==='signup'?<button className="text-button" onClick={()=>setMode('login')}>Vrati se na prijavu</button>:<div className="signup-closed-note">Novi nalozi se trenutno aktiviraju direktno preko prodaje.</div>}
@@ -56,3 +59,5 @@ export function AuthScreen({ onDemo, onBack, signupOpen=true }: { onDemo: () => 
     </div>
   )
 }
+
+function passwordStrength(value:string){let score=0;if(value.length>=10)score++;if(/[a-z]/.test(value)&&/[A-Z]/.test(value))score++;if(/\d/.test(value))score++;if(/[^A-Za-z0-9]/.test(value)||value.length>=14)score++;return score}
