@@ -90,3 +90,25 @@ label{font-size:13px!important;gap:8px!important}
   .owner-control-v3 .admin-table-row small,.owner-control-v3 .admin-table-head{font-size:12px!important}
   .launch-task-copy p,.support-ticket p{font-size:13px!important}
 }
+
+/* Mobile release pass 3 — top bar and new launch/support flows must stay comfortably readable. */
+@media(max-width:900px){
+  .sidebar .location-control select{font-size:12px!important;min-height:38px!important;padding:7px 8px!important}
+  .sidebar .restaurant-chip strong{font-size:14px!important}
+  .sidebar .restaurant-chip small{font-size:11px!important}
+  .sidebar nav button{font-size:12.5px!important;line-height:1.05!important}
+  .launch-hero,.support-hero{padding:26px!important}
+  .launch-hero h1,.support-hero h1{font-size:32px!important}
+  .launch-hero p,.support-hero p{font-size:14px!important}
+  .launch-task-copy strong,.support-ticket-head strong,.owner-support-row strong{font-size:16px!important}
+  .launch-task-copy p,.support-ticket p,.notification-card p{font-size:14px!important}
+  .notification-card strong{font-size:17px!important}
+  .notification-card span,.notification-card small{font-size:12px!important}
+  .support-form label,.support-form input,.support-form select,.support-form textarea{font-size:14px!important}
+}
+@media(max-width:520px){
+  .sidebar .location-control select{font-size:12px!important;max-width:31vw!important}
+  .sidebar nav button{font-size:12px!important;min-width:100px!important;flex-basis:100px!important}
+  .launch-score,.support-stat{min-height:135px!important}
+  .launch-score strong,.support-stat strong{font-size:48px!important}
+}
