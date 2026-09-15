@@ -31,6 +31,11 @@ export function VisualStudio({ restaurant, posts, menuItems, setNotice }: { rest
   useEffect(() => { if (selected) setDesign(designFromPost(selected, menuItems, restaurant)) }, [selectedId, restaurant.id])
 
   const item = selected ? menuItems.find(i => i.id === selected.menu_item_id) : undefined
+  const promoItems = useMemo(() => {
+    const first = selected?.menu_item_id ? menuItems.find(i => i.id === selected.menu_item_id && i.is_active) : undefined
+    const rest = menuItems.filter(i => i.is_active && i.id !== first?.id)
+    return [first,...rest].filter(Boolean).slice(0,5) as MenuItem[]
+  }, [selected?.menu_item_id, menuItems])
   const price = item?.price ? `${item.price} ${item.currency || 'RSD'}` : ''
   const location = [restaurant.neighborhood, restaurant.city].filter(Boolean).join(' · ') || restaurant.cuisine_type || 'Restaurant'
   const lowContrast = contrastRatio(design.primaryColor, design.accentColor) < 2.2
@@ -47,18 +52,20 @@ export function VisualStudio({ restaurant, posts, menuItems, setNotice }: { rest
 
   function autoDesign() {
     let nextTemplate: Template = 'editorial'
-    if (selected.post_type === 'promotion') nextTemplate = 'bold'
-    else if (selected.post_type === 'story') nextTemplate = 'poster'
-    else if (selected.generation_meta?.pillar === 'local_discovery') nextTemplate = 'split'
-    else if (restaurant.brand_style === 'premium') nextTemplate = 'luxe'
+    if (selected.post_type === 'promotion') nextTemplate = 'bold-offer'
+    else if (selected.post_type === 'story') nextTemplate = 'lunch-time'
+    else if (selected.generation_meta?.pillar === 'local_discovery') nextTemplate = 'hero-menu'
+    else if (selected.generation_meta?.pillar === 'kitchen_story') nextTemplate = 'family'
+    else if (selected.generation_meta?.pillar === 'social_prompt') nextTemplate = 'promo-badge'
+    else if (restaurant.brand_style === 'premium') nextTemplate = promoItems.length >= 3 ? 'premium-grid' : 'luxe'
     else if (!design.imageUrl) nextTemplate = 'minimal'
     patch({
       template: nextTemplate,
-      overlay: nextTemplate === 'minimal' ? .44 : nextTemplate === 'luxe' ? .58 : .7,
+      overlay: nextTemplate === 'minimal' || nextTemplate === 'hero-menu' ? .44 : nextTemplate === 'luxe' || nextTemplate === 'family' ? .58 : .7,
       photoPosition: 'center',
-      logoPosition: nextTemplate === 'poster' ? 'top-right' : (restaurant.default_logo_position || 'top-right'),
-      copyPosition: nextTemplate === 'poster' ? 'center' : nextTemplate === 'split' ? 'center' : 'bottom',
-      fontPair: nextTemplate === 'luxe' || nextTemplate === 'editorial' ? 'editorial' : nextTemplate === 'bold' || nextTemplate === 'poster' ? 'impact' : 'modern',
+      logoPosition: nextTemplate === 'poster' || nextTemplate === 'promo-badge' ? 'top-right' : (restaurant.default_logo_position || 'top-right'),
+      copyPosition: nextTemplate === 'poster' || nextTemplate === 'promo-badge' ? 'center' : nextTemplate === 'split' || nextTemplate === 'hero-menu' ? 'center' : 'bottom',
+      fontPair: nextTemplate === 'luxe' || nextTemplate === 'editorial' || nextTemplate === 'family' ? 'editorial' : nextTemplate === 'bold' || nextTemplate === 'poster' || nextTemplate === 'bold-offer' || nextTemplate === 'promo-badge' ? 'impact' : 'modern',
       priceVisible: Boolean(price),
       headline: selected.title || design.headline,
       subline: shorten(selected.caption || design.subline, selected.post_type === 'story' ? 96 : 118),
