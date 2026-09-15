@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase'
 import type { LogoBadge, LogoPosition, LogoSize, Restaurant } from '../types'
 import { AccountDataTools } from './AccountDataTools'
 import { AccountSecurity } from './AccountSecurity'
+import { OpeningHoursEditor, normalizeOpeningHours } from './OpeningHoursEditor'
 
 export function SettingsPanel({ restaurant, onSaved, setNotice }: {
   restaurant: Restaurant
@@ -36,6 +37,7 @@ export function SettingsPanel({ restaurant, onSaved, setNotice }: {
     default_logo_size: restaurant.default_logo_size || 'm' as LogoSize,
     default_logo_badge: restaurant.default_logo_badge || 'white' as LogoBadge,
     default_overlay_strength: Number(restaurant.default_overlay_strength ?? .68),
+    opening_hours: normalizeOpeningHours(restaurant.opening_hours),
   })
   const [working, setWorking] = useState(false)
   const [logoFile, setLogoFile] = useState<File | null>(null)
@@ -113,6 +115,7 @@ export function SettingsPanel({ restaurant, onSaved, setNotice }: {
         default_logo_size: form.default_logo_size,
         default_logo_badge: form.default_logo_badge,
         default_overlay_strength: form.default_overlay_strength,
+        opening_hours: form.opening_hours,
       }
       if (uploadedLogo) payload.logo_url = uploadedLogo
       const { error } = await supabase.from('restaurants').update(payload).eq('id', restaurant.id)
@@ -158,6 +161,7 @@ export function SettingsPanel({ restaurant, onSaved, setNotice }: {
             <label>Ciljna publika<input value={form.target_audience} onChange={(e) => setForm({ ...form, target_audience: e.target.value })} placeholder="Parovi 25–45, porodice, turisti..." /></label>
           </div>
           <div className="smart-note"><Hash size={17} /><div><strong>Smart Discovery v2</strong><span>Autopilot kombinuje brend + grad/kraj + tip kuhinje + konkretno jelo. Instagram dobija fokusiran set relevantnih tagova, Facebook samo 2–3 najkorisnija.</span></div></div>
+          <OpeningHoursEditor value={form.opening_hours} onChange={(opening_hours)=>setForm({...form,opening_hours})}/>
         </section>
 
         <section className="settings-section panel">
