@@ -1,5 +1,5 @@
 import { FormEvent, useMemo, useState } from 'react'
-import { ArrowUpRight, CalendarDays, CheckCircle2, ChefHat, Clock3, Copy, Facebook, Hash, Instagram, MapPin, Pencil, Save, Search, Sparkles, TrendingUp, UtensilsCrossed, WandSparkles, X, Zap } from 'lucide-react'
+import { ArrowUpRight, CalendarDays, CheckCircle2, ChefHat, Clock3, Copy, CopyPlus, Facebook, Hash, Instagram, MapPin, Pencil, Save, Search, Sparkles, Trash2, TrendingUp, UtensilsCrossed, WandSparkles, X, Zap } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import type { MenuItem, Post, Restaurant } from '../types'
 
@@ -96,6 +96,54 @@ export function Dashboard({ restaurant, menuItems, posts, onChanged, setNotice }
     if (error) setNotice(error.message)
     else {
       if (status === 'approved') setNotice('Objava je prošla proveru kvaliteta i odobrena je.')
+      await onChanged()
+    }
+    setWorkingId('')
+  }
+
+  async function duplicatePost(post: Post) {
+    setWorkingId(post.id)
+    const scheduled = post.scheduled_for ? new Date(new Date(post.scheduled_for).getTime() + 24 * 60 * 60 * 1000).toISOString() : null
+    const { id: _id, ...rest } = post
+    const payload = {
+      restaurant_id: restaurant.id,
+      content_plan_id: null,
+      menu_item_id: post.menu_item_id,
+      promotion_id: post.promotion_id,
+      post_type: post.post_type,
+      scheduled_for: scheduled,
+      title: post.title ? post.title + ' · kopija' : 'Kopija objave',
+      caption: post.caption,
+      cta: post.cta,
+      hashtags: post.hashtags || [],
+      visual_brief: post.visual_brief,
+      status: 'draft' as const,
+      generation_meta: { ...(post.generation_meta || {}), duplicated_from: post.id, duplicated_at: new Date().toISOString() },
+      platform_content: post.platform_content || {},
+      discovery_score: post.discovery_score || 0,
+      seo_keywords: post.seo_keywords || [],
+    }
+    void rest
+    const { error } = await supabase.from('posts').insert(payload)
+    if (error) setNotice(error.message)
+    else {
+      setNotice('Objava je duplirana kao draft. Termin je pomeren za jedan dan.')
+      await onChanged()
+    }
+    setWorkingId('')
+  }
+
+  async function deletePost(post: Post) {
+    if (post.status === 'approved' || post.status === 'published') {
+      setNotice('Odobrenu ili objavljenu objavu prvo vrati u draft ako želiš da je obrišeš.')
+      return
+    }
+    if (!window.confirm(`Obriši „${post.title || 'ovu objavu'}“?`)) return
+    setWorkingId(post.id)
+    const { error } = await supabase.from('posts').delete().eq('id', post.id).eq('restaurant_id', restaurant.id)
+    if (error) setNotice(error.message)
+    else {
+      setNotice('Draft objava je obrisana.')
       await onChanged()
     }
     setWorkingId('')
@@ -202,7 +250,7 @@ export function Dashboard({ restaurant, menuItems, posts, onChanged, setNotice }
           <div className="empty-state wow-empty"><Sparkles size={30} /><h3>Još nema sadržaja</h3><p>Dodaj kvalitetne fotografije i jela u meni, zatim pokreni nedelju.</p><button className="wow-primary" onClick={generateWeek}><Sparkles size={17} /> Generiši sada</button></div>
         ) : (
           <div className="post-grid post-grid-pro wow-post-grid">
-            {posts.map((post) => <PostCard key={post.id} post={post} restaurant={restaurant} menuItems={menuItems} working={workingId === post.id} onEdit={() => setEditing(post)} onAiCopy={() => aiCopy(post)} onOptimize={() => optimizeDiscovery(post)} onStatus={(status) => changeStatus(post, status)} setNotice={setNotice} />)}
+            {posts.map((post) => <PostCard key={post.id} post={post} restaurant={restaurant} menuItems={menuItems} working={workingId === post.id} onEdit={() => setEditing(post)} onAiCopy={() => aiCopy(post)} onOptimize={() => optimizeDiscovery(post)} onDuplicate={() => duplicatePost(post)} onDelete={() => deletePost(post)} onStatus={(status) => changeStatus(post, status)} setNotice={setNotice} />)}
           </div>
         )}
       </section>
@@ -224,7 +272,7 @@ function resolvePostImage(post: Post, menuItems: MenuItem[]) {
   return menuItems.find((item) => item.id === post.menu_item_id)?.image_url || null
 }
 
-function PostCard({ post, restaurant, menuItems, working, onEdit, onAiCopy, onOptimize, onStatus, setNotice }: {
+function PostCard({ post, restaurant, menuItems, working, onEdit, onAiCopy, onOptimize, onDuplicate, onDelete, onStatus, setNotice }: {
   post: Post
   restaurant: Restaurant
   menuItems: MenuItem[]
@@ -232,6 +280,8 @@ function PostCard({ post, restaurant, menuItems, working, onEdit, onAiCopy, onOp
   onEdit: () => void
   onAiCopy: () => void
   onOptimize: () => void
+  onDuplicate: () => void
+  onDelete: () => void
   onStatus: (status: Post['status']) => void
   setNotice: (value: string) => void
 }) {
@@ -266,7 +316,7 @@ function PostCard({ post, restaurant, menuItems, working, onEdit, onAiCopy, onOp
         <div className="post-title-line"><h3>{post.title}</h3><span className="visual-template-chip">{template}</span></div>
         <p className="caption-preview">{post.caption}</p>
         <div className="platform-discovery"><div className="platform-row"><div className="platform-label ig"><Instagram size={14} /> Instagram</div><div className="tag-cloud">{instagramTags.slice(0, 8).map((tag) => <span key={tag}>{tag}</span>)}</div></div><div className="platform-row"><div className="platform-label fb"><Facebook size={14} /> Facebook</div><div className="tag-cloud fb-tags">{facebookTags.slice(0, 3).map((tag) => <span key={tag}>{tag}</span>)}</div></div>{post.seo_keywords?.length > 0 && <div className="keyword-line"><Search size={13} /><span>{post.seo_keywords.slice(0, 4).join(' · ')}</span></div>}</div>
-        <div className="post-actions post-actions-pro"><button className="icon-button" title="Kopiraj Instagram objavu" onClick={copyInstagram}><Copy size={15} /></button><button className="icon-button" title="Izmeni objavu i termin" onClick={onEdit}><Pencil size={15} /></button><button className="icon-button ai-copy-button" title="AI napiši novu verziju teksta" disabled={working} onClick={onAiCopy}><WandSparkles size={16} /></button><button className="icon-button discovery-button" title="Optimizuj discovery" disabled={working} onClick={onOptimize}><Hash size={15} /></button>{post.status !== 'approved' && post.status !== 'published'? <button className="secondary action-grow" disabled={working} onClick={() => onStatus('approved')}><CheckCircle2 size={16} /> Proveri + odobri</button>: <button className="approved-button action-grow" onClick={() => onStatus('draft')}><CheckCircle2 size={16} /> Spremno</button>}</div>
+        <div className="post-actions post-actions-pro"><button className="icon-button" title="Kopiraj Instagram objavu" onClick={copyInstagram}><Copy size={15} /></button><button className="icon-button" title="Izmeni objavu i termin" onClick={onEdit}><Pencil size={15} /></button><button className="icon-button" title="Dupliraj kao draft" disabled={working} onClick={onDuplicate}><CopyPlus size={15}/></button><button className="icon-button ai-copy-button" title="AI napiši novu verziju teksta" disabled={working} onClick={onAiCopy}><WandSparkles size={16} /></button><button className="icon-button discovery-button" title="Optimizuj discovery" disabled={working} onClick={onOptimize}><Hash size={15} /></button>{post.status !== 'approved' && post.status !== 'published'&&<button className="icon-button danger-icon" title="Obriši draft" disabled={working} onClick={onDelete}><Trash2 size={15}/></button>}{post.status !== 'approved' && post.status !== 'published'? <button className="secondary action-grow" disabled={working} onClick={() => onStatus('approved')}><CheckCircle2 size={16} /> Proveri + odobri</button>: <button className="approved-button action-grow" onClick={() => onStatus('draft')}><CheckCircle2 size={16} /> Spremno</button>}</div>
       </div>
     </article>
   )
