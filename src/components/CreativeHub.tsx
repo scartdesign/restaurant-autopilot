@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { CalendarClock, ChefHat, ImagePlus, KeyRound, LayoutGrid, Megaphone, RefreshCw, ShieldCheck, Sparkles, Target, WandSparkles, Zap } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import type { Entitlement, MenuItem, Restaurant } from '../types'
+import { CreativeAssetLibrary } from './CreativeAssetLibrary'
 
 type Suggestion = {
   id:string
@@ -228,6 +229,7 @@ export function CreativeHub({ restaurant, menuItems, entitlement, onChanged, set
         </aside>
       </div>
     </section>
+    <CreativeAssetLibrary restaurant={restaurant} menuItems={menuItems} onChanged={onChanged} setNotice={setNotice}/>
   </div>
 }
 
