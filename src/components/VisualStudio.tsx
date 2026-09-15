@@ -1,5 +1,5 @@
 import { type CSSProperties, useEffect, useMemo, useState } from 'react'
-import { AlignLeft, CheckCircle2, Copy, Download, Eye, EyeOff, Image as ImageIcon, LayoutTemplate, Minus, Move, Palette, Plus, RotateCcw, Save, Sparkles, WandSparkles } from 'lucide-react'
+import { AlignLeft, CheckCircle2, Copy, Download, Eye, EyeOff, Image as ImageIcon, LayoutTemplate, Minus, Move, Palette, Plus, Redo2, RotateCcw, Save, Sparkles, Undo2, WandSparkles } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import type { LogoBadge, LogoPosition, LogoSize, MenuItem, Post, Restaurant } from '../types'
 
@@ -29,8 +29,10 @@ export function VisualStudio({ restaurant, posts, menuItems, setNotice }: { rest
   const [working, setWorking] = useState(false)
   const [saving, setSaving] = useState(false)
   const [savingDefaults, setSavingDefaults] = useState(false)
+  const [undoStack,setUndoStack]=useState<DesignState[]>([])
+  const [redoStack,setRedoStack]=useState<DesignState[]>([])
 
-  useEffect(() => { if (selected) setDesign(designFromPost(selected, menuItems, restaurant)) }, [selectedId, restaurant.id])
+  useEffect(() => { if (selected) { setDesign(designFromPost(selected, menuItems, restaurant)); setUndoStack([]); setRedoStack([]) } }, [selectedId, restaurant.id])
 
   const item = selected ? menuItems.find(i => i.id === selected.menu_item_id) : undefined
   const promoItems = useMemo(() => {
@@ -45,7 +47,9 @@ export function VisualStudio({ restaurant, posts, menuItems, setNotice }: { rest
 
   if (!selected) return <><header className="page-header"><div><p className="eyebrow">VISUAL STUDIO</p><h1>Gotovi vizuali</h1><p className="muted">Prvo generiši nedelju sadržaja, pa ovde pravi finalne objave.</p></div></header><div className="empty-state"><ImageIcon size={34}/><h3>Nema objava za dizajn</h3><p>Dodaj jela sa fotografijama i generiši sadržaj.</p></div></>
 
-  const patch = (value:Partial<DesignState>) => setDesign(current => ({ ...current, ...value }))
+  const patch = (value:Partial<DesignState>) => setDesign(current => { setUndoStack(stack=>[...stack.slice(-29),current]); setRedoStack([]); return { ...current, ...value } })
+  function undoDesign(){setUndoStack(stack=>{if(!stack.length)return stack;const previous=stack[stack.length-1];setRedoStack(redo=>[...redo.slice(-29),design]);setDesign(previous);return stack.slice(0,-1)})}
+  function redoDesign(){setRedoStack(stack=>{if(!stack.length)return stack;const next=stack[stack.length-1];setUndoStack(undo=>[...undo.slice(-29),design]);setDesign(next);return stack.slice(0,-1)})}
   const adjustScale = (field:'headlineScale'|'sublineScale'|'ctaScale'|'priceScale',delta:number,min:number,max:number) => setDesign(current => ({...current,[field]:clampScale(current[field]+delta,min,max)}))
 
   function resetBrand() {
@@ -148,7 +152,7 @@ export function VisualStudio({ restaurant, posts, menuItems, setNotice }: { rest
     <header className="page-header studio-header studio-header-pro"><div><p className="eyebrow">VISUAL STUDIO</p><h1>Objava mora da izgleda kao da ju je radio dizajner.</h1><p className="muted">Realna fotografija, logo, brend boje, hijerarhija i CTA — sve menjaš uživo.</p></div><div className="studio-header-actions"><button className="secondary" onClick={saveDesign} disabled={saving}><Save size={17}/>{saving?'Čuvam…':'Sačuvaj objavu'}</button><button className="primary" onClick={downloadPng} disabled={working}><Download size={18}/>{working?'Renderujem…':`Preuzmi ${design.format==='story'?'1080×1920':'1080×1350'}`}</button></div></header>
     <div className="studio-shell studio-shell-pro">
       <aside className="studio-controls panel studio-controls-pro">
-        <div className="studio-score-row"><div className="studio-control-head"><LayoutTemplate size={19}/><div><strong>Finalni dizajn</strong><span>Sve izmene se vide odmah.</span></div></div><div className={`design-score ${designScore>=85?'great':designScore>=70?'good':''}`}><strong>{designScore}</strong><span>/100</span></div></div>
+        <div className="studio-score-row"><div className="studio-control-head"><LayoutTemplate size={19}/><div><strong>Finalni dizajn</strong><span>Sve izmene se vide odmah.</span></div></div><div className={`design-score ${designScore>=85?'great':designScore>=70?'good':''}`}><strong>{designScore}</strong><span>/100</span></div></div><div className="studio-history"><button type="button" className="secondary" disabled={!undoStack.length} onClick={undoDesign}><Undo2 size={14}/> Poništi</button><button type="button" className="secondary" disabled={!redoStack.length} onClick={redoDesign}><Redo2 size={14}/> Ponovi</button><span>{undoStack.length?`${undoStack.length} koraka`:'Početno stanje'}</span></div>
         <label>Objava<select value={selected.id} onChange={e=>setSelectedId(e.target.value)}>{usablePosts.map(p=><option key={p.id} value={p.id}>{p.title||'Objava'} · {p.post_type}</option>)}</select></label>
         <button type="button" className="magic-design-button" onClick={autoDesign}><WandSparkles size={18}/><div><strong>Auto Design</strong><span>Layout + kadar + logo pozicija</span></div></button>
         <div className="studio-fieldset"><span>Format</span><div className="segmented"><button type="button" className={design.format==='feed'?'active':''} onClick={()=>patch({format:'feed'})}>Feed 4:5</button><button type="button" className={design.format==='story'?'active':''} onClick={()=>patch({format:'story'})}>Story 9:16</button></div></div>
