@@ -106,6 +106,11 @@ function App() {
       localStorage.setItem(ACTIVE_RESTAURANT_KEY, selected.id)
       await Promise.all([loadMenu(selected.id), loadPosts(selected.id)])
     } else { setMenuItems([]); setPosts([]) }
+    const onboardingWarning = sessionStorage.getItem('restaurant-autopilot-onboarding-warning')
+    if (onboardingWarning) {
+      sessionStorage.removeItem('restaurant-autopilot-onboarding-warning')
+      setNotice(onboardingWarning)
+    }
   }
 
   async function selectRestaurant(id: string) {
