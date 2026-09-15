@@ -74,6 +74,12 @@ export type VisualDesignMeta = {
   copy_position?: 'top' | 'center' | 'bottom'
   font_pair?: 'modern' | 'editorial' | 'impact'
   price_visible?: boolean
+  headline_scale?: number
+  subline_scale?: number
+  cta_scale?: number
+  price_scale?: number
+  headline_tracking?: number
+  headline_line_height?: number
   saved_at?: string
 }
 
