@@ -23,6 +23,7 @@ import { SupportCenter } from './components/SupportCenter'
 import { NotificationsCenter } from './components/NotificationsCenter'
 import { LandingScreen } from './components/LandingScreen'
 import { LegalScreen } from './components/LegalScreen'
+import { NetworkStatus } from './components/NetworkStatus'
 
 type Tab = 'launch' | 'dashboard' | 'creative' | 'studio' | 'brand' | 'publish' | 'menu' | 'promotions' | 'settings' | 'support' | 'notifications' | 'billing' | 'admin'
 type AppControlsLite = { maintenance_mode:boolean; maintenance_message:string|null; sales_open:boolean; signup_open:boolean; announcement_enabled:boolean; announcement_text:string|null; announcement_tone:'info'|'success'|'warning'; app_version:string }
@@ -188,7 +189,7 @@ function App() {
     return <Onboarding userId={session.user.id} onCreated={async () => { await loadAccountState(); await loadRestaurants(session.user.id); setActiveTab('launch') }} />
   }
 
-  return <div className="app-shell">
+  return <div className="app-shell"><NetworkStatus/>
     <aside className="sidebar sidebar-pro"><div>
       <div className="brand-mark"><div className="brand-icon"><ChefHat size={21}/></div><span>Restaurant<br/><strong>Autopilot</strong></span></div>
       <div className="restaurant-chip restaurant-switcher">{restaurant.logo_url?<img className="sidebar-logo" src={restaurant.logo_url} alt=""/>:<div className="avatar" style={{background:restaurant.secondary_color||undefined}}>{restaurant.name.slice(0,1).toUpperCase()}</div>}<div className="restaurant-switch-copy"><strong>{restaurant.name}</strong><small>{restaurant.neighborhood||restaurant.city||restaurant.cuisine_type||'Restoran'}</small></div></div>
