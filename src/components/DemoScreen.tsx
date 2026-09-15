@@ -76,7 +76,7 @@ export function DemoScreen({ onExit }: { onExit: () => void }) {
       </aside>
 
       <main className="main-area">
-        <div className="demo-banner"><Sparkles size={14} /> LIVE MVP DEMO · Brand Kit, Visual Studio i Publish Center su interaktivni.</div>
+        <div className="demo-banner"><Sparkles size={14} /> LIVE PRODUCT DEMO · Brand Kit, Visual Studio i Publish Center su interaktivni.</div>
         {tab === 'content' && <DemoContent approved={approved} setApproved={setApproved} notify={notify} />}
         {tab === 'studio' && <VisualStudio restaurant={demoRestaurant} posts={demoVisualPosts} menuItems={demoMenu} setNotice={notify} />}
         {tab === 'brand' && <BrandKit restaurant={demoRestaurant} menuItems={demoMenu} onSaved={async () => {}} setNotice={notify} demo />}
