@@ -50,7 +50,7 @@ export function AuthScreen({ onDemo, onBack, signupOpen=true }: { onDemo: () => 
           {mode==='login'&&<button className="auth-recovery-link" type="button" onClick={sendRecovery} disabled={recoveryWorking}><KeyRound size={14}/>{recoveryWorking?'Šaljem link…':'Zaboravljena lozinka?'}</button>}
           {message && <p className="form-message">{message}</p>}
           {signupOpen?<button className="text-button" onClick={() => setMode(mode === 'login' ? 'signup' : 'login')}>{mode === 'login' ? 'Nemaš nalog? Registruj restoran' : 'Već imaš nalog? Prijavi se'}</button>:mode==='signup'?<button className="text-button" onClick={()=>setMode('login')}>Vrati se na prijavu</button>:<div className="signup-closed-note">Novi nalozi se trenutno aktiviraju direktno preko prodaje.</div>}
-          <div className="auth-divider"><span>ili</span></div><button className="secondary full demo-login" type="button" onClick={onDemo}><Eye size={17} /> Pogledaj interaktivni demo</button>
+          {mode==='signup'&&<p className="auth-legal-consent">Registracijom prihvataš <a href="?legal=terms">Uslove korišćenja</a> i <a href="?legal=privacy">Politiku privatnosti</a>. AI funkcije su opisane u <a href="?legal=ai">AI transparentnosti</a>.</p>}<div className="auth-divider"><span>ili</span></div><button className="secondary full demo-login" type="button" onClick={onDemo}><Eye size={17} /> Pogledaj interaktivni demo</button>
         </div>
       </section>
     </div>
