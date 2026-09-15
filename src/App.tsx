@@ -186,7 +186,6 @@ function App() {
         <button className={activeTab==='settings'?'nav-active':''} onClick={()=>void openTab('settings')}><Settings size={18}/> Podešavanja</button>
         <button className={activeTab==='support'?'nav-active support-nav':'support-nav'} onClick={()=>void openTab('support')}><LifeBuoy size={18}/> Podrška</button>
         <button className={activeTab==='notifications'?'nav-active':''} onClick={()=>void openTab('notifications')}><Bell size={18}/> Obaveštenja</button>
-        <button className={activeTab==='support'?'nav-active support-nav':''} onClick={()=>void openTab('support')}><LifeBuoy size={18}/> Podrška</button>
         {isSuperadmin&&<button className={activeTab==='admin'?'nav-active admin-nav':'admin-nav'} onClick={()=>void openTab('admin')}><ShieldCheck size={18}/> Superadmin <span className="nav-beta">OWNER</span></button>}
       </nav>
     </div><button className="logout" onClick={signOut}><LogOut size={18}/> Odjavi se</button></aside>
