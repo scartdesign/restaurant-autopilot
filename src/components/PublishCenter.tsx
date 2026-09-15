@@ -205,7 +205,7 @@ function zonedInputToIso(value: string, timeZone: string) {
 function defaultDraft(post: Post, timeZone: string): ScheduleDraft {
   if (post.scheduled_for) return dateParts(post.scheduled_for,timeZone)
   const tomorrow = new Date(Date.now()+86400000)
-  const p=zonedParts(tomorrow,timeZone)
+  const p=zonedParts(tomorrow.toISOString(),timeZone)
   return { date: `${p.year}-${p.month}-${p.day}`, time: recommendedTime(post) }
 }
 function dateParts(iso: string, timeZone: string): ScheduleDraft {
