@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabase'
 import type { LogoBadge, LogoPosition, LogoSize, MenuItem, Post, Restaurant } from '../types'
 
 type Format = 'feed' | 'story'
-type Template = 'editorial' | 'bold' | 'minimal' | 'split' | 'poster' | 'luxe'
+type Template = 'editorial' | 'bold' | 'minimal' | 'split' | 'poster' | 'luxe' | 'premium-grid' | 'hero-menu' | 'bold-offer' | 'lunch-time' | 'family' | 'promo-badge'
 type PhotoPosition = 'left' | 'center' | 'right'
 type CopyPosition = 'top' | 'center' | 'bottom'
 type FontPair = 'modern' | 'editorial' | 'impact'
@@ -16,7 +16,7 @@ type DesignState = {
   copyPosition: CopyPosition; fontPair: FontPair; priceVisible: boolean
 }
 
-const templateNames: Record<Template, string> = { editorial:'Editorial', bold:'Bold', minimal:'Minimal', split:'Split', poster:'Poster', luxe:'Luxe' }
+const templateNames: Record<Template, string> = { editorial:'Editorial', bold:'Bold', minimal:'Minimal', split:'Split', poster:'Poster', luxe:'Luxe', 'premium-grid':'Premium Grid', 'hero-menu':'Hero Menu', 'bold-offer':'Bold Offer', 'lunch-time':'Lunch Time', family:'Family', 'promo-badge':'Promo Badge' }
 
 export function VisualStudio({ restaurant, posts, menuItems, setNotice }: { restaurant:Restaurant; posts:Post[]; menuItems:MenuItem[]; setNotice:(value:string)=>void }) {
   const usablePosts = useMemo(() => posts.filter(p => p.status !== 'rejected'), [posts])
@@ -171,7 +171,7 @@ function designFromPost(post:Post|undefined, menu:MenuItem[], r:Restaurant):Desi
   const saved=post.generation_meta?.visual_design||{}, item=menu.find(i=>i.id===post.menu_item_id), metaImage=typeof post.generation_meta?.image_url==='string'?post.generation_meta.image_url:null, fallback=item?.image_url||menu.find(i=>i.is_active&&i.image_url)?.image_url||null
   return {template:isTemplate(saved.template)?saved.template:post.post_type==='promotion'?'bold':r.brand_style==='premium'?'luxe':'editorial',headline:typeof saved.headline==='string'?saved.headline:post.title||'',subline:typeof saved.subline==='string'?saved.subline:shorten(post.caption||'',118),cta:typeof saved.cta==='string'?saved.cta:post.cta||'Svrati danas',format:saved.format==='story'||saved.format==='feed'?saved.format:post.post_type==='story'?'story':'feed',imageUrl:typeof saved.image_url==='string'?saved.image_url:metaImage||fallback,photoPosition:saved.photo_position==='left'||saved.photo_position==='right'?saved.photo_position:'center',overlay:typeof saved.overlay==='number'?saved.overlay:brand.overlay,primaryColor:typeof saved.primary_color==='string'?saved.primary_color:brand.primaryColor,accentColor:typeof saved.accent_color==='string'?saved.accent_color:brand.accentColor,logoVisible:typeof saved.logo_visible==='boolean'?saved.logo_visible:brand.logoVisible,logoPosition:isLogoPosition(saved.logo_position)?saved.logo_position:brand.logoPosition,logoSize:isLogoSize(saved.logo_size)?saved.logo_size:brand.logoSize,logoBadge:isLogoBadge(saved.logo_badge)?saved.logo_badge:brand.logoBadge,copyPosition:isCopyPosition((saved as any).copy_position)?(saved as any).copy_position:'bottom',fontPair:isFontPair((saved as any).font_pair)?(saved as any).font_pair:(isTemplate(saved.template)&&(saved.template==='luxe'||saved.template==='editorial')?'editorial':isTemplate(saved.template)&&(saved.template==='bold'||saved.template==='poster')?'impact':'modern'),priceVisible:typeof (saved as any).price_visible==='boolean'?(saved as any).price_visible:true}
 }
-function isTemplate(v:unknown):v is Template{return typeof v==='string'&&['editorial','bold','minimal','split','poster','luxe'].includes(v)}
+function isTemplate(v:unknown):v is Template{return typeof v==='string'&&['editorial','bold','minimal','split','poster','luxe','premium-grid','hero-menu','bold-offer','lunch-time','family','promo-badge'].includes(v)}
 function isLogoPosition(v:unknown):v is LogoPosition{return typeof v==='string'&&['top-left','top-right','top-center','bottom-left','bottom-right'].includes(v)}
 function isLogoSize(v:unknown):v is LogoSize{return v==='s'||v==='m'||v==='l'}
 function isLogoBadge(v:unknown):v is LogoBadge{return typeof v==='string'&&['none','white','dark','blur'].includes(v)}
