@@ -32,6 +32,7 @@ import './commerce-release.css'
 import './email-admin.css'
 import './launch-support.css'
 import './landing.css'
+import './legal.css'
 
 function PreviewShell({kind}:{kind:'creative'|'owner'}) {
   const [message, setMessage] = React.useState('')
