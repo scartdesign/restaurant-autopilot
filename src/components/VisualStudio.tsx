@@ -197,7 +197,7 @@ export function VisualStudio({ restaurant, posts, menuItems, setNotice }: { rest
   }
 
   const headlinePreviewStyle:CSSProperties={fontSize:`clamp(${34*design.headlineScale}px,${5.8*design.headlineScale}vw,${84*design.headlineScale}px)`,letterSpacing:`${design.headlineTracking}em`,lineHeight:design.headlineLineHeight}
-  const sublinePreviewStyle:CSSProperties={fontSize:`clamp(${11*design.sublineScale}px,${1.55*design.sublineScale}vw,${21*design.sublineScale}px)`}
+  const sublinePreviewStyle:CSSProperties={fontSize:`clamp(${11*design.sublineScale}px,${1.55*design.sublineScale}vw,${21*design.sublineScale}px)`,marginLeft:design.textAlign==='left'?undefined:'auto',marginRight:design.textAlign==='right'?undefined:'auto'}
   const ctaPreviewStyle:CSSProperties={fontSize:`${12*design.ctaScale}px`,padding:`${11*design.ctaScale}px ${16*design.ctaScale}px`}
   const pricePreviewStyle:CSSProperties={fontSize:`${11*design.priceScale}px`,padding:`${7*design.priceScale}px ${11*design.priceScale}px`}
   const copyPreviewStyle:CSSProperties={textAlign:design.textAlign,marginLeft:design.textAlign==='left'?undefined:'auto',marginRight:design.textAlign==='right'?undefined:'auto'}
