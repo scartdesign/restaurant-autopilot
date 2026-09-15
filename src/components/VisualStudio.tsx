@@ -113,7 +113,12 @@ export function VisualStudio({ restaurant, posts, menuItems, setNotice }: { rest
       const width = 1080, height = design.format === 'story' ? 1920 : 1350
       const backgroundData = design.imageUrl ? await urlToDataUrl(design.imageUrl) : null
       const logoData = design.logoVisible && restaurant.logo_url ? await urlToDataUrl(restaurant.logo_url).catch(() => null) : null
-      const svg = buildSvg({ width,height,design,restaurantName:restaurant.name,location,price,backgroundData,logoData })
+      const promoData = design.template==='premium-grid'
+        ? await Promise.all(promoItems.map(async menuItem=>({name:menuItem.name,price:menuItem.price?String(menuItem.price)+' '+(menuItem.currency||'RSD'):'',imageData:menuItem.image_url?await urlToDataUrl(menuItem.image_url).catch(()=>null):null})))
+        : []
+      const svg = design.template==='premium-grid'
+        ? buildPromoGridSvg({width,height,design,restaurantName:restaurant.name,location,logoData,items:promoData})
+        : buildSvg({ width,height,design,restaurantName:restaurant.name,location,price,backgroundData,logoData })
       const blob = new Blob([svg], { type:'image/svg+xml;charset=utf-8' }), objectUrl = URL.createObjectURL(blob), image = new Image()
       image.onload = () => {
         const canvas = document.createElement('canvas'); canvas.width=width; canvas.height=height
