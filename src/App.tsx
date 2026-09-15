@@ -22,6 +22,7 @@ import { LaunchCenter } from './components/LaunchCenter'
 import { SupportCenter } from './components/SupportCenter'
 import { NotificationsCenter } from './components/NotificationsCenter'
 import { LandingScreen } from './components/LandingScreen'
+import { LegalScreen } from './components/LegalScreen'
 
 type Tab = 'launch' | 'dashboard' | 'creative' | 'studio' | 'brand' | 'publish' | 'menu' | 'promotions' | 'settings' | 'support' | 'notifications' | 'billing' | 'admin'
 type AppControlsLite = { maintenance_mode:boolean; maintenance_message:string|null; sales_open:boolean; signup_open:boolean; announcement_enabled:boolean; announcement_text:string|null; announcement_tone:'info'|'success'|'warning'; app_version:string }
@@ -48,7 +49,9 @@ function App() {
   const [mobileMenuOpen,setMobileMenuOpen]=useState(false)
   const [addingRestaurant, setAddingRestaurant] = useState(false)
   const [recoveryMode,setRecoveryMode]=useState(false)
-  const adminSetupRequested = new URLSearchParams(window.location.search).get('superadmin') === 'setup'
+  const params = new URLSearchParams(window.location.search)
+  const adminSetupRequested = params.get('superadmin') === 'setup'
+  const legalParam = params.get('legal') as 'terms'|'privacy'|'ai'|'refund'|null
 
   useEffect(() => {
     void loadAppControls()
@@ -166,6 +169,7 @@ function App() {
   const planName = isSuperadmin ? 'OWNER' : entitlement?.plan_name || 'Aktivan paket'
   const generationUsage = useMemo(() => entitlement?.generation_limit == null ? null : `${entitlement.generated_this_month || 0}/${entitlement.generation_limit}`, [entitlement])
 
+  if (legalParam && ['terms','privacy','ai','refund'].includes(legalParam)) return <LegalScreen kind={legalParam} onBack={()=>{window.history.replaceState({},'',window.location.pathname);window.location.reload()}} />
   if (demo) return <DemoScreen onExit={() => setDemo(false)} />
   if (loading || (session && !accountReady)) return <div className="screen-center"><div className="loader" />Učitavanje Restaurant Autopilota…</div>
   if (recoveryMode && session) return <PasswordRecovery onDone={recoveryDone}/>
