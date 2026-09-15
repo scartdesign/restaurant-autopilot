@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { CalendarClock, ChefHat, ImagePlus, KeyRound, LayoutGrid, Megaphone, RefreshCw, ShieldCheck, Sparkles, Target, WandSparkles, Zap } from 'lucide-react'
+import { CalendarClock, ChefHat, ImagePlus, KeyRound, LayoutGrid, Megaphone, RefreshCw, ShieldCheck, Sparkles, Target, TrendingUp, WandSparkles, Zap } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import type { Entitlement, MenuItem, Restaurant } from '../types'
 import { CreativeAssetLibrary } from './CreativeAssetLibrary'
@@ -30,6 +30,7 @@ type CreativeStatus = {
   ai_text_used?:number
   ai_text_limit?:number|null
   quota_exhausted?:boolean
+  performance_samples?:number
 }
 
 type Collection = 'premium-grid'|'dark-luxe'|'bright-sale'|'clean-menu'|'family'|'lunch'
@@ -53,7 +54,7 @@ export function CreativeHub({ restaurant, menuItems, entitlement, onChanged, set
   const [suggestions,setSuggestions] = useState<Suggestion[]>([])
   const [selectedId,setSelectedId] = useState('')
   const [collection,setCollection] = useState<Collection>('premium-grid')
-  const [status,setStatus] = useState<CreativeStatus>({ai_image_ready:false,ai_images_used:0,ai_images_limit:0,campaign_pack:false,ai_text_ready:false,advisor_engine:'rules-fallback',ai_text_used:0,ai_text_limit:0,quota_exhausted:false})
+  const [status,setStatus] = useState<CreativeStatus>({ai_image_ready:false,ai_images_used:0,ai_images_limit:0,campaign_pack:false,ai_text_ready:false,advisor_engine:'rules-fallback',ai_text_used:0,ai_text_limit:0,quota_exhausted:false,performance_samples:0})
   const [loading,setLoading] = useState(true)
   const [working,setWorking] = useState('')
   const [providerKey,setProviderKey] = useState('')
@@ -105,6 +106,7 @@ export function CreativeHub({ restaurant, menuItems, entitlement, onChanged, set
         ai_text_used:Number(advisorResult.data?.ai_text_used??current.ai_text_used??0),
         ai_text_limit:advisorResult.data?.ai_text_limit==null?null:Number(advisorResult.data.ai_text_limit),
         quota_exhausted:Boolean(advisorResult.data?.quota_exhausted),
+        performance_samples:Number(advisorResult.data?.performance_samples||0),
       }))
       if(advisorResult.data?.ai_error) setNotice('AI Advisor je trenutno koristio sigurni fallback; predlozi su i dalje dostupni.')
     }
@@ -190,7 +192,7 @@ export function CreativeHub({ restaurant, menuItems, entitlement, onChanged, set
         <span className="creative-kicker"><Sparkles size={15}/> CREATIVE AUTOPILOT</span>
         <h1>Ne pitaj se više šta da reklamiraš.</h1>
         <p>AI analizira tvoj meni, cilj, publiku i lokalni kontekst, pa predlaže jelo, kampanju, CTA i vreme — a ako nema fotografije, pravi realističan food vizual.</p>
-        <div className="creative-hero-actions"><button className="creative-primary" onClick={()=>void loadAdvisor()} disabled={loading}><RefreshCw size={16}/>{loading?'AI analizira…':'Novi AI predlozi'}</button><span><Sparkles size={15}/> Strateg · {advisorLabel}</span><span className={status.quota_exhausted?'quota-hot':''}><Zap size={15}/> AI tekst {textLimitText}</span><span><ImagePlus size={15}/> AI slike {aiLimitText}</span><span><LayoutGrid size={15}/> {campaignFeature?'Campaign Pack aktivan':'Campaign Pack · PRO'}</span></div>
+        <div className="creative-hero-actions"><button className="creative-primary" onClick={()=>void loadAdvisor()} disabled={loading}><RefreshCw size={16}/>{loading?'AI analizira…':'Novi AI predlozi'}</button><span><Sparkles size={15}/> Strateg · {advisorLabel}</span><span className={status.quota_exhausted?'quota-hot':''}><Zap size={15}/> AI tekst {textLimitText}</span><span><ImagePlus size={15}/> AI slike {aiLimitText}</span><span><TrendingUp size={15}/> Uči iz {status.performance_samples||0} rezultata</span><span><LayoutGrid size={15}/> {campaignFeature?'Campaign Pack aktivan':'Campaign Pack · PRO'}</span></div>
       </div>
       <div className="creative-pulse"><i/><strong>{status.photo_coverage??0}%</strong><span>photo ready</span></div>
     </header>
