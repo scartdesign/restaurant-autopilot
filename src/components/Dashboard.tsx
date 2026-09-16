@@ -269,7 +269,7 @@ export function Dashboard({ restaurant, menuItems, posts, onChanged, setNotice }
       <section className="week-quality-panel panel">
         <div className="week-quality-score">
           <span className="week-quality-ring" style={{ '--quality': weekQuality.score } as CSSProperties}><strong>{weekQuality.score}</strong><small>/100</small></span>
-          <div><p className="eyebrow">WEEK QUALITY</p><h2>{weekQuality.label}</h2><span>{weekQuality.issues[0] || 'Plan je izbalansiran i spreman za dalju obradu.'}</span></div>
+          <div><p className="eyebrow">WEEK QUALITY</p><h2>{weekQuality.label}</h2><span>{weekQuality.issues[0] || 'Plan je izbalansiran i spreman za dalju obradu.'}</span>{orderedPosts.length > 0 && weekQuality.score < 90 && <button className="week-quality-fix" onClick={generateWeek} disabled={generating}><Sparkles size={13}/>{generating?'Popravljam plan…':'Auto popravi plan'}</button>}</div>
         </div>
         <div className="week-quality-metrics">
           <div><strong>{weekQuality.uniqueDishes}</strong><span>različita jela</span></div>
