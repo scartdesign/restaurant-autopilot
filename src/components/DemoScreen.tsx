@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, type CSSProperties } from 'react'
 import { ArrowLeft, CalendarClock, CalendarDays, CheckCircle2, ChefHat, Clock3, Facebook, Hash, Image as ImageIcon, Instagram, MapPin, Megaphone, Palette, Pencil, Save, Search, Send, Settings, Sparkles, TrendingUp, UtensilsCrossed, X, Zap } from 'lucide-react'
 import { VisualStudio } from './VisualStudio'
 import { BrandKit } from './BrandKit'
@@ -102,7 +102,7 @@ function DemoContent({ approved, setApproved, notify }: { approved: string[]; se
     <section className="wow-week panel wow-demo-week"><div className="wow-panel-head"><div><p className="eyebrow">NEDELJNI PLAN</p><h2>Sadržaj koji već čeka</h2></div><button className="small-ghost" onClick={() => notify('Kompletan raspored je u Publish Centeru.')}>Pogledaj raspored →</button></div><div className="wow-week-strip">{demoPosts.map((post) => <div className="wow-day" key={post.title}><div className="wow-day-image has-photo" style={{ backgroundImage: `url(${post.image})` }}><span>{post.type}</span>{approved.includes(post.title) && <i><CheckCircle2 size={14} /></i>}</div><strong>{post.day}</strong><span className="demo-time-pill"><Clock3 size={11} /> {post.time}</span><p>{post.title}</p></div>)}</div></section>
 
     <section className="week-quality-panel panel demo-week-quality">
-      <div className="week-quality-score"><span className="week-quality-ring" style={{ '--quality': 94 } as React.CSSProperties}><strong>94</strong><small>/100</small></span><div><p className="eyebrow">WEEK QUALITY</p><h2>Odličan plan</h2><span>4 različita jela, HERO prisutan bez preteranog ponavljanja i svaki post ima termin.</span></div></div>
+      <div className="week-quality-score"><span className="week-quality-ring" style={{ '--quality': 94 } as CSSProperties}><strong>94</strong><small>/100</small></span><div><p className="eyebrow">WEEK QUALITY</p><h2>Odličan plan</h2><span>4 različita jela, HERO prisutan bez preteranog ponavljanja i svaki post ima termin.</span></div></div>
       <div className="week-quality-metrics"><div><strong>4</strong><span>različita jela</span></div><div><strong>1</strong><span>HERO objava</span></div><div><strong>4/4</strong><span>sa terminom</span></div><div><strong>3</strong><span>formata</span></div></div>
     </section>
 
