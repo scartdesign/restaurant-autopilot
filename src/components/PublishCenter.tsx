@@ -1,9 +1,16 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { CalendarClock, CalendarRange, CheckCircle2, ClipboardCopy, Clock3, Download, ExternalLink, Facebook, Instagram, List, Pencil, RotateCcw, Save, Send, ShieldCheck, Sparkles, X } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import type { Post, Restaurant } from '../types'
 
 type ScheduleDraft = { date: string; time: string }
+type MetaCandidate={id:string;name:string;instagram_business_account?:{id:string;username:string}|null;tasks?:string[]}
+type MetaConnection={
+  id:string;status:'pending_oauth'|'pending_page_selection'|'connected'|'expired'|'error'|'disconnected';
+  page_id:string|null;page_name:string|null;instagram_business_account_id:string|null;instagram_username:string|null;
+  token_expires_at:string|null;scopes:string[];connection_meta?:{page_candidates?:MetaCandidate[]};connected_at:string|null;last_verified_at:string|null
+}
+type MetaState={provider_configured:boolean;connection:MetaConnection|null;callback_url?:string}
 
 export function PublishCenter({ restaurant, posts, onChanged, setNotice }: {
   restaurant: Restaurant
@@ -17,6 +24,9 @@ export function PublishCenter({ restaurant, posts, onChanged, setNotice }: {
   const [scheduleDraft, setScheduleDraft] = useState<ScheduleDraft>({ date: '', time: '' })
   const [view,setView]=useState<'queue'|'calendar'>('queue')
   const [bulkWorking,setBulkWorking]=useState(false)
+  const [metaState,setMetaState]=useState<MetaState|null>(null)
+  const [metaWorking,setMetaWorking]=useState(false)
+  const [metaPageId,setMetaPageId]=useState('')
 
   const ordered = useMemo(() => [...posts].sort((a, b) => new Date(a.scheduled_for || 0).getTime() - new Date(b.scheduled_for || 0).getTime()), [posts])
   const approved = posts.filter((post) => post.status === 'approved')
@@ -46,6 +56,77 @@ export function PublishCenter({ restaurant, posts, onChanged, setNotice }: {
     const ready=posts.length>0&&!reasons.length
     return{ready,allDone,reasons,label:allDone?'Nedelja završena':ready?'Spremno za publishing':posts.length?'Treba završiti':'Čeka sadržaj'}
   },[posts.length,published.length,drafts.length,missingSchedule,overdue.length,conflicts])
+
+  async function loadMetaStatus(){
+    const{data,error}=await supabase.functions.invoke('meta-publisher',{body:{action:'status',restaurantId:restaurant.id}})
+    if(!error&&!data?.error){
+      setMetaState(data as MetaState)
+      const candidates=(data?.connection?.connection_meta?.page_candidates||[]) as MetaCandidate[]
+      if(data?.connection?.status==='pending_page_selection'&&candidates.length&&!metaPageId)setMetaPageId(candidates[0].id)
+    }
+  }
+
+  useEffect(()=>{
+    void loadMetaStatus()
+    const handler=(event:MessageEvent)=>{
+      if(event.data?.type!=='restaurant-autopilot-meta')return
+      void loadMetaStatus()
+      setNotice(event.data?.ok?'Meta povezivanje je završeno. Proveravam stranicu i Instagram nalog…':'Meta povezivanje nije završeno.')
+    }
+    window.addEventListener('message',handler)
+    return()=>window.removeEventListener('message',handler)
+  },[restaurant.id])
+
+  async function connectMeta(){
+    setMetaWorking(true)
+    const{data,error}=await supabase.functions.invoke('meta-publisher',{body:{action:'start',restaurantId:restaurant.id}})
+    if(error||data?.error){setNotice(data?.error||error?.message||'Meta Connect nije pokrenut.');setMetaWorking(false);return}
+    const popup=window.open(data.authorization_url,'restaurant-autopilot-meta','popup=yes,width=620,height=760')
+    if(!popup)window.location.href=data.authorization_url
+    else setNotice('Meta Connect je otvoren u novom prozoru. Odobri pristup Facebook stranici i Instagram nalogu.')
+    setMetaWorking(false)
+  }
+
+  async function selectMetaPage(){
+    if(!metaPageId)return
+    setMetaWorking(true)
+    const{data,error}=await supabase.functions.invoke('meta-publisher',{body:{action:'select_page',restaurantId:restaurant.id,pageId:metaPageId}})
+    if(error||data?.error)setNotice(data?.error||error?.message||'Stranica nije povezana.')
+    else{setNotice('Facebook stranica i povezani Instagram nalog su aktivirani.');await loadMetaStatus()}
+    setMetaWorking(false)
+  }
+
+  async function disconnectMeta(){
+    if(!window.confirm('Odvojiti Facebook / Instagram nalog od ovog restorana?'))return
+    setMetaWorking(true)
+    const{data,error}=await supabase.functions.invoke('meta-publisher',{body:{action:'disconnect',restaurantId:restaurant.id}})
+    if(error||data?.error)setNotice(data?.error||error?.message||'Meta nalog nije odvojen.')
+    else{setNotice('Meta nalog je odvojen od restorana.');await loadMetaStatus()}
+    setMetaWorking(false)
+  }
+
+  function metaPlatforms(post:Post){
+    const out:('facebook'|'instagram')[]=[]
+    if(metaState?.connection?.status!=='connected')return out
+    if(metaState.connection.page_id)out.push('facebook')
+    const image=String(post.generation_meta?.image_url||'')
+    if(metaState.connection.instagram_business_account_id&&image&&post.post_type!=='story')out.push('instagram')
+    return out
+  }
+
+  async function sendToMeta(post:Post,publishNow:boolean){
+    const platforms=metaPlatforms(post)
+    if(!platforms.length){setNotice('Nema podržane Meta platforme za ovu objavu. Instagram zahteva povezani profesionalni nalog i javnu fotografiju.');return}
+    setWorkingId('meta-'+post.id)
+    const{data,error}=await supabase.functions.invoke('meta-publisher',{body:{action:'queue',restaurantId:restaurant.id,postId:post.id,platforms,publishNow,publishAt:post.scheduled_for}})
+    if(error||data?.error)setNotice(data?.error||error?.message||'Meta publishing nije uspeo.')
+    else if(publishNow){
+      const failed=(data?.results||[]).filter((x:any)=>x.error)
+      if(failed.length)setNotice(`Meta: ${platforms.length-failed.length}/${platforms.length} platforme objavljeno. ${failed.map((x:any)=>x.error).join(' · ')}`)
+      else{setNotice(`Objavljeno direktno na ${platforms.map(p=>p==='instagram'?'Instagram':'Facebook').join(' + ')}.`);await supabase.from('posts').update({status:'published'}).eq('id',post.id).eq('restaurant_id',restaurant.id);await onChanged()}
+    }else setNotice(`Meta queue: ${platforms.length} platforme zakazane za ${post.scheduled_for?formatDateLong(post.scheduled_for,restaurant.timezone)+' u '+formatTime(post.scheduled_for,restaurant.timezone):'prvi mogući termin'}.`)
+    setWorkingId('')
+  }
 
   function exportCsv() {
     if (!posts.length) { setNotice('Nema sadržaja za export.'); return }
@@ -229,6 +310,21 @@ export function PublishCenter({ restaurant, posts, onChanged, setNotice }: {
         <div className="publish-actions">{drafts.length>0&&<button className="secondary" onClick={()=>void approveAll()} disabled={workingId==='bulk-approve'}><CheckCircle2 size={16}/>{workingId==='bulk-approve'?'Proveravam…':`Quality + odobri (${drafts.length})`}</button>}<button className="secondary" onClick={()=>void autoScheduleWeek()} disabled={bulkWorking}><Sparkles size={16}/>{bulkWorking?'Raspoređujem…':'Auto rasporedi'}</button><button className="secondary" onClick={exportCalendar}><CalendarClock size={16} /> .ICS kalendar</button><button className="primary" onClick={exportCsv}><Download size={16} /> Export CSV</button></div>
       </header>
 
+      <section className={`meta-connect-panel ${metaState?.connection?.status==='connected'?'connected':metaState?.connection?.status==='expired'?'expired':''}`}>
+        <div className="meta-connect-brand"><div><Facebook size={20}/><Instagram size={20}/></div><span><small>META PUBLISHING</small><strong>{metaState?.connection?.status==='connected'?'Facebook + Instagram povezani':metaState?.connection?.status==='pending_page_selection'?'Izaberi Facebook stranicu':metaState?.provider_configured?'Poveži poslovni nalog':'Meta App čeka OWNER konfiguraciju'}</strong><p>{metaState?.connection?.status==='connected'
+          ? `${metaState.connection.page_name||'Facebook Page'}${metaState.connection.instagram_username?` · @${metaState.connection.instagram_username}`:' · Instagram nije povezan'}`
+          : metaState?.connection?.status==='expired'
+          ? 'Meta token je istekao. Poveži nalog ponovo.'
+          : metaState?.provider_configured
+          ? 'OAuth tokeni ostaju server-side u Vault-u. Posle povezivanja možeš direktno da objavljuješ ili zakažeš odobrene objave.'
+          : 'OWNER prvo treba da unese Meta App ID i App Secret. Posle toga restoran sam povezuje svoju Facebook stranicu.'}</p></span></div>
+        <div className="meta-connect-actions">
+          {metaState?.connection?.status==='pending_page_selection'?<><select value={metaPageId} onChange={e=>setMetaPageId(e.target.value)}>{((metaState.connection.connection_meta?.page_candidates||[]) as MetaCandidate[]).map(page=><option value={page.id} key={page.id}>{page.name}{page.instagram_business_account?.username?` · @${page.instagram_business_account.username}`:''}</option>)}</select><button className="primary" onClick={()=>void selectMetaPage()} disabled={metaWorking||!metaPageId}><CheckCircle2 size={15}/> Poveži stranicu</button></>
+          :metaState?.connection?.status==='connected'?<><span className="meta-connected-chip"><CheckCircle2 size={14}/> CONNECTED</span><button className="secondary" onClick={()=>void loadMetaStatus()} disabled={metaWorking}><RotateCcw size={14}/> Proveri</button><button className="meta-disconnect" onClick={()=>void disconnectMeta()} disabled={metaWorking}>Odvoji</button></>
+          :<button className="primary meta-connect-button" onClick={()=>void connectMeta()} disabled={metaWorking||!metaState?.provider_configured}><Facebook size={15}/>{metaWorking?'Otvaram…':'Poveži Facebook + Instagram'}</button>}
+        </div>
+      </section>
+
       <section className={`publish-gate ${publishGate.allDone?'done':publishGate.ready?'ready':'blocked'}`}>
         <div className="publish-gate-icon">{publishGate.allDone||publishGate.ready?<CheckCircle2 size={20}/>:<ShieldCheck size={20}/>}</div>
         <div><span>WEEK GATE</span><strong>{publishGate.label}</strong><small>{publishGate.reasons.length?publishGate.reasons.join(' · '):publishGate.allDone?'Sve planirane objave su označene kao objavljene.':'Nema tehničkih blokera: termini i approval status su spremni.'}</small></div>
@@ -269,12 +365,12 @@ export function PublishCenter({ restaurant, posts, onChanged, setNotice }: {
                 <div className="schedule-editor-actions"><button type="button" className="secondary" onClick={() => setEditingId('')}><X size={14} /> Otkaži</button><button type="button" className="secondary" onClick={() => setScheduleDraft(defaultDraft(post, restaurant))}><RotateCcw size={14} /> Reset</button><button type="button" className="primary" disabled={workingId === post.id} onClick={() => void saveSchedule(post)}><Save size={14} /> Sačuvaj termin</button></div>
               </div>}
             </div>
-            <div className="queue-state"><span className={`status ${post.status}`}>{post.status}</span><button className="mini-schedule" onClick={() => openSchedule(post)}><CalendarClock size={14} /> Datum i vreme</button><button className="mini-quality" disabled={workingId === post.id} onClick={() => qualityCheck(post)}><ShieldCheck size={14} /> Quality check</button><div className="platform-copy-actions"><button type="button" onClick={()=>void copyPlatform(post,'instagram')}><Instagram size={13}/> IG copy</button><button type="button" onClick={()=>void copyPlatform(post,'facebook')}><Facebook size={13}/> FB copy</button></div>{post.status === 'approved' && <><button className="mini-meta-suite" onClick={()=>void openBusinessSuite(post)}><ExternalLink size={14}/> Meta Business Suite</button><button className="mini-publish" disabled={workingId === post.id} onClick={() => markPublished(post)}><CheckCircle2 size={14} /> Označi objavljeno</button></>}{post.status === 'published' && <span className="published-ok"><CheckCircle2 size={15} /> završeno</span>}</div>
+            <div className="queue-state"><span className={`status ${post.status}`}>{post.status}</span><button className="mini-schedule" onClick={() => openSchedule(post)}><CalendarClock size={14} /> Datum i vreme</button><button className="mini-quality" disabled={workingId === post.id} onClick={() => qualityCheck(post)}><ShieldCheck size={14} /> Quality check</button><div className="platform-copy-actions"><button type="button" onClick={()=>void copyPlatform(post,'instagram')}><Instagram size={13}/> IG copy</button><button type="button" onClick={()=>void copyPlatform(post,'facebook')}><Facebook size={13}/> FB copy</button></div>{post.status === 'approved' && <>{metaState?.connection?.status==='connected'?<><button className="mini-meta-now" disabled={workingId==='meta-'+post.id||!metaPlatforms(post).length} onClick={()=>void sendToMeta(post,true)}><Send size={14}/> Meta sada</button><button className="mini-meta-queue" disabled={workingId==='meta-'+post.id||!post.scheduled_for||!metaPlatforms(post).length} onClick={()=>void sendToMeta(post,false)}><CalendarClock size={14}/> Zakaži Meta</button></>:<button className="mini-meta-suite" onClick={()=>void openBusinessSuite(post)}><ExternalLink size={14}/> Meta Business Suite</button>}<button className="mini-publish" disabled={workingId === post.id} onClick={() => markPublished(post)}><CheckCircle2 size={14} /> Označi objavljeno</button></>}{post.status === 'published' && <span className="published-ok"><CheckCircle2 size={15} /> završeno</span>}</div>
           </div>)}
         </div>}
       </section>
 
-      <div className="meta-roadmap"><div><ExternalLink size={18} /><div><strong>Spremno za ručni publishing workflow</strong><span>Plan, termin, dizajn, caption, hashtagovi, quality check, CSV i kalendar rade. Direktan Meta autopost zahteva povezivanje poslovnog naloga i dozvole.</span></div></div><span className="roadmap-badge">WORKFLOW READY</span></div>
+      <div className="meta-roadmap"><div><ExternalLink size={18} /><div><strong>{metaState?.connection?.status==='connected'?'Direktan Meta publishing je aktivan':'Ručni workflow ostaje kao fallback'}</strong><span>{metaState?.connection?.status==='connected'?'Odobrene objave mogu direktno na Facebook i povezani Instagram profesionalni nalog. Queue čuva termin i status po platformi.':'CSV, copy i Meta Business Suite ostaju dostupni dok poslovni nalog nije povezan.'}</span></div></div><span className="roadmap-badge">{metaState?.connection?.status==='connected'?'META CONNECTED':'FALLBACK READY'}</span></div>
     </>
   )
 }
