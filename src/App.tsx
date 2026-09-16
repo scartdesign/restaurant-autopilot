@@ -137,12 +137,16 @@ function App() {
     const dateKey = localDateKey(target.timezone || 'Europe/Belgrade')
     const attemptKey = `restaurant-autopilot-weekly-check:${target.id}:${dateKey}`
     if (sessionStorage.getItem(attemptKey)) return
-    sessionStorage.setItem(attemptKey, '1')
+    sessionStorage.setItem(attemptKey, 'inflight')
 
     const { data, error } = await supabase.functions.invoke('content-engine', {
       body: { action: 'ensure_week', restaurantId: target.id },
     })
-    if (error || data?.error) return
+    if (error || data?.error) {
+      sessionStorage.removeItem(attemptKey)
+      return
+    }
+    sessionStorage.setItem(attemptKey, 'done')
     if (data?.created) {
       await loadPosts(target.id)
       await loadAccountState()
