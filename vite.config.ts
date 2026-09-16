@@ -8,10 +8,10 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks(id) {
-          if (!id.includes('node_modules')) return undefined
-          if (id.includes('/node_modules/react/') || id.includes('/node_modules/react-dom/') || id.includes('/node_modules/scheduler/')) return 'vendor-react'
-          if (id.includes('/node_modules/@supabase/')) return 'vendor-supabase'
-          if (id.includes('/node_modules/lucide-react/')) return 'vendor-icons'
+          if (!id.indexOf('node_modules') !== -1) return undefined
+          if (id.indexOf('/node_modules/react/') !== -1 || id.indexOf('/node_modules/react-dom/') !== -1 || id.indexOf('/node_modules/scheduler/') !== -1) return 'vendor-react'
+          if (id.indexOf('/node_modules/@supabase/') !== -1) return 'vendor-supabase'
+          if (id.indexOf('/node_modules/lucide-react/') !== -1) return 'vendor-icons'
           return 'vendor'
         },
       },
