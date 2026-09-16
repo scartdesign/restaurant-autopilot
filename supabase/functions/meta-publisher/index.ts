@@ -284,7 +284,15 @@ Deno.serve(async(req)=>{
       const jobs:any[]=[];
       for(const platform of platforms){
         const{data:existing}=await service.from("social_publish_jobs").select("*").eq("post_id",postId).eq("platform",platform).neq("status","cancelled").maybeSingle();
-        if(existing){jobs.push(existing);continue}
+        if(existing){
+          if(existing.status==="queued"&&String(existing.publish_at)!==publishAt){
+            const{data:updated,error:updateExistingError}=await service.from("social_publish_jobs")
+              .update({publish_at:publishAt,updated_at:new Date().toISOString()}).eq("id",existing.id).select().single();
+            if(updateExistingError)return json({error:updateExistingError.message},400);
+            jobs.push(updated||existing);
+          }else jobs.push(existing);
+          continue;
+        }
         const{data:job,error:jobError}=await service.from("social_publish_jobs").insert({restaurant_id:restaurantId,post_id:postId,connection_id:connection.id,platform,status:"queued",publish_at:publishAt}).select().single();
         if(jobError)return json({error:jobError.message},400);
         jobs.push(job);
