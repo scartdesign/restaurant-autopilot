@@ -145,24 +145,26 @@ async function recordSync(service:any,status:"success"|"skipped"|"failed",payloa
   const errorMessage=status==="failed"
     ? String(payload?.errors?.[0]||payload?.error||"Discovery sync failed")
     : null;
-  await service.rpc("service_record_discovery_sync",{
-    p_source:"serpapi_google_trends",
-    p_status:status,
-    p_terms_seen:Number(payload?.active_terms||0),
-    p_terms_updated:Number(payload?.updated||0),
-    p_error_message:errorMessage,
-    p_metadata:{
-      provider:"serpapi_google_trends",
-      unique_queries:Number(payload?.unique_queries||0),
-      api_calls:Number(payload?.api_calls||0),
-      failed_batches:Number(payload?.failed_batches||0),
-      candidate_api_calls:Number(payload?.candidate_api_calls||0),
-      candidates_upserted:Number(payload?.candidates_upserted||0),
-      verified_at:payload?.verified_at||null,
-      skipped:Boolean(payload?.skipped),
-      reason:payload?.reason||null,
-    }
-  }).catch(()=>null);
+  try{
+    await service.rpc("service_record_discovery_sync",{
+      p_source:"serpapi_google_trends",
+      p_status:status,
+      p_terms_seen:Number(payload?.active_terms||0),
+      p_terms_updated:Number(payload?.updated||0),
+      p_error_message:errorMessage,
+      p_metadata:{
+        provider:"serpapi_google_trends",
+        unique_queries:Number(payload?.unique_queries||0),
+        api_calls:Number(payload?.api_calls||0),
+        failed_batches:Number(payload?.failed_batches||0),
+        candidate_api_calls:Number(payload?.candidate_api_calls||0),
+        candidates_upserted:Number(payload?.candidates_upserted||0),
+        verified_at:payload?.verified_at||null,
+        skipped:Boolean(payload?.skipped),
+        reason:payload?.reason||null,
+      }
+    });
+  }catch(_){/* logging must never fail the discovery sync */}
 }
 
 async function runSync(service:any,config:any){
