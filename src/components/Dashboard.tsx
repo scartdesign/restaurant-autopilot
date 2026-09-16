@@ -1,4 +1,4 @@
-import { FormEvent, useMemo, useState } from 'react'
+import { FormEvent, useMemo, useState, type CSSProperties } from 'react'
 import { ArrowUpRight, CalendarDays, CheckCircle2, ChefHat, Clock3, Copy, CopyPlus, Facebook, Hash, Instagram, MapPin, Pencil, Save, Search, Sparkles, Trash2, TrendingUp, UtensilsCrossed, WandSparkles, X, Zap } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import type { MenuItem, Post, Restaurant } from '../types'
@@ -268,7 +268,7 @@ export function Dashboard({ restaurant, menuItems, posts, onChanged, setNotice }
 
       <section className="week-quality-panel panel">
         <div className="week-quality-score">
-          <span className="week-quality-ring" style={{ '--quality': weekQuality.score } as React.CSSProperties}><strong>{weekQuality.score}</strong><small>/100</small></span>
+          <span className="week-quality-ring" style={{ '--quality': weekQuality.score } as CSSProperties}><strong>{weekQuality.score}</strong><small>/100</small></span>
           <div><p className="eyebrow">WEEK QUALITY</p><h2>{weekQuality.label}</h2><span>{weekQuality.issues[0] || 'Plan je izbalansiran i spreman za dalju obradu.'}</span></div>
         </div>
         <div className="week-quality-metrics">
