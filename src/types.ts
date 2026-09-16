@@ -207,6 +207,11 @@ export type SalesOrder = {
   due_at?: string | null
   payment_reference?: string | null
   billing_snapshot?: Record<string, unknown>
+  payment_provider?: 'stripe' | string | null
+  provider_checkout_session_id?: string | null
+  provider_payment_intent_id?: string | null
+  provider_payment_status?: string | null
+  provider_payload?: Record<string, unknown>
   accepted_terms_at?: string | null
   accepted_terms_url?: string | null
   accepted_privacy_at?: string | null
