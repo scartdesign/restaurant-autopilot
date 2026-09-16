@@ -98,6 +98,7 @@ export type GenerationMeta = Record<string, unknown> & {
     marketing_priority?: number
     recent_uses_30d?: number
     schedule_hour?: number | null
+    schedule_day?: number | null
   }
   campaign_style?: string
   campaign_focus?: string
