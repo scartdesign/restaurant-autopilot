@@ -1,10 +1,10 @@
 import { useState, type CSSProperties } from 'react'
-import { ArrowLeft, CalendarClock, CalendarDays, CheckCircle2, ChefHat, Clock3, Facebook, Hash, Image as ImageIcon, Instagram, MapPin, Megaphone, Palette, Pencil, Save, Search, Send, Settings, Sparkles, TrendingUp, UtensilsCrossed, X, Zap } from 'lucide-react'
+import { ArrowLeft, BarChart3, CalendarClock, CalendarDays, CheckCircle2, ChefHat, Clock3, Facebook, Hash, Image as ImageIcon, Instagram, MapPin, Megaphone, MousePointerClick, Palette, Pencil, Save, Search, Send, Settings, Sparkles, Target, TrendingUp, UtensilsCrossed, X, Zap } from 'lucide-react'
 import { VisualStudio } from './VisualStudio'
 import { BrandKit } from './BrandKit'
 import type { MenuItem, Post, Restaurant } from '../types'
 
-type DemoTab = 'content' | 'studio' | 'brand' | 'publish' | 'menu' | 'promotions' | 'settings'
+type DemoTab = 'content' | 'studio' | 'brand' | 'publish' | 'insights' | 'menu' | 'promotions' | 'settings'
 
 const food = {
   pizza: 'https://images.unsplash.com/photo-1574071318508-1cdbab80d002?auto=format&fit=crop&w=1500&q=88',
@@ -46,7 +46,7 @@ const demoVisualPosts: Post[] = [
 ]
 
 export function DemoScreen({ onExit }: { onExit: () => void }) {
-  const [tab, setTab] = useState<DemoTab>(() => { const value = window.location.hash.replace('#','') as DemoTab; return ['content','studio','brand','publish','menu','promotions','settings'].includes(value) ? value : 'content' })
+  const [tab, setTab] = useState<DemoTab>(() => { const value = window.location.hash.replace('#','') as DemoTab; return ['content','studio','brand','publish','insights','menu','promotions','settings'].includes(value) ? value : 'content' })
   const [approved, setApproved] = useState<string[]>(['Pizza Capricciosa', 'Sveža Carbonara'])
   const [toast, setToast] = useState('')
 
@@ -67,6 +67,7 @@ export function DemoScreen({ onExit }: { onExit: () => void }) {
             <button className={tab === 'studio' ? 'nav-active' : ''} onClick={() => setTab('studio')}><ImageIcon size={18} /> Visual Studio</button>
             <button className={tab === 'brand' ? 'nav-active brand-nav' : 'brand-nav'} onClick={() => setTab('brand')}><Palette size={18} /> Brend <span className="nav-beta">LOGO</span></button>
             <button className={tab === 'publish' ? 'nav-active' : ''} onClick={() => setTab('publish')}><Send size={18} /> Publish Center</button>
+            <button className={tab === 'insights' ? 'nav-active insights-nav' : 'insights-nav'} onClick={() => setTab('insights')}><BarChart3 size={18} /> Rezultati <span className="nav-beta">DATA</span></button>
             <button className={tab === 'menu' ? 'nav-active' : ''} onClick={() => setTab('menu')}><UtensilsCrossed size={18} /> Meni</button>
             <button className={tab === 'promotions' ? 'nav-active' : ''} onClick={() => setTab('promotions')}><Megaphone size={18} /> Akcije</button>
             <button className={tab === 'settings' ? 'nav-active' : ''} onClick={() => setTab('settings')}><Settings size={18} /> Podešavanja</button>
@@ -144,6 +145,39 @@ function DemoPublish({ notify }: { notify: (value: string) => void }) {
       <div className="demo-publish-actions"><span className="demo-publish-time"><Clock3 size={13} /> {times[post.title]}</span><span className={`status ${post.status}`}>{post.status}</span><button className="mini-schedule" onClick={() => begin(post.title)}><Pencil size={13} /> Promeni</button></div>
     </div>)}</div>
   </>
+}
+
+function DemoInsights() {
+  const ranking = [
+    {title:'Pizza Capricciosa', reach:'8.4k', engagement:'7.8%', width:92, detail:'HERO · Feed'},
+    {title:'Sveža Carbonara', reach:'6.1k', engagement:'6.4%', width:76, detail:'Lunch · Story'},
+    {title:'Vikend pasta', reach:'4.9k', engagement:'5.9%', width:68, detail:'Promo · Feed'},
+    {title:'Tiramisu', reach:'3.6k', engagement:'4.8%', width:55, detail:'Hero dish · Feed'},
+  ]
+  return <div className="insights-center demo-insights">
+    <header className="page-header insights-header"><div><p className="eyebrow">PERFORMANCE LOOP</p><h1>Rezultati koji uče Autopilot.</h1><p className="muted">Reach, engagement, klikovi i konverzije vraćaju signal u sledeću AI nedelju.</p></div></header>
+    <section className="insights-kpis">
+      <article><span><Target size={16}/> Doseg</span><strong>23k</strong><small>4 praćene objave</small></article>
+      <article><span><TrendingUp size={16}/> Engagement</span><strong>6.6%</strong><small>1.518 interakcija</small></article>
+      <article><span><MousePointerClick size={16}/> Klikovi</span><strong>286</strong><small>CTR 1.2%</small></article>
+      <article><span><CheckCircle2 size={16}/> Konverzije</span><strong>31</strong><small>rezervacije / porudžbine</small></article>
+    </section>
+    <section className="learning-status panel">
+      <div className="learning-status-head"><div><p className="eyebrow">AUTOPILOT LEARNING</p><h2>Učenje aktivno</h2><span>4 stvarne objave trenutno utiču na sledeću generaciju sadržaja.</span></div><strong>50%</strong></div>
+      <div className="learning-progress"><i style={{width:'50%'}}/></div>
+      <div className="learning-signals"><div><span>Najbolje jelo</span><strong>Pizza Capricciosa</strong></div><div><span>Najjači pillar</span><strong>Hero jelo</strong></div><div><span>Top engagement</span><strong>7.8%</strong></div><div><span>Praćeno</span><strong>4/4</strong></div></div>
+      <p>Priority Engine već kombinuje ove rezultate sa HERO prioritetom, recency signalom i raznovrsnošću menija.</p>
+    </section>
+    <div className="insights-grid">
+      <section className="panel insights-ranking"><div className="panel-heading"><div><p className="eyebrow">TOP SADRŽAJ</p><h2>Šta radi najbolje</h2></div><BarChart3 size={20}/></div>
+        {ranking.map((item,index)=><div className="ranking-row" key={item.title}><span className="ranking-no">0{index+1}</span><div className="ranking-copy"><strong>{item.title}</strong><small>{item.detail}</small><div className="ranking-track"><i style={{width:`${item.width}%`}}/></div></div><div className="ranking-value"><strong>{item.engagement}</strong><small>{item.reach} reach</small></div></div>)}
+      </section>
+      <section className="panel insights-details"><div className="panel-heading"><div><p className="eyebrow">SMART INSIGHT</p><h2>Šta Autopilot menja sledeće</h2></div><Sparkles size={20}/></div>
+        <div className="signal-grid"><div><span>HERO weight</span><strong>↑</strong></div><div><span>Lunch content</span><strong>↑</strong></div><div><span>Repeat penalty</span><strong>ON</strong></div><div><span>Promo mix</span><strong>20%</strong></div></div>
+        <div className="insights-note"><strong>Zaključak iz demo rezultata</strong><span>Pizza dobija premium slot, Carbonara ostaje jak lunch signal, ali isti proizvod se ne ponavlja uzastopno. Sledeća nedelja ostaje raznovrsna.</span></div>
+      </section>
+    </div>
+  </div>
 }
 
 function DemoSettings() {
