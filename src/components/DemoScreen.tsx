@@ -170,6 +170,15 @@ function DemoInsights() {
       <article><span><MousePointerClick size={16}/> Klikovi</span><strong>286</strong><small>CTR 1.2%</small></article>
       <article><span><CheckCircle2 size={16}/> Konverzije</span><strong>31</strong><small>rezervacije / porudžbine</small></article>
     </section>
+    <section className="generation-performance panel">
+      <div className="panel-heading"><div><p className="eyebrow">GENERATION PERFORMANCE</p><h2>AUTO WEEK vs MANUAL</h2></div><Sparkles size={20}/></div>
+      <div className="generation-performance-grid">
+        <article className="auto"><div><span>AUTO WEEK</span><strong>5</strong><small>izmerenih objava</small></div><div><span>Engagement</span><strong>6.9%</strong><small>18.4k reach</small></div><div><span>CTR</span><strong>1.4%</strong><small>258 klikova</small></div><div><span>Konverzije</span><strong>24</strong><small>stabilniji uzorak</small></div></article>
+        <article className="manual"><div><span>MANUAL</span><strong>3</strong><small>izmerene objave</small></div><div><span>Engagement</span><strong>5.8%</strong><small>11.2k reach</small></div><div><span>CTR</span><strong>1.1%</strong><small>123 klika</small></div><div><span>Konverzije</span><strong>11</strong><small>stabilniji uzorak</small></div></article>
+      </div>
+      <p className="generation-performance-note">Demo prikazuje kako se porede samo izmerene objave; u pravoj aplikaciji brojke dolaze iz stvarnih performance podataka restorana.</p>
+    </section>
+
     <section className="learning-status panel">
       <div className="learning-status-head"><div><p className="eyebrow">AUTOPILOT LEARNING</p><h2>Učenje aktivno</h2><span>4 stvarne objave trenutno utiču na sledeću generaciju sadržaja.</span></div><strong>50%</strong></div>
       <div className="learning-progress"><i style={{width:'50%'}}/></div>
