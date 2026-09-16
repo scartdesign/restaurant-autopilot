@@ -489,7 +489,7 @@ Deno.serve(async (req: Request) => {
       if (error) return json({ error: error.message }, 403);
       entitlement = data || {};
       if (!entitlement.active && action !== "preflight") return json({ error: "Aktivan paket je potreban za generisanje sadržaja.", code: "ACTIVE_PLAN_REQUIRED" }, 402);
-      if (action === "promotion" && entitlement.features?.campaigns !== true) {
+      if ((action === "promotion" || action === "trend_opportunity_campaign") && entitlement.features?.campaigns !== true) {
         return json({ error: "Campaign Autopilot je dostupan u Pro i Business paketu.", code: "FEATURE_NOT_INCLUDED" }, 402);
       }
     }
@@ -734,6 +734,208 @@ Deno.serve(async (req: Request) => {
       });
 
       return json({ok:true,post,scheduled_for:scheduledFor,reason,engine:"restaurant-autopilot-v27"});
+    }
+
+    if (action === "refresh_trend_opportunities") {
+      const { data: refreshData, error: refreshError } = await service.rpc("service_refresh_trend_content_opportunities",{p_restaurant_id:restaurantId});
+      if (refreshError) return json({ error: refreshError.message }, 400);
+      const { data: opportunities, error: opportunityError } = await service.from("trend_content_opportunities")
+        .select("*")
+        .eq("restaurant_id",restaurantId)
+        .eq("status","pending")
+        .gt("expires_at",new Date().toISOString())
+        .order("opportunity_score",{ascending:false})
+        .limit(12);
+      if (opportunityError) return json({ error: opportunityError.message }, 400);
+      return json({ok:true,refresh:refreshData,opportunities:opportunities||[],engine:"restaurant-autopilot-v28"});
+    }
+
+    if (action === "dismiss_trend_opportunity") {
+      const opportunityId=String(body.opportunityId||"").trim();
+      if(!opportunityId)return json({error:"opportunityId is required"},400);
+      const { data: opportunity } = await service.from("trend_content_opportunities")
+        .select("id,status")
+        .eq("id",opportunityId)
+        .eq("restaurant_id",restaurantId)
+        .maybeSingle();
+      if(!opportunity)return json({error:"Trend prilika nije pronađena."},404);
+      const { error }=await service.from("trend_content_opportunities").update({status:"dismissed",updated_at:new Date().toISOString()}).eq("id",opportunityId);
+      if(error)return json({error:error.message},400);
+      return json({ok:true,id:opportunityId,status:"dismissed"});
+    }
+
+    if (action === "trend_opportunity_post" || action === "trend_opportunity_campaign") {
+      const opportunityId=String(body.opportunityId||"").trim();
+      if(!opportunityId)return json({error:"opportunityId is required"},400);
+      const { data: opportunity, error: opportunityError } = await service.from("trend_content_opportunities")
+        .select("*")
+        .eq("id",opportunityId)
+        .eq("restaurant_id",restaurantId)
+        .eq("status","pending")
+        .gt("expires_at",new Date().toISOString())
+        .maybeSingle();
+      if(opportunityError||!opportunity)return json({error:"Trend prilika je istekla, iskorišćena ili ne postoji."},404);
+
+      let item:any=null;
+      if(opportunity.menu_item_id){
+        const {data}=await service.from("menu_items").select("*").eq("id",opportunity.menu_item_id).eq("restaurant_id",restaurantId).eq("is_active",true).maybeSingle();
+        item=data;
+      }
+      if(!item){
+        const {data}=await service.from("menu_items").select("*").eq("restaurant_id",restaurantId).eq("is_active",true).order("marketing_priority",{ascending:false}).order("updated_at",{ascending:false}).limit(1).maybeSingle();
+        item=data;
+      }
+      if(!item)return json({error:"Dodaj aktivno jelo pre korišćenja trend prilike."},400);
+
+      const isCampaign=action==="trend_opportunity_campaign";
+      const quotaError=ensureQuota(isCampaign?2:1);
+      if(quotaError)return quotaError;
+
+      const rawPillar=String(opportunity.recommended_pillar||"local_discovery");
+      const pillar:Pillar=(["hero_dish","engagement","local_discovery","kitchen_story","social_prompt","promotion"] as string[]).includes(rawPillar)?rawPillar as Pillar:"local_discovery";
+      const timeZone=String(restaurant.timezone||"Europe/Belgrade");
+      const target=generationWeekTarget(timeZone,restaurant.opening_hours);
+      const recentSince=new Date(Date.now()-30*86400000).toISOString();
+      const {data:scheduleRows}=await service.from("posts").select("scheduled_for").eq("restaurant_id",restaurantId).not("scheduled_for","is",null).gte("scheduled_for",recentSince).order("scheduled_for",{ascending:false}).limit(40);
+      const hourCounts=new Map<number,number>();
+      for(const row of scheduleRows||[]){
+        const hour=localHour(String(row.scheduled_for),timeZone);
+        if(hour!==null)hourCounts.set(hour,(hourCounts.get(hour)||0)+1);
+      }
+      const preferredHour=[...hourCounts.entries()].sort((a,b)=>b[1]-a[1])[0]?.[0]??18;
+      const futureUntil=new Date(Date.now()+15*86400000).toISOString();
+      const {data:futureRows}=await service.from("posts").select("scheduled_for").eq("restaurant_id",restaurantId).not("scheduled_for","is",null).gte("scheduled_for",new Date().toISOString()).lte("scheduled_for",futureUntil);
+      const occupied=(futureRows||[]).map((row:any)=>new Date(row.scheduled_for).getTime()).filter(Number.isFinite);
+      let scheduledFor:string|null=null;
+      outerTrend:
+      for(let weekAdd=0;weekAdd<2;weekAdd+=1){
+        const monday=new Date(target.monday);
+        monday.setUTCDate(monday.getUTCDate()+weekAdd*7);
+        const startOffset=weekAdd===0?target.minDayOffset:0;
+        for(let day=startOffset;day<7;day+=1){
+          if(!rowForDay(restaurant.opening_hours,day).enabled)continue;
+          const candidate=scheduleFor(monday,day,0,pillar,timeZone,restaurant.opening_hours,preferredHour);
+          const ts=new Date(candidate).getTime();
+          if(ts<Date.now()+30*60*1000)continue;
+          if(occupied.some((other:number)=>Math.abs(other-ts)<90*60*1000))continue;
+          scheduledFor=candidate;
+          break outerTrend;
+        }
+      }
+
+      const title=titleFor(item,pillar,restaurant.city);
+      const caption=makeCaption(restaurant,item,0,pillar);
+      const cta=ctaFor(restaurant,pillar);
+      const discovery:any=platformContent(restaurant,item,caption,0,pillar);
+      const trendKeywords=uniq([...(discovery.seo_keywords||[]),String(opportunity.trend_query||"")]).filter(Boolean).slice(0,9);
+      const platform={
+        ...(discovery.platform_content||{}),
+        instagram:{...(discovery.platform_content?.instagram||{}),keywords:trendKeywords},
+        facebook:{...(discovery.platform_content?.facebook||{}),keywords:trendKeywords.slice(0,4)},
+      };
+      const commonMeta={
+        engine:"restaurant-autopilot-v28",
+        generation_source:"trend_opportunity",
+        trend_opportunity_id:opportunity.id,
+        trend_query:opportunity.trend_query,
+        trend_seed:opportunity.seed_query,
+        trend_score:opportunity.opportunity_score,
+        trend_type:opportunity.trend_type,
+        pillar,
+        image_url:item.image_url||null,
+        generated_at:new Date().toISOString(),
+      };
+
+      const feedPayload={
+        restaurant_id:restaurantId,
+        content_plan_id:null,
+        menu_item_id:item.id,
+        post_type:"feed",
+        scheduled_for:scheduledFor,
+        title,
+        caption,
+        cta,
+        hashtags:discovery.hashtags,
+        seo_keywords:trendKeywords,
+        discovery_score:Math.max(Number(discovery.discovery_score||0),Number(opportunity.opportunity_score||0)),
+        platform_content:platform,
+        visual_brief:visualBrief(restaurant,item,pillar,"feed"),
+        status:"draft",
+        generation_meta:{
+          ...commonMeta,
+          variation:0,
+          format:"4:5",
+          visual_design:visualDesign(restaurant,item,pillar,"feed",title,caption,cta,0),
+        },
+      };
+
+      const payloads:any[]=[feedPayload];
+      if(isCampaign){
+        let storyScheduled:string|null=null;
+        if(scheduledFor){
+          const base=new Date(scheduledFor).getTime();
+          const before=base-2*60*60*1000;
+          storyScheduled=new Date(before>Date.now()+30*60*1000?before:base+2*60*60*1000).toISOString();
+        }
+        const storyCaption=`${item.name} je danas u fokusu. ${ctaFor(restaurant,"social_prompt")}.`;
+        const storyDiscovery:any=platformContent(restaurant,item,storyCaption,1,"social_prompt");
+        const storyKeywords=uniq([...(storyDiscovery.seo_keywords||[]),String(opportunity.trend_query||"")]).filter(Boolean).slice(0,9);
+        payloads.push({
+          restaurant_id:restaurantId,
+          content_plan_id:null,
+          menu_item_id:item.id,
+          post_type:"story",
+          scheduled_for:storyScheduled,
+          title:`${item.name} · Story`,
+          caption:storyCaption,
+          cta:ctaFor(restaurant,"social_prompt"),
+          hashtags:storyDiscovery.hashtags,
+          seo_keywords:storyKeywords,
+          discovery_score:Math.max(Number(storyDiscovery.discovery_score||0),Number(opportunity.opportunity_score||0)),
+          platform_content:{
+            ...(storyDiscovery.platform_content||{}),
+            instagram:{...(storyDiscovery.platform_content?.instagram||{}),keywords:storyKeywords},
+            facebook:{...(storyDiscovery.platform_content?.facebook||{}),keywords:storyKeywords.slice(0,4)},
+          },
+          visual_brief:visualBrief(restaurant,item,"social_prompt","story"),
+          status:"draft",
+          generation_meta:{
+            ...commonMeta,
+            pillar:"social_prompt",
+            variation:1,
+            format:"9:16",
+            campaign_style:"trend_opportunity",
+            visual_design:visualDesign(restaurant,item,"social_prompt","story",`${item.name} · Story`,storyCaption,ctaFor(restaurant,"social_prompt"),1),
+          },
+        });
+      }
+
+      const {data:created,error:createError}=await supabase.from("posts").insert(payloads).select();
+      if(createError||!created?.length)return json({error:createError?.message||"Trend sadržaj nije napravljen."},400);
+
+      await service.from("trend_content_opportunities").update({
+        status:"created",
+        created_post_id:created[0].id,
+        updated_at:new Date().toISOString(),
+      }).eq("id",opportunity.id).eq("restaurant_id",restaurantId);
+
+      await service.from("autopilot_activity").insert({
+        restaurant_id:restaurantId,
+        user_id:user.id,
+        event_type:isCampaign?"trend_campaign_created":"trend_post_created",
+        title:isCampaign?"Trend mini kampanja je napravljena":"Trend objava je napravljena",
+        summary:`${item.name} · ${opportunity.trend_query} · ${created.length} ${created.length===1?"draft":"drafta"}.`,
+        metadata:{
+          opportunity_id:opportunity.id,
+          candidate_id:opportunity.candidate_id,
+          menu_item_id:item.id,
+          trend_query:opportunity.trend_query,
+          opportunity_score:opportunity.opportunity_score,
+          posts:created.map((p:any)=>p.id),
+        },
+      });
+
+      return json({ok:true,opportunity:{...opportunity,status:"created"},posts:created,scheduled_for:scheduledFor,engine:"restaurant-autopilot-v28"});
     }
 
     if (action === "week" || action === "ensure_week") {
