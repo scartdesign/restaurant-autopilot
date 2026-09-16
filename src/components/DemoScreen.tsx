@@ -104,7 +104,7 @@ function DemoContent({ approved, setApproved, notify }: { approved: string[]; se
 
     <section className="autopilot-health panel">
       <div className="autopilot-health-score"><span>100<small>%</small></span><div><p className="eyebrow">AUTOPILOT HEALTH</p><h2>Spreman za automatizaciju</h2><p>Svi ključni uslovi za automatsku nedelju su spremni.</p></div></div>
-      <div className="autopilot-health-checks"><span className="ok"><CheckCircle2 size={12}/> Auto week</span><span className="ok"><CheckCircle2 size={12}/> 3+ jela</span><span className="ok"><CheckCircle2 size={12}/> HERO</span><span className="ok"><CheckCircle2 size={12}/> 70% fotografija</span><span className="ok"><CheckCircle2 size={12}/> Radno vreme</span></div>
+      <div className="autopilot-health-checks"><span className="ok"><CheckCircle2 size={12}/> Auto week</span><span className="ok"><CheckCircle2 size={12}/> Quota OK</span><span className="ok"><CheckCircle2 size={12}/> 3+ jela</span><span className="ok"><CheckCircle2 size={12}/> HERO</span><span className="ok"><CheckCircle2 size={12}/> 70% fotografija</span><span className="ok"><CheckCircle2 size={12}/> Radno vreme</span></div>
     </section>
 
     {approved.length<demoPosts.length&&<section className="review-queue-bar panel"><div><span><CheckCircle2 size={16}/> REVIEW QUEUE</span><strong>{demoPosts.length-approved.length} drafta čekaju proveru</strong><small>Quality gate proverava copy, CTA, discovery, fotografiju i platform verzije.</small></div><button className="primary" onClick={()=>{setApproved(demoPosts.map(post=>post.title));notify('Demo review: svi draftovi su prošli quality gate i odobreni su.')}}><CheckCircle2 size={15}/> Proveri + odobri sve</button></section>}
