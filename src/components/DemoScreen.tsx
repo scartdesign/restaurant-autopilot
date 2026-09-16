@@ -46,7 +46,7 @@ const demoVisualPosts: Post[] = [
 ]
 
 export function DemoScreen({ onExit }: { onExit: () => void }) {
-  const [tab, setTab] = useState<DemoTab>('content')
+  const [tab, setTab] = useState<DemoTab>(() => { const value = window.location.hash.replace('#','') as DemoTab; return ['content','studio','brand','publish','menu','promotions','settings'].includes(value) ? value : 'content' })
   const [approved, setApproved] = useState<string[]>(['Pizza Capricciosa', 'Sveža Carbonara'])
   const [toast, setToast] = useState('')
 
@@ -128,7 +128,16 @@ function DemoPublish({ notify }: { notify: (value: string) => void }) {
   return <>
     <header className="page-header wow-simple-header"><div><p className="eyebrow">PUBLISH CENTER</p><h1>Tačan dan. Tačno vreme.</h1><p className="muted">Autopilot predlaže termin, a ti ga menjaš jednim klikom pre objave.</p></div><button className="primary" onClick={() => notify('Demo kalendar je spreman sa datumima i vremenima.')}><CalendarClock size={17} /> Export kalendara</button></header>
     <div className="demo-next-time"><div><Clock3 size={22} /></div><span>SLEDEĆA OBJAVA<strong>Ponedeljak, 14. septembar · {times['Pizza Capricciosa']}</strong><small>FEED · Pizza Capricciosa</small></span></div>
-    <div className="panel wow-publish-demo demo-publish-pro">{demoPosts.map((post) => <div className={`wow-publish-row ${editing === post.title ? 'editing' : ''}`} key={post.title}><div className="wow-publish-thumb" style={{ backgroundImage: `url(${post.image})` }} /><div><span>{post.day} · {post.type}</span><strong>{post.title}</strong><p>{post.caption}</p>{editing === post.title && <div className="demo-time-editor"><label>Vreme objave<input type="time" value={draft} onChange={(event) => setDraft(event.target.value)} /></label><button className="secondary" onClick={() => setDraft(post.type === 'STORY' ? '11:30' : post.type === 'PROMO' ? '17:30' : '18:30')}><Sparkles size={13} /> Autopilot</button><button className="primary" onClick={() => save(post.title)}><Save size={13} /> Sačuvaj</button><button className="icon-button" onClick={() => setEditing('')}><X size={14} /></button></div>}</div><div className="demo-publish-actions"><span className="demo-publish-time"><Clock3 size={13} /> {times[post.title]}</span><span className={`status ${post.status}`}>{post.status}</span><button className="mini-schedule" onClick={() => begin(post.title)}><Pencil size={13} /> Promeni</button></div></div>)}</div>
+    <div className="panel wow-publish-demo demo-publish-pro">{demoPosts.map((post) => <div className={`wow-publish-row ${editing === post.title ? 'editing' : ''}`} key={post.title}>
+      <div className="wow-publish-thumb" style={{ backgroundImage: `url(${post.image})` }} />
+      <div className="demo-publish-copy">
+        <span className="demo-publish-meta">{post.day} · {post.type}</span>
+        <strong className="demo-publish-title">{post.title}</strong>
+        <p className="demo-publish-caption">{post.caption}</p>
+        {editing === post.title && <div className="demo-time-editor"><label>Vreme objave<input type="time" value={draft} onChange={(event) => setDraft(event.target.value)} /></label><button className="secondary" onClick={() => setDraft(post.type === 'STORY' ? '11:30' : post.type === 'PROMO' ? '17:30' : '18:30')}><Sparkles size={13} /> Autopilot</button><button className="primary" onClick={() => save(post.title)}><Save size={13} /> Sačuvaj</button><button className="icon-button" onClick={() => setEditing('')}><X size={14} /></button></div>}
+      </div>
+      <div className="demo-publish-actions"><span className="demo-publish-time"><Clock3 size={13} /> {times[post.title]}</span><span className={`status ${post.status}`}>{post.status}</span><button className="mini-schedule" onClick={() => begin(post.title)}><Pencil size={13} /> Promeni</button></div>
+    </div>)}</div>
   </>
 }
 
