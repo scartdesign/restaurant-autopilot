@@ -286,10 +286,27 @@ function minutes(value: string) {
   return (Number.isFinite(h) ? h : 0) * 60 + (Number.isFinite(m) ? m : 0);
 }
 
-function scheduleFor(monday: Date, dayOffset: number, index: number, pillar: Pillar, timeZone: string, openingHours: any) {
+function performanceSignal(row: any) {
+  const reach = Number(row?.reach || 0);
+  const interactions = Number(row?.likes||0)+Number(row?.comments||0)+Number(row?.saves||0)+Number(row?.shares||0);
+  const engagement = reach > 0 ? interactions / reach * 100 : 0;
+  return engagement * 10 + Number(row?.saves||0) * 1.2 + Number(row?.shares||0) * 1.5 + Number(row?.clicks||0) * .5 + Number(row?.conversions||0) * 5;
+}
+
+function localHour(value: string, timeZone: string) {
+  try {
+    const text = new Intl.DateTimeFormat("en-US", { timeZone, hour: "2-digit", hourCycle: "h23" }).format(new Date(value));
+    const hour = Number(text);
+    return Number.isFinite(hour) ? hour : null;
+  } catch { return null; }
+}
+
+function scheduleFor(monday: Date, dayOffset: number, index: number, pillar: Pillar, timeZone: string, openingHours: any, learnedHour: number | null = null) {
   const d = new Date(monday);
   d.setUTCDate(monday.getUTCDate() + dayOffset);
-  const preferred = (pillar === "promotion" ? 16 : pillar === "engagement" ? 11 : pillar === "kitchen_story" ? 13 : index % 2 === 0 ? 9 : 17) * 60 + 30;
+  const fallbackHour = pillar === "promotion" ? 16 : pillar === "engagement" ? 11 : pillar === "kitchen_story" ? 13 : index % 2 === 0 ? 9 : 17;
+  const preferredHour = learnedHour !== null && Number.isFinite(learnedHour) ? clamp(Math.round(learnedHour), 7, 22) : fallbackHour;
+  const preferred = preferredHour * 60 + 30;
   const row = rowForDay(openingHours, dayOffset);
   const openMinute = minutes(row.open);
   const closeMinute = minutes(row.close);
@@ -421,7 +438,7 @@ Deno.serve(async (req: Request) => {
       const performancePostIds = [...new Set((performanceRows || []).map((row:any)=>row.post_id).filter(Boolean))];
       let performancePosts:any[]=[];
       if (performancePostIds.length) {
-        const { data } = await service.from("posts").select("id,menu_item_id").in("id", performancePostIds);
+        const { data } = await service.from("posts").select("id,menu_item_id,scheduled_for,post_type").in("id", performancePostIds);
         performancePosts = data || [];
       }
       const performancePostMap = new Map(performancePosts.map((post:any)=>[post.id,post]));
@@ -429,10 +446,7 @@ Deno.serve(async (req: Request) => {
       for (const row of performanceRows || []) {
         const post = performancePostMap.get(row.post_id);
         if (!post?.menu_item_id) continue;
-        const reach = Number(row.reach || 0);
-        const interactions = Number(row.likes||0)+Number(row.comments||0)+Number(row.saves||0)+Number(row.shares||0);
-        const engagement = reach > 0 ? interactions / reach * 100 : 0;
-        const score = engagement * 10 + Number(row.saves||0) * 1.2 + Number(row.shares||0) * 1.5 + Number(row.clicks||0) * .5 + Number(row.conversions||0) * 5;
+        const score = performanceSignal(row);
         const id=String(post.menu_item_id);
         learnedScore.set(id,(learnedScore.get(id)||0)+score);
       }
@@ -445,6 +459,32 @@ Deno.serve(async (req: Request) => {
         return bLearn-aLearn || Number(Boolean(b.image_url))-Number(Boolean(a.image_url)) || (recentUse.get(aId)||0)-(recentUse.get(bId)||0);
       });
       const timeZone = String(restaurant.timezone || "Europe/Belgrade");
+      const hourBuckets = new Map<string,{score:number;count:number}>();
+      for (const row of performanceRows || []) {
+        const post = performancePostMap.get(row.post_id);
+        if (!post?.scheduled_for) continue;
+        const hour = localHour(String(post.scheduled_for), timeZone);
+        if (hour === null) continue;
+        const type = String(post.post_type || "feed");
+        const signal = performanceSignal(row);
+        for (const key of [`${type}:${hour}`, `all:${hour}`]) {
+          const prev = hourBuckets.get(key) || {score:0,count:0};
+          prev.score += signal; prev.count += 1; hourBuckets.set(key, prev);
+        }
+      }
+      const bestLearnedHour = (type:string) => {
+        const candidates=[...hourBuckets.entries()]
+          .filter(([key,value]) => key.startsWith(type+":") && value.count >= (type==="all"?3:2))
+          .map(([key,value]) => ({hour:Number(key.split(":")[1]),avg:value.score/value.count,count:value.count}))
+          .sort((a,b)=>b.avg-a.avg || b.count-a.count);
+        return candidates[0]?.hour ?? null;
+      };
+      const fallbackLearnedHour = bestLearnedHour("all");
+      const learnedScheduleHours:Record<string,number|null> = {
+        feed: bestLearnedHour("feed") ?? fallbackLearnedHour,
+        story: bestLearnedHour("story") ?? fallbackLearnedHour,
+        promotion: bestLearnedHour("promotion") ?? fallbackLearnedHour,
+      };
       const monday = mondayOfCurrentWeek(timeZone);
       const weekStart = dateOnly(monday);
       const frequency = clamp(Number(restaurant.posting_frequency || 5), 3, 7);
@@ -476,12 +516,13 @@ Deno.serve(async (req: Request) => {
         const title = titleFor(item, pillar, restaurant.city);
         const caption = makeCaption(restaurant, item, index, pillar, otherItem);
         const cta = ctaFor(restaurant, pillar);
+        const learnedHour = learnedScheduleHours[postType] ?? null;
         return {
           restaurant_id: restaurantId,
           content_plan_id: plan.id,
           menu_item_id: item.id,
           post_type: postType,
-          scheduled_for: scheduleFor(monday, scheduleDays[index], index, pillar, timeZone, restaurant.opening_hours),
+          scheduled_for: scheduleFor(monday, scheduleDays[index], index, pillar, timeZone, restaurant.opening_hours, learnedHour),
           title,
           caption,
           cta,
@@ -489,7 +530,7 @@ Deno.serve(async (req: Request) => {
           visual_brief: visualBrief(restaurant, item, pillar, postType),
           status: "draft",
           generation_meta: {
-            engine: "restaurant-autopilot-v10",
+            engine: "restaurant-autopilot-v12",
             pillar,
             variation: index,
             image_url: item.image_url || null,
@@ -501,6 +542,7 @@ Deno.serve(async (req: Request) => {
               item_score: Math.round((learnedScore.get(String(item.id)) || 0) * 10) / 10,
               marketing_priority: Number(item.marketing_priority || 0),
               recent_uses_30d: recentUse.get(String(item.id)) || 0,
+              schedule_hour: learnedHour,
             },
             visual_design: visualDesign(restaurant, item, pillar, postType, title, caption, cta, index),
           },
@@ -508,7 +550,7 @@ Deno.serve(async (req: Request) => {
       });
       const { data: posts, error: insertError } = await supabase.from("posts").insert(payload).select();
       if (insertError) return json({ error: insertError.message }, 400);
-      return json({ ok: true, plan, posts, engine: "restaurant-autopilot-v10", pillars, timezone: timeZone, schedule_days: scheduleDays, learning:{performance_samples:(performanceRows||[]).length,ranked_menu:rankedMenu.map((item:any)=>({id:item.id,name:item.name,score:Math.round(((learnedScore.get(String(item.id))||0)+Number(item.marketing_priority||0)*35)*10)/10,marketing_priority:Number(item.marketing_priority||0),recent_uses_30d:recentUse.get(String(item.id))||0}))} });
+      return json({ ok: true, plan, posts, engine: "restaurant-autopilot-v12", pillars, timezone: timeZone, schedule_days: scheduleDays, learning:{performance_samples:(performanceRows||[]).length,schedule_hours:learnedScheduleHours,ranked_menu:rankedMenu.map((item:any)=>({id:item.id,name:item.name,score:Math.round(((learnedScore.get(String(item.id))||0)+Number(item.marketing_priority||0)*35)*10)/10,marketing_priority:Number(item.marketing_priority||0),recent_uses_30d:recentUse.get(String(item.id))||0}))} });
     }
 
     if (action === "promotion") {
@@ -538,7 +580,7 @@ Deno.serve(async (req: Request) => {
       const feedCaption = `${[title, discountText, description].filter(Boolean).join(" · ")}. ${goalClose(restaurant)}`;
       const storyCaption = `${discountText || title}. ${description || "Važi ograničeno vreme."} ${ctaFor(restaurant, "promotion")}.`;
       const cta = ctaFor(restaurant, "promotion");
-      const commonMeta = { engine: "restaurant-autopilot-v10", source: "promotion", image_url: visualItem?.image_url || null, selected_menu_item_id: visualItem?.id || null, generated_at: new Date().toISOString(), pillar: "promotion" };
+      const commonMeta = { engine: "restaurant-autopilot-v12", source: "promotion", image_url: visualItem?.image_url || null, selected_menu_item_id: visualItem?.id || null, generated_at: new Date().toISOString(), pillar: "promotion" };
       const feedTitle = discountText || title;
       const feed = {
         restaurant_id: restaurantId, promotion_id: promotion.id, post_type: "promotion", scheduled_for: startsAt, title: feedTitle, caption: feedCaption, cta,
@@ -555,7 +597,7 @@ Deno.serve(async (req: Request) => {
       };
       const { data: posts, error: postError } = await supabase.from("posts").insert([feed, story]).select();
       if (postError) return json({ error: postError.message }, 400);
-      return json({ ok: true, promotion, posts, engine: "restaurant-autopilot-v10" });
+      return json({ ok: true, promotion, posts, engine: "restaurant-autopilot-v12" });
     }
 
     if (action === "regenerate" || action === "optimize_discovery") {
@@ -575,10 +617,10 @@ Deno.serve(async (req: Request) => {
         ...discovery,
         cta: post.cta || ctaFor(restaurant, pillar),
         status: "draft",
-        generation_meta: { ...(post.generation_meta || {}), engine: "restaurant-autopilot-v10", pillar, variation, visual_design: nextVisual, regenerated_at: new Date().toISOString() },
+        generation_meta: { ...(post.generation_meta || {}), engine: "restaurant-autopilot-v12", pillar, variation, visual_design: nextVisual, regenerated_at: new Date().toISOString() },
       }).eq("id", postId).select().single();
       if (updateError) return json({ error: updateError.message }, 400);
-      return json({ ok: true, post: updated, engine: "restaurant-autopilot-v10" });
+      return json({ ok: true, post: updated, engine: "restaurant-autopilot-v12" });
     }
 
     if (action === "quality_check") {
