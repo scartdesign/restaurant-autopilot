@@ -145,6 +145,7 @@ export function PublishCenter({ restaurant, posts, onChanged, setNotice }: {
       if(error){setNotice(error.message);setBulkWorking(false);return}
     }
     await onChanged()
+    await supabase.functions.invoke('content-engine',{body:{action:'log_activity',restaurantId:restaurant.id,eventType:'schedule_adjusted',metadata:{count:updates.length,learned:true}}})
     setNotice(`Autopilot je rasporedio ${updates.length} objava bez preklapanja i uz radno vreme restorana.`)
     setBulkWorking(false)
   }
@@ -198,6 +199,7 @@ export function PublishCenter({ restaurant, posts, onChanged, setNotice }: {
     const { error } = await supabase.from('posts').update({ scheduled_for: scheduledIso }).eq('id', post.id)
     if (error) setNotice(error.message)
     else {
+      await supabase.functions.invoke('content-engine',{body:{action:'log_activity',restaurantId:restaurant.id,eventType:'schedule_adjusted',metadata:{post_id:post.id,learned:false,count:1}}})
       setNotice(`Termin je sačuvan: ${formatDateLong(scheduledIso, restaurant.timezone)} u ${formatTime(scheduledIso, restaurant.timezone)} · ${restaurant.timezone}.`)
       setEditingId('')
       await onChanged()
