@@ -263,6 +263,8 @@ function buildCalendarDays(restaurant:Restaurant,count:number){
   })
 }
 function preferredMinutes(post:Post){
+  const learnedHour=post.generation_meta?.learning_signal?.schedule_hour
+  if(learnedHour!==null&&learnedHour!==undefined&&Number.isFinite(Number(learnedHour)))return Math.max(7,Math.min(22,Math.round(Number(learnedHour))))*60+30
   if(post.post_type==='promotion')return 17*60+30
   if(post.post_type==='story')return 11*60+30
   const pillar=String(post.generation_meta?.pillar||'')
@@ -279,8 +281,21 @@ function openingRow(restaurant:Restaurant,date:string){
 function toMinutes(value:string){const[h,m]=value.split(':').map(Number);return (Number.isFinite(h)?h:0)*60+(Number.isFinite(m)?m:0)}
 function hhmm(value:number){const minutes=Math.max(0,Math.min(23*60+59,Math.round(value)));return String(Math.floor(minutes/60)).padStart(2,'0')+':'+String(minutes%60).padStart(2,'0')}
 function addLocalDays(date:string,days:number){const d=new Date(date+'T12:00:00Z');d.setUTCDate(d.getUTCDate()+days);return d.toISOString().slice(0,10)}
+function mondayDayOffset(date:string,timeZone:string){
+  try{
+    const iso=zonedInputToIso(date+'T12:00',timeZone)
+    const label=new Intl.DateTimeFormat('en-US',{timeZone,weekday:'short'}).format(new Date(iso))
+    const map:Record<string,number>={Mon:0,Tue:1,Wed:2,Thu:3,Fri:4,Sat:5,Sun:6}
+    return map[label]??0
+  }catch{return 0}
+}
 function autopilotDraft(post:Post,date:string,restaurant:Restaurant):ScheduleDraft{
   let chosenDate=date
+  const learnedDay=post.generation_meta?.learning_signal?.schedule_day
+  if(learnedDay!==null&&learnedDay!==undefined&&Number.isFinite(Number(learnedDay))){
+    const wanted=Math.max(0,Math.min(6,Math.round(Number(learnedDay))))
+    for(let i=0;i<7;i++){const candidate=addLocalDays(date,i);if(mondayDayOffset(candidate,restaurant.timezone)===wanted){chosenDate=candidate;break}}
+  }
   let row=openingRow(restaurant,chosenDate)
   for(let i=0;i<7&&!row.enabled;i++){chosenDate=addLocalDays(chosenDate,1);row=openingRow(restaurant,chosenDate)}
   const preferred=preferredMinutes(post)
