@@ -1,5 +1,5 @@
-import { FormEvent, useMemo, useState, type CSSProperties } from 'react'
-import { ArrowUpRight, CalendarDays, CheckCircle2, ChefHat, Clock3, Copy, CopyPlus, Facebook, Hash, Instagram, MapPin, Pencil, Save, Search, Sparkles, Trash2, TrendingUp, UtensilsCrossed, WandSparkles, X, Zap } from 'lucide-react'
+import { FormEvent, useEffect, useMemo, useState, type CSSProperties } from 'react'
+import { Activity, ArrowUpRight, CalendarDays, CheckCircle2, ChefHat, Clock3, Copy, CopyPlus, Facebook, Hash, Instagram, MapPin, Pencil, RefreshCw, Save, Search, ShieldCheck, Sparkles, Trash2, TrendingUp, UtensilsCrossed, WandSparkles, X, Zap } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import type { Entitlement, MenuItem, Post, Restaurant } from '../types'
 
@@ -19,6 +19,9 @@ export function Dashboard({ restaurant, menuItems, posts, entitlement, onChanged
   const [contentQuery,setContentQuery]=useState('')
   const [contentStatus,setContentStatus]=useState<'all'|Post['status']>('all')
   const [contentType,setContentType]=useState<'all'|Post['post_type']>('all')
+  const [preflight,setPreflight]=useState<any>(null)
+  const [preflightLoading,setPreflightLoading]=useState(false)
+  const [activityRows,setActivityRows]=useState<any[]>([])
   const activeItems = useMemo(() => menuItems.filter((item) => item.is_active).sort((a, b) => (b.marketing_priority || 0) - (a.marketing_priority || 0)), [menuItems])
   const approvedCount = useMemo(() => posts.filter((post) => post.status === 'approved' || post.status === 'published').length, [posts])
   const averageDiscovery = useMemo(() => posts.length ? Math.round(posts.reduce((sum, post) => sum + (post.discovery_score || 0), 0) / posts.length) : 0, [posts])
@@ -107,6 +110,20 @@ export function Dashboard({ restaurant, menuItems, posts, entitlement, onChanged
   }, [orderedPosts.length, weekQuality.score, weekQuality.uniqueDishes, weekQuality.scheduled, weekQuality.pastScheduled, heroItem, activeItems.length])
 
 
+  async function loadPreflight(recordActivity=false){
+    setPreflightLoading(true)
+    const{data,error}=await supabase.functions.invoke('content-engine',{body:{action:'preflight',restaurantId:restaurant.id,recordActivity}})
+    if(!error&&!data?.error)setPreflight(data)
+    else if(recordActivity)setNotice(data?.error||error?.message||'Preflight provera nije uspela.')
+    setPreflightLoading(false)
+  }
+
+  async function loadActivity(){
+    const{data}=await supabase.from('autopilot_activity').select('id,event_type,title,summary,metadata,created_at').eq('restaurant_id',restaurant.id).order('created_at',{ascending:false}).limit(8)
+    setActivityRows(data||[])
+  }
+
+  useEffect(()=>{void loadPreflight(false);void loadActivity()},[restaurant.id,menuItems.length,posts.length,entitlement?.generated_this_month])
   async function reviewWholeWeek() {
     if (!reviewQueue.length) { setNotice('Nema draft objava za proveru.'); return }
     setBulkReviewing(true)
@@ -125,6 +142,9 @@ export function Dashboard({ restaurant, menuItems, posts, entitlement, onChanged
       } else flagged.push(post.title || 'Objava')
     }
     await onChanged()
+    await supabase.functions.invoke('content-engine',{body:{action:'log_activity',restaurantId:restaurant.id,eventType:'weekly_review_completed',metadata:{approved,flagged:flagged.length,total:reviewQueue.length}}})
+    void loadActivity()
+    void loadPreflight(false)
     setNotice(flagged.length
       ? `Review završen: ${approved} odobreno · ${flagged.length} ostavljeno za doradu (${flagged.slice(0,3).join(', ')}${flagged.length>3?'…':''}).`
       : `Review završen: svih ${approved} draftova je prošlo quality gate i odobreno je.`)
@@ -175,6 +195,8 @@ export function Dashboard({ restaurant, menuItems, posts, entitlement, onChanged
     }
 
     await onChanged()
+    void loadActivity()
+    void loadPreflight(false)
     const count = generated.length || restaurant.posting_frequency || 0
     setNotice(aiEnhanced
       ? `Nedelja je spremna: ${count} objava, AI je doradio ${aiEnhanced}/${count} tekstova${heroGenerated?` · HERO fokus u ${heroGenerated} ${heroGenerated===1?'objavi':'objave'}`:''}${performanceSamples?` · učenje iz ${performanceSamples} stvarnih rezultata`:''}. Dizajn, datum i vreme su sačuvani.`
@@ -329,6 +351,16 @@ export function Dashboard({ restaurant, menuItems, posts, entitlement, onChanged
         </div>
       </section>
 
+      <section className={'autopilot-preflight panel '+(preflight?.status||'loading')}>
+        <div className="preflight-head">
+          <div className="preflight-icon"><ShieldCheck size={20}/></div>
+          <div><p className="eyebrow">AUTO WEEK PREFLIGHT</p><h2>{preflightLoading&&!preflight?'Proveravam…':preflight?.existing?'Plan već postoji':preflight?.ready?'Spreman za generisanje':'Ima blokera'}</h2><span>{preflight?.week_start?('Ciljna nedelja: '+formatWeekStart(preflight.week_start)+(preflight.next_week?' · sledeća nedelja':'')):'Server proverava paket, meni, radno vreme, kvotu i postojeći plan.'}</span></div>
+          <button className="secondary preflight-refresh" onClick={()=>void loadPreflight(true)} disabled={preflightLoading}><RefreshCw size={13} className={preflightLoading?'spin':''}/>{preflightLoading?'Proveravam':'Proveri sada'}</button>
+        </div>
+        {preflight&&<div className="preflight-checks">{(preflight.checks||[]).map((check:any)=><span key={check.key} className={check.ok?'ok':check.severity==='blocker'?'blocker':'warning'}>{check.ok?<CheckCircle2 size={11}/>:<X size={11}/>} {check.label}{check.key==='photos'&&typeof check.value==='number'?(' '+check.value+'%'):''}</span>)}</div>}
+        {preflight?.existing&&<div className="preflight-existing"><CalendarDays size={14}/><span>Postojeći plan: <b>{preflight.plan?.posts||0} objava</b> · {preflight.plan?.locked_posts||0} zaključano · {preflight.plan?.replaceable_posts||0} draft/rejected</span></div>}
+        {!preflight?.existing&&preflight?.blockers?.length>0&&<div className="preflight-blockers">{preflight.blockers.map((item:any)=><span key={item.key}>{item.label}</span>)}</div>}
+      </section>
       <section className="autopilot-health panel">
         <div className="autopilot-health-score"><span>{autopilotHealth.score}<small>%</small></span><div><p className="eyebrow">AUTOPILOT HEALTH</p><h2>{autopilotHealth.score===100?'Spreman za automatizaciju':autopilotHealth.score>=60?'Skoro spreman':'Treba podešavanje'}</h2><p>{autopilotHealth.score===100?'Svi ključni uslovi za automatsku nedelju su spremni.':'Dovrši crvene stavke da automatski plan radi bez ručnih intervencija.'}</p></div></div>
         <div className="autopilot-health-checks">{autopilotHealth.checks.map(check=><span key={check.key} className={check.ok?'ok':'missing'}>{check.ok?<CheckCircle2 size={12}/>:<X size={12}/>} {check.label}</span>)}</div>
@@ -340,6 +372,10 @@ export function Dashboard({ restaurant, menuItems, posts, entitlement, onChanged
         <button className="primary" onClick={()=>void reviewWholeWeek()} disabled={bulkReviewing}>{bulkReviewing?<><Sparkles size={15}/> Proveravam…</>:<><CheckCircle2 size={15}/> Proveri + odobri sve</>}</button>
       </section>}
 
+      {activityRows.length>0&&<section className="autopilot-activity panel">
+        <div className="activity-head"><div><p className="eyebrow">AUTOPILOT ACTIVITY</p><h2>Šta je sistem uradio</h2></div><Activity size={19}/></div>
+        <div className="activity-list">{activityRows.map((row:any)=><article key={row.id}><span className="activity-dot"/><div><strong>{row.title}</strong><p>{row.summary||activityFallback(row.event_type)}</p><small>{relativeActivityTime(row.created_at)}</small></div></article>)}</div>
+      </section>}
       <section className="week-quality-panel panel">
         <div className="week-quality-score">
           <span className="week-quality-ring" style={{ '--quality': weekQuality.score } as CSSProperties}><strong>{weekQuality.score}</strong><small>/100</small></span>
@@ -534,4 +570,27 @@ function shorten(value: string, max: number) { const clean = value.replace(/\s+/
 
 function normalizeCopyKey(value:string){
   return value.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,' ').trim().slice(0,90)
+}
+
+function formatWeekStart(value:string){
+  try{return new Intl.DateTimeFormat('sr-RS',{day:'2-digit',month:'2-digit',year:'numeric'}).format(new Date(value+'T12:00:00Z'))}catch{return value}
+}
+function relativeActivityTime(value:string){
+  const diff=Math.max(0,Date.now()-new Date(value).getTime())
+  const minutes=Math.floor(diff/60000)
+  if(minutes<1)return 'upravo sada'
+  if(minutes<60)return 'pre '+minutes+' min'
+  const hours=Math.floor(minutes/60)
+  if(hours<24)return 'pre '+hours+' h'
+  const days=Math.floor(hours/24)
+  return days===1?'pre 1 dan':'pre '+days+' dana'
+}
+function activityFallback(type:string){
+  if(type==='weekly_plan_created')return 'Nedelja je kreirana.'
+  if(type==='preflight_checked')return 'Preflight provera je završena.'
+  if(type==='weekly_review_completed')return 'Quality review nedelje je završen.'
+  if(type==='performance_imported')return 'Performance podaci su osveženi.'
+  if(type==='menu_imported')return 'Meni je osvežen iz CSV-a.'
+  if(type==='ai_images_generated')return 'AI fotografije su generisane.'
+  return 'Autopilot aktivnost.'
 }
