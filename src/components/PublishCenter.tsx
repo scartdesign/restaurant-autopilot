@@ -148,6 +148,16 @@ export function PublishCenter({ restaurant, posts, onChanged, setNotice }: {
     setWorkingId('')
   }
 
+  async function cancelMetaJob(job:MetaJob){
+    if(!window.confirm(`Otkaži zakazanu ${job.platform==='instagram'?'Instagram':'Facebook'} objavu?`))return
+    setWorkingId('job-'+job.id)
+    const{data,error}=await supabase.functions.invoke('meta-publisher',{body:{action:'cancel_job',restaurantId:restaurant.id,jobId:job.id}})
+    if(error||data?.error)setNotice(data?.error||error?.message||'Meta job nije otkazan.')
+    else setNotice(`${job.platform==='instagram'?'Instagram':'Facebook'} zakazivanje je otkazano.`)
+    await loadMetaJobs()
+    setWorkingId('')
+  }
+
   function exportCsv() {
     if (!posts.length) { setNotice('Nema sadržaja za export.'); return }
     const headers = ['datum','vreme','status','format','naslov','instagram_caption','instagram_hashtags','facebook_caption','facebook_hashtags','cta','search_keywords']
@@ -381,7 +391,7 @@ export function PublishCenter({ restaurant, posts, onChanged, setNotice }: {
             <div className="queue-copy">
               <div className="queue-title"><span className="queue-format">{post.post_type}</span><strong>{post.title || 'Objava'}</strong>{post.scheduled_for && <span className="schedule-chip">{formatWeekday(post.scheduled_for, restaurant.timezone)} · {formatTime(post.scheduled_for, restaurant.timezone)}</span>}{post.generation_meta?.learning_signal?.schedule_hour !== null && post.generation_meta?.learning_signal?.schedule_hour !== undefined && <span className="learned-time-chip"><Sparkles size={11}/> LEARNED TIME</span>}{post.generation_meta?.generation_source&&<span className={`generation-source-chip ${String(post.generation_meta.generation_source).startsWith('weekly_autopilot')?'auto':'manual'}`}>{String(post.generation_meta.generation_source).startsWith('weekly_autopilot')?'AUTO WEEK':post.generation_meta.generation_source==='opportunity_test'?'TEST':'MANUAL'}</span>}</div>
               <p>{post.caption}</p>
-              <div className="queue-platforms"><span><Instagram size={13} /> {(post.platform_content?.instagram?.hashtags || post.hashtags || []).length} IG tags</span><span><Facebook size={13} /> {(post.platform_content?.facebook?.hashtags || []).length} FB tags</span><span>{post.discovery_score || 0}/100 discovery</span>{qualityScores[post.id] !== undefined && <span className="quality-inline"><ShieldCheck size={13} /> {qualityScores[post.id]}/100 quality</span>}</div>{metaJobsFor(post.id).length>0&&<div className="meta-job-strip">{metaJobsFor(post.id).map(job=><span key={job.id} className={`meta-job-chip ${job.status}`}><b>{job.platform==='instagram'?'IG':'FB'}</b> {job.status}{job.status==='queued'?<small>{formatTime(job.publish_at,restaurant.timezone)}</small>:null}{job.status==='failed'&&<button disabled={workingId==='job-'+job.id} onClick={()=>void retryMetaJob(job)}>Retry</button>}</span>)}</div>}
+              <div className="queue-platforms"><span><Instagram size={13} /> {(post.platform_content?.instagram?.hashtags || post.hashtags || []).length} IG tags</span><span><Facebook size={13} /> {(post.platform_content?.facebook?.hashtags || []).length} FB tags</span><span>{post.discovery_score || 0}/100 discovery</span>{qualityScores[post.id] !== undefined && <span className="quality-inline"><ShieldCheck size={13} /> {qualityScores[post.id]}/100 quality</span>}</div>{metaJobsFor(post.id).length>0&&<div className="meta-job-strip">{metaJobsFor(post.id).map(job=><span key={job.id} className={`meta-job-chip ${job.status}`}><b>{job.platform==='instagram'?'IG':'FB'}</b> {job.status}{job.status==='queued'?<small>{formatTime(job.publish_at,restaurant.timezone)}</small>:null}{job.status==='failed'&&<button disabled={workingId==='job-'+job.id} onClick={()=>void retryMetaJob(job)}>Retry</button>}{job.status==='queued'&&<button className="cancel" disabled={workingId==='job-'+job.id} onClick={()=>void cancelMetaJob(job)}>Otkaži</button>}</span>)}</div>}
 
               {editingId === post.id && <div className="schedule-editor">
                 <div className="schedule-fields"><label>Datum <small>{restaurant.timezone}</small><input type="date" value={scheduleDraft.date} onChange={(e) => setScheduleDraft({ ...scheduleDraft, date: e.target.value })} /></label><label>Vreme<input type="time" step="300" value={scheduleDraft.time} onChange={(e) => setScheduleDraft({ ...scheduleDraft, time: e.target.value })} /></label></div>
