@@ -413,6 +413,7 @@ function PostCard({ post, restaurant, menuItems, working, onEdit, onAiCopy, onOp
   const price = item?.price ? `${item.price} ${item.currency || 'RSD'}` : ''
   const photoPosition = design?.photo_position === 'left' ? 'left center' : design?.photo_position === 'right' ? 'right center' : 'center center'
   const learning = post.generation_meta?.learning_signal
+  const generationSource = String(post.generation_meta?.generation_source || '')
   const selectionSignals = [
     Number(learning?.marketing_priority || 0) >= 3 ? 'HERO' : Number(learning?.marketing_priority || 0) >= 2 ? 'PRIORITET' : '',
     Number(learning?.item_score || 0) > 0 ? 'PERFORMANCE' : '',
@@ -436,7 +437,7 @@ function PostCard({ post, restaurant, menuItems, working, onEdit, onAiCopy, onOp
         <div className="preview-brand">{restaurant.logo_url ? <img className="wow-card-logo" src={restaurant.logo_url} alt="" /> : <div className="preview-logo"><ChefHat size={20} /></div>}<div><strong>{restaurant.name}</strong><small>{restaurant.neighborhood || restaurant.city || restaurant.cuisine_type}</small></div></div>
       </div>
       <div className="post-body post-body-pro">
-        <div className="post-meta"><span>{post.scheduled_for ? formatDateLong(post.scheduled_for, restaurant.timezone) : 'Bez termina'}{post.scheduled_for && <> · <b className="post-time-strong"><Clock3 size={11} /> {formatTime(post.scheduled_for, restaurant.timezone)}</b></>}</span><span className={`status ${post.status}`}>{post.status}</span></div>
+        <div className="post-meta"><span>{post.scheduled_for ? formatDateLong(post.scheduled_for, restaurant.timezone) : 'Bez termina'}{post.scheduled_for && <> · <b className="post-time-strong"><Clock3 size={11} /> {formatTime(post.scheduled_for, restaurant.timezone)}</b></>}</span><div className="post-meta-badges">{generationSource&&<span className={`generation-source-chip ${generationSource==='weekly_autopilot'?'auto':'manual'}`}>{generationSource==='weekly_autopilot'?'AUTO WEEK':'MANUAL'}</span>}<span className={`status ${post.status}`}>{post.status}</span></div></div>
         <div className="post-title-line"><h3>{post.title}</h3><span className="visual-template-chip">{template}</span></div>
         {selectionSignals.length > 0 && <div className="ai-selection-signals"><span>AI IZBOR</span>{selectionSignals.map((signal)=><b key={signal}>{signal}</b>)}</div>}
         <p className="caption-preview">{post.caption}</p>
