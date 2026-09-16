@@ -61,7 +61,7 @@ export function DemoScreen({ onExit }: { onExit: () => void }) {
         <div>
           <div className="brand-mark"><div className="brand-icon"><ChefHat size={21} /></div><span>Restaurant<br /><strong>Autopilot</strong></span></div>
           <div className="restaurant-chip"><img className="sidebar-logo" src={demoLogo} alt="" /><div><strong>Bella Napoli</strong><small>Vračar · Beograd</small></div></div>
-          <div className="autopilot-status"><span className="live-dot" /> AUTOPILOT ACTIVE</div>
+          <div className="autopilot-status"><span className="live-dot" /> AUTOPILOT ACTIVE · AUTO WEEK ON</div>
           <nav>
             <button className={tab === 'content' ? 'nav-active' : ''} onClick={() => setTab('content')}><CalendarDays size={18} /> Sadržaj</button>
             <button className={tab === 'studio' ? 'nav-active' : ''} onClick={() => setTab('studio')}><ImageIcon size={18} /> Visual Studio</button>
@@ -94,13 +94,18 @@ export function DemoScreen({ onExit }: { onExit: () => void }) {
 function DemoContent({ approved, setApproved, notify }: { approved: string[]; setApproved: (value: string[]) => void; notify: (value: string) => void }) {
   return <>
     <section className="wow-hero wow-demo-hero has-image" style={{ backgroundImage: `linear-gradient(90deg, rgba(7,12,9,.97), rgba(7,12,9,.68) 47%, rgba(7,12,9,.10)), url(${food.pizza})` }}>
-      <div className="wow-hero-copy"><div className="hero-kicker"><span className="live-dot" /> AUTOPILOT ACTIVE</div><span className="wow-brand-label">BELLA NAPOLI</span><h1>Prava italijanska priča u tvom gradu.</h1><p>Fotografije, sadržaj, termini i lokalni discovery — spremni bez svakodnevnog cimanja.</p><div className="wow-hero-actions"><button className="wow-primary" onClick={() => notify('Nova nedelja je generisana: 5 premium predloga sa terminima.')}><Sparkles size={18} /> Kreiraj novi sadržaj</button><div className="wow-hero-meta"><span><MapPin size={14} /> Vračar, Beograd</span><span><Hash size={14} /> Smart Discovery</span></div></div></div>
+      <div className="wow-hero-copy"><div className="hero-kicker"><span className="live-dot" /> AUTOPILOT ACTIVE <b className="auto-week-on">AUTO WEEK ON</b></div><span className="wow-brand-label">BELLA NAPOLI</span><h1>Prava italijanska priča u tvom gradu.</h1><p>Fotografije, sadržaj, termini i lokalni discovery — spremni bez svakodnevnog cimanja.</p><div className="wow-hero-actions"><button className="wow-primary" onClick={() => notify('Nova nedelja je generisana: 5 premium predloga sa terminima.')}><Sparkles size={18} /> Kreiraj novi sadržaj</button><div className="wow-hero-meta"><span><MapPin size={14} /> Vračar, Beograd</span><span><Hash size={14} /> Smart Discovery</span></div></div></div>
       <div className="wow-score-card"><div><TrendingUp size={19} /><span>Discovery score</span></div><strong>94<small>/100</small></strong><p>plan + vreme + vizual spremni</p></div>
     </section>
 
     <section className="wow-kpi-grid"><DemoKpi label="Nedeljni sadržaj" value="5" detail="3 feed · 1 story · 1 promo" /><DemoKpi label="Spremno" value={`${approved.length}/4`} detail="odobreno za objavu" /><DemoKpi label="Sledeća objava" value="18:30" detail="ponedeljak · Feed" /><DemoKpi label="Discovery" value="94" detail="local + niche + search" /></section>
 
     <section className="wow-week panel wow-demo-week"><div className="wow-panel-head"><div><p className="eyebrow">NEDELJNI PLAN</p><h2>Sadržaj koji već čeka</h2></div><button className="small-ghost" onClick={() => notify('Kompletan raspored je u Publish Centeru.')}>Pogledaj raspored →</button></div><div className="wow-week-strip">{demoPosts.map((post) => <div className="wow-day" key={post.title}><div className="wow-day-image has-photo" style={{ backgroundImage: `url(${post.image})` }}><span>{post.type}</span>{approved.includes(post.title) && <i><CheckCircle2 size={14} /></i>}</div><strong>{post.day}</strong><span className="demo-time-pill"><Clock3 size={11} /> {post.time}</span><p>{post.title}</p></div>)}</div></section>
+
+    <section className="autopilot-health panel">
+      <div className="autopilot-health-score"><span>100<small>%</small></span><div><p className="eyebrow">AUTOPILOT HEALTH</p><h2>Spreman za automatizaciju</h2><p>Svi ključni uslovi za automatsku nedelju su spremni.</p></div></div>
+      <div className="autopilot-health-checks"><span className="ok"><CheckCircle2 size={12}/> Auto week</span><span className="ok"><CheckCircle2 size={12}/> 3+ jela</span><span className="ok"><CheckCircle2 size={12}/> HERO</span><span className="ok"><CheckCircle2 size={12}/> 70% fotografija</span><span className="ok"><CheckCircle2 size={12}/> Radno vreme</span></div>
+    </section>
 
     <section className="week-quality-panel panel demo-week-quality">
       <div className="week-quality-score"><span className="week-quality-ring" style={{ '--quality': 94 } as CSSProperties}><strong>94</strong><small>/100</small></span><div><p className="eyebrow">WEEK QUALITY</p><h2>Odličan plan</h2><span>4 različita jela, HERO prisutan bez preteranog ponavljanja i svaki post ima termin.</span></div></div>
