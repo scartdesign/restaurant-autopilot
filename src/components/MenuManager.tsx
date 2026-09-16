@@ -41,6 +41,11 @@ export function MenuManager({ restaurant, userId, items, onChanged, setNotice }:
     })
   },[items,query,categoryFilter,stateFilter,itemSignals])
   const photoCoverage = useMemo(() => items.length ? Math.round((items.filter((item) => item.image_url).length / items.length) * 100) : 0, [items])
+  const learningCoverage = useMemo(() => {
+    const active=items.filter(item=>item.is_active)
+    const learned=active.filter(item=>(itemSignals[item.id]?.samples||0)>=2).length
+    return { learned, total:active.length, percent:active.length?Math.round((learned/active.length)*100):0 }
+  },[items,itemSignals])
   const aiBlocked=Boolean(aiStatus&&(!aiStatus.ready||(aiStatus.limit!==null&&aiStatus.used>=aiStatus.limit)))
   const currentHero=useMemo(()=>items.find(item=>Number(item.marketing_priority||0)===3)||null,[items])
 
@@ -348,7 +353,7 @@ export function MenuManager({ restaurant, userId, items, onChanged, setNotice }:
     <>
       <header className="page-header menu-header-pro">
         <div><p className="eyebrow">MENI</p><h1>Jela i proizvodi</h1><p className="muted">Fotografije i podaci iz menija su gorivo za tekst, discovery i gotove vizuale. Nemaš fotografiju? Autopilot može da generiše realističnu AI food fotografiju.</p></div>
-        <div className="menu-health"><span>Photo coverage</span><strong>{photoCoverage}%</strong><small>{items.filter((item) => item.image_url).length}/{items.length || 0} sa fotografijom</small></div>
+        <div className="menu-health-group"><div className="menu-health"><span>Photo coverage</span><strong>{photoCoverage}%</strong><small>{items.filter((item) => item.image_url).length}/{items.length || 0} sa fotografijom</small></div><div className="menu-health learning-health"><span>Learning coverage</span><strong>{learningCoverage.percent}%</strong><small>{learningCoverage.learned}/{learningCoverage.total || 0} sa 2+ uzorka</small></div></div>
       </header>
 
       <div className="menu-hero-guide">
