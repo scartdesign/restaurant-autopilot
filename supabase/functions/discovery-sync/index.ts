@@ -246,8 +246,8 @@ async function runSync(service:any,config:any,engineConfig:any){
     for(const batch of chunks(targets,4)){
       if(apiCalls+candidateApiCalls>=callBudget){budgetExhausted=true;break}
       try{
-        const results=await fetchTrendBatch(String(config.api_key),geo,batch.map(x=>x.query));
         apiCalls+=1;
+        const results=await fetchTrendBatch(String(config.api_key),geo,batch.map(x=>x.query));
         for(const result of results){
           const item=batch.find(x=>x.query===result.query);
           if(!item)continue;
@@ -293,8 +293,8 @@ async function runSync(service:any,config:any,engineConfig:any){
   for(const seed of candidateSeeds){
     if(apiCalls+candidateApiCalls>=callBudget){budgetExhausted=true;break}
     try{
-      const related=await fetchRelatedQueries(String(config.api_key),seed.geo,seed.query);
       candidateApiCalls+=1;
+      const related=await fetchRelatedQueries(String(config.api_key),seed.geo,seed.query);
       for(const row of related){
         const relevance=candidateRelevance(row.query,seed.query);
         if(relevance<45)continue;
