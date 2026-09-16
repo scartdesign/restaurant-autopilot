@@ -57,5 +57,26 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
 
 
 if ('serviceWorker' in navigator && import.meta.env.PROD) {
-  window.addEventListener('load',()=>{void navigator.serviceWorker.register('./sw.js',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>undefined)})
+  window.addEventListener('load',()=>{
+    let reloading=false
+    navigator.serviceWorker.addEventListener('controllerchange',()=>{
+      if(reloading)return
+      reloading=true
+      window.location.reload()
+    })
+
+    void navigator.serviceWorker.register('./sw.js',{updateViaCache:'none'}).then(registration=>{
+      const notifyUpdate=()=>window.dispatchEvent(new CustomEvent('restaurant-autopilot-sw-update'))
+      if(registration.waiting&&navigator.serviceWorker.controller)notifyUpdate()
+
+      registration.addEventListener('updatefound',()=>{
+        const worker=registration.installing
+        worker?.addEventListener('statechange',()=>{
+          if(worker.state==='installed'&&navigator.serviceWorker.controller)notifyUpdate()
+        })
+      })
+
+      return registration.update()
+    }).catch(()=>undefined)
+  })
 }
