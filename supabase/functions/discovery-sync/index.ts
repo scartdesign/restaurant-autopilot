@@ -162,14 +162,34 @@ async function recordSync(service:any,status:"success"|"skipped"|"failed",payloa
         verified_at:payload?.verified_at||null,
         skipped:Boolean(payload?.skipped),
         reason:payload?.reason||null,
+        call_budget:Number(payload?.call_budget||0),
+        daily_call_limit:Number(payload?.daily_call_limit||0),
+        daily_calls_before:Number(payload?.daily_calls_before||0),
+        daily_calls_after:Number(payload?.daily_calls_after||0),
+        budget_exhausted:Boolean(payload?.budget_exhausted),
       }
     });
   }catch(_){/* logging must never fail the discovery sync */}
 }
 
-async function runSync(service:any,config:any){
+async function runSync(service:any,config:any,engineConfig:any){
+  if(engineConfig?.provider_enabled===false){
+    const result={ok:true,configured:Boolean(config?.configured),skipped:true,reason:"External discovery provider is disabled by OWNER",active_terms:0,updated:0,api_calls:0,candidate_api_calls:0,failed_batches:0};
+    await recordSync(service,"skipped",result);
+    return result;
+  }
   if(!config?.configured||!config?.api_key){
-    const result={ok:true,configured:false,skipped:true,reason:"SerpApi provider is not configured",active_terms:0,updated:0,api_calls:0,failed_batches:0};
+    const result={ok:true,configured:false,skipped:true,reason:"SerpApi provider is not configured",active_terms:0,updated:0,api_calls:0,candidate_api_calls:0,failed_batches:0};
+    await recordSync(service,"skipped",result);
+    return result;
+  }
+
+  const perSyncLimit=Math.max(1,Number(engineConfig?.per_sync_call_limit||18));
+  const dailyCallLimit=Math.max(1,Number(engineConfig?.daily_call_limit||60));
+  const dailyCallsBefore=Math.max(0,Number(engineConfig?.daily_calls_used||0));
+  const callBudget=Math.max(0,Math.min(perSyncLimit,dailyCallLimit-dailyCallsBefore));
+  if(callBudget<=0){
+    const result={ok:true,configured:true,skipped:true,reason:"Daily API call budget reached",active_terms:0,updated:0,api_calls:0,candidate_api_calls:0,failed_batches:0,call_budget:0,daily_call_limit:dailyCallLimit,daily_calls_before:dailyCallsBefore,daily_calls_after:dailyCallsBefore,budget_exhausted:true};
     await recordSync(service,"skipped",result);
     return result;
   }
@@ -201,6 +221,7 @@ async function runSync(service:any,config:any){
 
   let apiCalls=0;
   let updated=0;
+  let budgetExhausted=false;
   let failedBatches=0;
   let candidateApiCalls=0;
   let candidatesUpserted=0;
@@ -223,6 +244,7 @@ async function runSync(service:any,config:any){
 
     const targets=items.filter(item=>item.query.toLowerCase()!==anchor.toLowerCase());
     for(const batch of chunks(targets,4)){
+      if(apiCalls+candidateApiCalls>=callBudget){budgetExhausted=true;break}
       try{
         const results=await fetchTrendBatch(String(config.api_key),geo,batch.map(x=>x.query));
         apiCalls+=1;
@@ -253,15 +275,11 @@ async function runSync(service:any,config:any){
     }
   }
 
-  const candidateSeeds=[
-    {geo:"RS",query:"restoran"},
-    {geo:"RS",query:"pizza"},
-    {geo:"RS",query:"burger"},
-    {geo:"RS",query:"domaća hrana"},
-    {geo:"",query:"restaurant"},
-    {geo:"",query:"street food"},
-  ];
+  const candidateSeeds=(Array.isArray(engineConfig?.seeds)?engineConfig.seeds:[])
+    .map((row:any)=>({geo:String(row?.geo||""),query:String(row?.query||"").trim()}))
+    .filter((row:any)=>row.query);
   for(const seed of candidateSeeds){
+    if(apiCalls+candidateApiCalls>=callBudget){budgetExhausted=true;break}
     try{
       const related=await fetchRelatedQueries(String(config.api_key),seed.geo,seed.query);
       candidateApiCalls+=1;
@@ -299,6 +317,12 @@ async function runSync(service:any,config:any){
     failed_batches:failedBatches,
     candidate_api_calls:candidateApiCalls,
     candidates_upserted:candidatesUpserted,
+    candidate_seeds:candidateSeeds.length,
+    call_budget:callBudget,
+    daily_call_limit:dailyCallLimit,
+    daily_calls_before:dailyCallsBefore,
+    daily_calls_after:dailyCallsBefore+apiCalls+candidateApiCalls,
+    budget_exhausted:budgetExhausted,
     verified_at:verifiedAt,
     errors:errors.slice(0,8),
   };
@@ -318,13 +342,17 @@ Deno.serve(async(req)=>{
   try{
     const body=await req.json().catch(()=>({}));
     const action=String(body?.action||"status");
-    const{data:config,error:configError}=await service.rpc("service_discovery_provider_config");
+    const[{data:config,error:configError},{data:engineConfig,error:engineConfigError}]=await Promise.all([
+      service.rpc("service_discovery_provider_config"),
+      service.rpc("service_discovery_engine_runtime"),
+    ]);
     if(configError)return json({error:configError.message},500);
+    if(engineConfigError)return json({error:engineConfigError.message},500);
 
     if(action==="process_cron"){
       const supplied=req.headers.get("x-cron-secret")||"";
       if(!config?.cron_secret||supplied!==String(config.cron_secret))return json({error:"Unauthorized cron"},401);
-      return json(await runSync(service,config));
+      return json(await runSync(service,config,engineConfig));
     }
 
     const authHeader=req.headers.get("Authorization")||"";
@@ -342,7 +370,7 @@ Deno.serve(async(req)=>{
     }
 
     if(action==="sync_now"){
-      return json(await runSync(service,config));
+      return json(await runSync(service,config,engineConfig));
     }
 
     return json({error:"Unknown action"},400);
