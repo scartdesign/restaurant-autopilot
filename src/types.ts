@@ -35,6 +35,7 @@ export type Restaurant = {
   default_logo_badge?: LogoBadge
   default_overlay_strength?: number
   weekly_autopilot_enabled?: boolean
+  trend_autopilot_mode?: 'off' | 'suggest' | 'auto'
 }
 
 export type MenuItem = {
