@@ -1,9 +1,8 @@
-const CACHE='restaurant-autopilot-shell-v2';
+const CACHE='restaurant-autopilot-shell-v3';
 const CORE=['./','./manifest.webmanifest','./autopilot-icon.svg'];
 
 self.addEventListener('install',event=>{
   event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(CORE)).catch(()=>null));
-  self.skipWaiting();
 });
 
 self.addEventListener('activate',event=>{
@@ -58,7 +57,7 @@ self.addEventListener('fetch',event=>{
   }
 
   event.respondWith(
-    fetch(req)
+    fetch(req,{cache:'no-cache'})
       .then(res=>{
         if(res.ok){
           const clone=res.clone();
