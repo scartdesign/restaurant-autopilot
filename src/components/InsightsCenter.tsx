@@ -157,6 +157,31 @@ export function InsightsCenter({restaurant,posts,menuItems,setNotice,onChanged,o
     }))
   },[ranking])
 
+  const trendPerformance=useMemo(()=>{
+    const groups={
+      trend:{count:0,reach:0,interactions:0,clicks:0,conversions:0,revenue:0},
+      baseline:{count:0,reach:0,interactions:0,clicks:0,conversions:0,revenue:0},
+    }
+    for(const item of ranking){
+      const source=String(item.post.generation_meta?.generation_source||'')
+      const isTrend=source==='trend_opportunity'||Boolean(item.post.generation_meta?.trend_opportunity_id)
+      const group=isTrend?groups.trend:groups.baseline
+      group.count+=1
+      group.reach+=item.m.reach
+      group.interactions+=item.interactions
+      group.clicks+=item.m.clicks
+      group.conversions+=item.m.conversions
+      group.revenue+=item.m.revenue
+    }
+    const decorate=(group:typeof groups.trend)=>({...group,engagement:group.reach?group.interactions/group.reach*100:0,ctr:group.reach?group.clicks/group.reach*100:0})
+    const trend=decorate(groups.trend),baseline=decorate(groups.baseline)
+    const engagementDiff=trend.count&&baseline.count?trend.engagement-baseline.engagement:null
+    const reachPerPostTrend=trend.count?trend.reach/trend.count:0
+    const reachPerPostBaseline=baseline.count?baseline.reach/baseline.count:0
+    const reachDiff=trend.count&&baseline.count?reachPerPostTrend-reachPerPostBaseline:null
+    return{trend,baseline,engagementDiff,reachPerPostTrend,reachPerPostBaseline,reachDiff}
+  },[ranking])
+
   const pillarStats=useMemo(()=>{
     const map=new Map<string,{reach:number;interactions:number;count:number}>()
     for(const item of ranking){const pillar=String(item.post.generation_meta?.pillar||'other');const prev=map.get(pillar)||{reach:0,interactions:0,count:0};prev.reach+=item.m.reach;prev.interactions+=item.interactions;prev.count+=1;map.set(pillar,prev)}
@@ -322,6 +347,17 @@ export function InsightsCenter({restaurant,posts,menuItems,setNotice,onChanged,o
       <div className="panel-heading"><div><p className="eyebrow">GENERATION PERFORMANCE</p><h2>AUTO WEEK vs MANUAL</h2></div><Sparkles size={20}/></div>
       <div className="generation-performance-grid">{generationStats.map(stat=><article key={stat.key} className={stat.key}><div><span>{stat.label}</span><strong>{stat.count}</strong><small>izmerenih objava</small></div><div><span>Engagement</span><strong>{stat.count?stat.engagement.toFixed(1)+'%':'—'}</strong><small>{stat.count?fmt(stat.reach)+' reach':'nema uzorka'}</small></div><div><span>CTR</span><strong>{stat.count?stat.ctr.toFixed(1)+'%':'—'}</strong><small>{stat.clicks} klikova</small></div><div><span>Konverzije</span><strong>{stat.count?fmt(stat.conversions):'—'}</strong><small>{stat.count>=3?'stabilniji uzorak':stat.count?'mali uzorak':'čeka podatke'}</small></div></article>)}</div>
       <p className="generation-performance-note">Poređenje koristi samo objave sa unetim performance podacima u izabranom periodu. Za smisleniji signal koristi bar 3 izmerene objave po grupi.</p>
+    </section>
+
+    <section className="trend-performance panel">
+      <div className="panel-heading"><div><p className="eyebrow">TREND PERFORMANCE</p><h2>Trend objave vs ostali sadržaj</h2></div><TrendingUp size={20}/></div>
+      <div className="trend-performance-grid">
+        <article><span>Trend uzorak</span><strong>{trendPerformance.trend.count}</strong><small>{trendPerformance.trend.count?fmt(trendPerformance.trend.reach)+' reach':'čeka prve rezultate'}</small></article>
+        <article><span>Trend engagement</span><strong>{trendPerformance.trend.count?trendPerformance.trend.engagement.toFixed(1)+'%':'—'}</strong><small>{trendPerformance.engagementDiff===null?'nema poređenja':(trendPerformance.engagementDiff>=0?'+':'')+trendPerformance.engagementDiff.toFixed(1)+' pp vs ostale'}</small></article>
+        <article><span>Reach / objava</span><strong>{trendPerformance.trend.count?fmt(Math.round(trendPerformance.reachPerPostTrend)):'—'}</strong><small>{trendPerformance.reachDiff===null?'nema poređenja':(trendPerformance.reachDiff>=0?'+':'')+fmt(Math.round(trendPerformance.reachDiff))+' vs ostale'}</small></article>
+        <article><span>Konverzije</span><strong>{trendPerformance.trend.count?fmt(trendPerformance.trend.conversions):'—'}</strong><small>{trendPerformance.trend.revenue?moneyFmt(trendPerformance.trend.revenue,currency):'bez unetog prihoda'}</small></article>
+      </div>
+      <p className="generation-performance-note">Ovo je samo poređenje rezultata u izabranom periodu. Ne tvrdi da je trend uzrok boljeg ili lošijeg rezultata; smislenije je kada imaš bar 3 izmerene trend objave.</p>
     </section>
 
     <section className="learning-status panel">
