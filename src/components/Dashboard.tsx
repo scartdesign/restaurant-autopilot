@@ -43,7 +43,7 @@ export function Dashboard({ restaurant, menuItems, posts, onChanged, setNotice, 
 
   const weekQuality = useMemo(() => {
     const planned = orderedPosts.filter((post) => post.status !== 'rejected')
-    if (!planned.length) return { score: 0, label: 'Čeka plan', issues: ['Generiši nedelju da Autopilot proveri kvalitet plana.'], uniqueDishes: 0, heroPosts: 0, scheduled: 0, formats: 0 }
+    if (!planned.length) return { score: 0, label: 'Čeka plan', issues: ['Generiši nedelju da Autopilot proveri kvalitet plana.'], uniqueDishes: 0, heroPosts: 0, scheduled: 0, formats: 0, duplicateCopy: 0 }
     const ids = planned.map((post) => post.menu_item_id).filter(Boolean) as string[]
     const uniqueDishes = new Set(ids).size
     const heroPosts = heroItem ? planned.filter((post) => post.menu_item_id === heroItem.id || Number(post.generation_meta?.learning_signal?.marketing_priority || post.generation_meta?.marketing_priority || 0) >= 3).length : 0
@@ -53,6 +53,8 @@ export function Dashboard({ restaurant, menuItems, posts, onChanged, setNotice, 
     for (let i = 1; i < planned.length; i += 1) {
       if (planned[i].menu_item_id && planned[i].menu_item_id === planned[i - 1].menu_item_id) adjacentRepeats += 1
     }
+    const copyKeys = planned.map((post) => normalizeCopyKey(post.caption || post.title || '')).filter(Boolean)
+    const duplicateCopy = copyKeys.length - new Set(copyKeys).size
 
     let score = 100
     const issues: string[] = []
@@ -60,13 +62,14 @@ export function Dashboard({ restaurant, menuItems, posts, onChanged, setNotice, 
     if (planned.length < expected) { score -= Math.min(24, (expected - planned.length) * 8); issues.push(`Plan ima ${planned.length}/${expected} ciljnih objava.`) }
     if (activeItems.length > 1 && uniqueDishes < Math.min(3, activeItems.length)) { score -= 16; issues.push('Premalo različitih jela u nedeljnom planu.') }
     if (adjacentRepeats > 0) { score -= Math.min(24, adjacentRepeats * 12); issues.push(`${adjacentRepeats} uzastopno ponavljanje istog jela.`) }
+    if (duplicateCopy > 0) { score -= Math.min(20, duplicateCopy * 10); issues.push(`${duplicateCopy} objava ima previše sličan tekst.`) }
     if (heroItem && heroPosts === 0) { score -= 18; issues.push('HERO jelo nije zastupljeno u planu.') }
     if (heroItem && heroPosts > Math.max(2, Math.ceil(planned.length * 0.4))) { score -= 12; issues.push('HERO jelo se ponavlja previše često.') }
     if (scheduled < planned.length) { score -= Math.min(18, (planned.length - scheduled) * 6); issues.push(`${planned.length - scheduled} objava nema termin.`) }
     if (planned.length >= 3 && formats < 2) { score -= 10; issues.push('Nedelja nema dovoljno različitih formata.') }
     score = Math.max(0, Math.min(100, score))
     const label = score >= 90 ? 'Odličan plan' : score >= 75 ? 'Dobar plan' : score >= 55 ? 'Treba doradu' : 'Slab plan'
-    return { score, label, issues, uniqueDishes, heroPosts, scheduled, formats }
+    return { score, label, issues, uniqueDishes, heroPosts, scheduled, formats, duplicateCopy }
   }, [orderedPosts, heroItem, activeItems.length, restaurant.posting_frequency])
 
   const weekQualityAction = useMemo(() => {
@@ -464,3 +467,7 @@ function formatWeekday(value: string, timeZone?: string) { return new Date(value
 function formatDateShort(value: string, timeZone?: string) { return new Date(value).toLocaleDateString('sr-RS', { weekday: 'short', day: 'numeric', ...(timeZone?{timeZone}:{}) }) }
 function formatDateLong(value: string, timeZone?: string) { return new Date(value).toLocaleDateString('sr-RS', { weekday: 'long', day: 'numeric', month: 'short', ...(timeZone?{timeZone}:{}) }) }
 function shorten(value: string, max: number) { const clean = value.replace(/\s+/g, ' ').trim(); return clean.length <= max ? clean : `${clean.slice(0, max - 1).trim()}…` }
+
+function normalizeCopyKey(value:string){
+  return value.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,' ').trim().slice(0,90)
+}
