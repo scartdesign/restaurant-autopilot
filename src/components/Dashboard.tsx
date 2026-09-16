@@ -3,6 +3,8 @@ import { Activity, ArrowUpRight, CalendarDays, CheckCircle2, ChefHat, Clock3, Co
 import { supabase } from '../lib/supabase'
 import type { Entitlement, MenuItem, Post, Restaurant } from '../types'
 
+type TrendOpportunity={id:string;restaurant_id:string;candidate_id:string;menu_item_id:string|null;trend_query:string;seed_query:string;trend_type:'rising'|'top';trend_value:string|null;trend_signal:number;relevance_score:number;opportunity_score:number;recommended_pillar:string;recommended_action:'post'|'campaign';reason:string;status:'pending'|'created'|'dismissed'|'expired';expires_at:string;created_at:string}
+
 export function Dashboard({ restaurant, menuItems, posts, entitlement, onChanged, setNotice, onNavigate }: {
   restaurant: Restaurant
   menuItems: MenuItem[]
@@ -22,6 +24,8 @@ export function Dashboard({ restaurant, menuItems, posts, entitlement, onChanged
   const [preflight,setPreflight]=useState<any>(null)
   const [preflightLoading,setPreflightLoading]=useState(false)
   const [activityRows,setActivityRows]=useState<any[]>([])
+  const [trendOpportunities,setTrendOpportunities]=useState<TrendOpportunity[]>([])
+  const [trendWorking,setTrendWorking]=useState('')
   const activeItems = useMemo(() => menuItems.filter((item) => item.is_active).sort((a, b) => (b.marketing_priority || 0) - (a.marketing_priority || 0)), [menuItems])
   const approvedCount = useMemo(() => posts.filter((post) => post.status === 'approved' || post.status === 'published').length, [posts])
   const averageDiscovery = useMemo(() => posts.length ? Math.round(posts.reduce((sum, post) => sum + (post.discovery_score || 0), 0) / posts.length) : 0, [posts])
@@ -123,7 +127,37 @@ export function Dashboard({ restaurant, menuItems, posts, entitlement, onChanged
     setActivityRows(data||[])
   }
 
+  async function loadTrendOpportunities(){
+    const{data,error}=await supabase.functions.invoke('content-engine',{body:{action:'refresh_trend_opportunities',restaurantId:restaurant.id}})
+    if(!error&&!data?.error)setTrendOpportunities((data?.opportunities||[]) as TrendOpportunity[])
+  }
+
+  async function useTrendOpportunity(item:TrendOpportunity,campaign=false){
+    const key=item.id+(campaign?':campaign':':post')
+    setTrendWorking(key)
+    const{data,error}=await supabase.functions.invoke('content-engine',{body:{action:campaign?'trend_opportunity_campaign':'trend_opportunity_post',restaurantId:restaurant.id,opportunityId:item.id}})
+    if(error||data?.error){
+      setNotice(data?.error||error?.message||'Trend sadržaj nije napravljen.')
+      setTrendWorking('')
+      return
+    }
+    await onChanged()
+    await Promise.all([loadTrendOpportunities(),loadActivity()])
+    const count=Number(data?.posts?.length||0)
+    setNotice(campaign?'Trend mini kampanja je spremna: '+count+' drafta za „'+item.trend_query+'“.':'Trend objava je spremna za „'+item.trend_query+'“.')
+    setTrendWorking('')
+  }
+
+  async function dismissTrendOpportunity(item:TrendOpportunity){
+    setTrendWorking(item.id+':dismiss')
+    const{data,error}=await supabase.functions.invoke('content-engine',{body:{action:'dismiss_trend_opportunity',restaurantId:restaurant.id,opportunityId:item.id}})
+    if(error||data?.error)setNotice(data?.error||error?.message||'Prilika nije sklonjena.')
+    else{setNotice('Trend prilika je sklonjena.');await loadTrendOpportunities()}
+    setTrendWorking('')
+  }
+
   useEffect(()=>{void loadPreflight(false);void loadActivity()},[restaurant.id,menuItems.length,posts.length,entitlement?.generated_this_month])
+  useEffect(()=>{void loadTrendOpportunities()},[restaurant.id,menuItems.length])
   async function reviewWholeWeek() {
     if (!reviewQueue.length) { setNotice('Nema draft objava za proveru.'); return }
     setBulkReviewing(true)
