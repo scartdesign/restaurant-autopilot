@@ -52,8 +52,14 @@ Deno.serve(async(req:Request)=>{
     if(action==="status"){
       return json({ok:true,provider:"resend",configured:Boolean(apiKey),sender_ready:Boolean(senderEmail),sender_email:senderEmail||null});
     }
-    if(!apiKey||keyError) return json({error:"Resend API ključ nije podešen.",code:"EMAIL_PROVIDER_NOT_CONFIGURED"},503);
-    if(!senderEmail) return json({error:"U OWNER podešavanjima upiši Email from adresu sa verifikovanog domena.",code:"EMAIL_FROM_MISSING"},400);
+    if(!apiKey||keyError){
+      if(action==="cron_send_queue")return json({ok:true,skipped:true,reason:"EMAIL_PROVIDER_NOT_CONFIGURED"});
+      return json({error:"Resend API ključ nije podešen.",code:"EMAIL_PROVIDER_NOT_CONFIGURED"},503);
+    }
+    if(!senderEmail){
+      if(action==="cron_send_queue")return json({ok:true,skipped:true,reason:"EMAIL_FROM_MISSING"});
+      return json({error:"U OWNER podešavanjima upiši Email from adresu sa verifikovanog domena.",code:"EMAIL_FROM_MISSING"},400);
+    }
 
     if(action==="retry_failed"){
       const {error}=await service.from("notification_outbox").update({delivery_status:"queued",error_message:null}).eq("delivery_status","failed").lt("retry_count",4);
