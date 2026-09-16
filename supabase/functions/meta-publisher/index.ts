@@ -25,10 +25,24 @@ function html(message:string,ok=true){
   const safe=message.replace(/[<>&"'\x60]/g,(ch)=>({"<":"&lt;",">":"&gt;","&":"&amp;",'"':"&quot;","'":"&#39;","\x60":"&#96;"}[ch]||ch));
   return new Response(`<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Restaurant Autopilot · Meta</title><style>body{font-family:system-ui;background:#f5f6f1;color:#17211b;display:grid;place-items:center;min-height:100vh;margin:0}.card{max-width:520px;margin:20px;padding:32px;border-radius:24px;background:white;border:1px solid #dfe5dc;box-shadow:0 24px 70px rgba(20,30,22,.12);text-align:center}.dot{width:58px;height:58px;border-radius:18px;margin:0 auto 15px;display:grid;place-items:center;background:${ok?"#e7f4d6":"#fff0eb"};font-size:28px}.card h1{margin:0 0 8px;font-size:28px}.card p{color:#68736a;line-height:1.6}.card button{border:0;border-radius:11px;padding:11px 16px;background:#17211b;color:#c9f77f;font-weight:800}</style></head><body><div class="card"><div class="dot">${ok?"✓":"!"}</div><h1>${ok?"Meta povezivanje završeno":"Meta povezivanje nije završeno"}</h1><p>${safe}</p><button onclick="window.close()">Zatvori prozor</button></div><script>try{window.opener&&window.opener.postMessage({type:"restaurant-autopilot-meta",ok:${ok}},"*")}catch(e){}</script></body></html>`,{status:ok?200:400,headers:{"Content-Type":"text/html; charset=utf-8"}});
 }
+class MetaApiError extends Error{
+  code:number;
+  subcode:number;
+  status:number;
+  type:string;
+  constructor(message:string,{code=0,subcode=0,status=0,type=""}:{code?:number;subcode?:number;status?:number;type?:string}={}){
+    super(message);this.name="MetaApiError";this.code=code;this.subcode=subcode;this.status=status;this.type=type;
+  }
+}
 async function fetchJson(url:string,init?:RequestInit){
   const res=await fetch(url,init);
   const data=await res.json().catch(()=>({}));
-  if(!res.ok||data?.error)throw new Error(data?.error?.message||data?.error_description||`Meta HTTP ${res.status}`);
+  if(!res.ok||data?.error){
+    const err=data?.error||{};
+    throw new MetaApiError(err?.message||data?.error_description||`Meta HTTP ${res.status}`,{
+      code:Number(err?.code||0),subcode:Number(err?.error_subcode||0),status:res.status,type:String(err?.type||"")
+    });
+  }
   return data;
 }
 async function formPost(url:string,body:Record<string,string>){
@@ -211,6 +225,34 @@ Deno.serve(async(req)=>{
       return json({ok:true,provider_configured:Boolean(config?.configured),connection:connection?{...connection,status:expired?"expired":connection.status}:null,callback_url:callbackUrl(supabaseUrl)});
     }
 
+    if(action==="verify_connection"){
+      if(!connection||connection.status==="disconnected")return json({error:"Meta nalog nije povezan."},409);
+      if(!connection.page_id)return json({error:"Facebook stranica nije izabrana."},409);
+      const{data:token,error:tokenError}=await service.rpc("service_get_social_token",{p_connection_id:connection.id});
+      if(tokenError||!token)return json({error:"Meta token nije dostupan. Poveži nalog ponovo."},409);
+      try{
+        const page=await fetchJson(`${graph}/${connection.page_id}?${new URLSearchParams({
+          fields:"id,name,instagram_business_account{id,username}",
+          access_token:String(token)
+        }).toString()}`);
+        const patch={
+          status:"connected",
+          page_name:String(page?.name||connection.page_name||""),
+          instagram_business_account_id:page?.instagram_business_account?.id?String(page.instagram_business_account.id):null,
+          instagram_username:page?.instagram_business_account?.username?String(page.instagram_business_account.username):null,
+          last_verified_at:new Date().toISOString(),
+          updated_at:new Date().toISOString()
+        };
+        await service.from("social_connections").update(patch).eq("id",connection.id);
+        return json({ok:true,status:"connected",page_name:patch.page_name,instagram_username:patch.instagram_username,last_verified_at:patch.last_verified_at});
+      }catch(error){
+        const metaError=error instanceof MetaApiError?error:null;
+        const nextStatus=metaError?.code===190?"expired":"error";
+        await service.from("social_connections").update({status:nextStatus,last_verified_at:new Date().toISOString(),updated_at:new Date().toISOString()}).eq("id",connection.id);
+        return json({error:error instanceof Error?error.message:String(error),status:nextStatus,meta_code:metaError?.code||null},409);
+      }
+    }
+
     if(action==="start"){
       if(!config?.configured)return json({error:"Meta App još nije konfigurisan u OWNER delu.",code:"META_PROVIDER_NOT_CONFIGURED"},409);
       const rawState=randomState();
@@ -309,6 +351,9 @@ Deno.serve(async(req)=>{
           try{results.push({job_id:job.id,result:await publishJobWithService(service,job,user.id)});}
           catch(error){
             const message=error instanceof Error?error.message:String(error);
+            if(error instanceof MetaApiError&&error.code===190){
+              await service.from("social_connections").update({status:"expired",last_verified_at:new Date().toISOString(),updated_at:new Date().toISOString()}).eq("id",job.connection_id);
+            }
             await service.from("social_publish_jobs").update({status:"failed",error_message:message,updated_at:new Date().toISOString()}).eq("id",job.id);
             await service.from("autopilot_activity").insert({restaurant_id:restaurantId,user_id:user.id,event_type:"publish_failed",title:"Meta publishing nije uspeo",summary:message.slice(0,300),metadata:{job_id:job.id,post_id:job.post_id,platform:job.platform}});
             results.push({job_id:job.id,error:message});
@@ -338,6 +383,9 @@ Deno.serve(async(req)=>{
       try{return json({ok:true,result:await publishJobWithService(service,job,user.id)});}
       catch(error){
         const message=error instanceof Error?error.message:String(error);
+        if(error instanceof MetaApiError&&error.code===190){
+          await service.from("social_connections").update({status:"expired",last_verified_at:new Date().toISOString(),updated_at:new Date().toISOString()}).eq("id",job.connection_id);
+        }
         await service.from("social_publish_jobs").update({status:"failed",error_message:message,updated_at:new Date().toISOString()}).eq("id",job.id);
         return json({error:message},400);
       }
