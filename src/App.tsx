@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
 import { BadgeEuro, BarChart3, Bell, Building2, CalendarDays, ChefHat, Image as ImageIcon, LifeBuoy, LockKeyhole, LogOut, Megaphone, Menu as MenuIcon, Palette, Plus, Rocket, Send, Settings, ShieldCheck, Sparkles, UtensilsCrossed, X } from 'lucide-react'
 import type { Session } from '@supabase/supabase-js'
 import { supabase } from './lib/supabase'
@@ -10,21 +10,22 @@ import { Dashboard } from './components/Dashboard'
 import { MenuManager } from './components/MenuManager'
 import { Promotions } from './components/Promotions'
 import { SettingsPanel } from './components/SettingsPanel'
-import { DemoScreen } from './components/DemoScreen'
-import { VisualStudio } from './components/VisualStudio'
-import { PublishCenter } from './components/PublishCenter'
-import { BrandKit } from './components/BrandKit'
-import { BillingPage } from './components/BillingPage'
-import { OwnerControlPlus } from './components/OwnerControlPlus'
 import { AdminSetup } from './components/AdminSetup'
-import { CreativeHub } from './components/CreativeHub'
 import { LaunchCenter } from './components/LaunchCenter'
 import { SupportCenter } from './components/SupportCenter'
 import { NotificationsCenter } from './components/NotificationsCenter'
 import { LandingScreen } from './components/LandingScreen'
 import { LegalScreen } from './components/LegalScreen'
 import { NetworkStatus } from './components/NetworkStatus'
-import { InsightsCenter } from './components/InsightsCenter'
+
+const DemoScreen = lazy(() => import('./components/DemoScreen').then((m) => ({ default: m.DemoScreen })))
+const VisualStudio = lazy(() => import('./components/VisualStudio').then((m) => ({ default: m.VisualStudio })))
+const PublishCenter = lazy(() => import('./components/PublishCenter').then((m) => ({ default: m.PublishCenter })))
+const BrandKit = lazy(() => import('./components/BrandKit').then((m) => ({ default: m.BrandKit })))
+const BillingPage = lazy(() => import('./components/BillingPage').then((m) => ({ default: m.BillingPage })))
+const OwnerControlPlus = lazy(() => import('./components/OwnerControlPlus').then((m) => ({ default: m.OwnerControlPlus })))
+const CreativeHub = lazy(() => import('./components/CreativeHub').then((m) => ({ default: m.CreativeHub })))
+const InsightsCenter = lazy(() => import('./components/InsightsCenter').then((m) => ({ default: m.InsightsCenter })))
 
 type Tab = 'launch' | 'dashboard' | 'creative' | 'studio' | 'brand' | 'publish' | 'insights' | 'menu' | 'promotions' | 'settings' | 'support' | 'notifications' | 'billing' | 'admin'
 type AppControlsLite = { maintenance_mode:boolean; maintenance_message:string|null; sales_open:boolean; signup_open:boolean; announcement_enabled:boolean; announcement_text:string|null; announcement_tone:'info'|'success'|'warning'; app_version:string }
@@ -173,7 +174,7 @@ function App() {
   const generationUsage = useMemo(() => entitlement?.generation_limit == null ? null : `${entitlement.generated_this_month || 0}/${entitlement.generation_limit}`, [entitlement])
 
   if (legalParam && ['terms','privacy','ai','refund'].includes(legalParam)) return <LegalScreen kind={legalParam} onBack={()=>{window.history.replaceState({},'',window.location.pathname);window.location.reload()}} />
-  if (demo) return <DemoScreen onExit={() => { const next = new URL(window.location.href); next.searchParams.delete('demo'); window.history.replaceState({}, '', `${next.pathname}${next.search}${next.hash}`); setDemo(false) }} />
+  if (demo) return <Suspense fallback={<LazyScreenFallback label="Učitavam demo…" />}><DemoScreen onExit={() => { const next = new URL(window.location.href); next.searchParams.delete('demo'); window.history.replaceState({}, '', `${next.pathname}${next.search}${next.hash}`); setDemo(false) }} /></Suspense>
   if (loading || (session && !accountReady)) return <div className="screen-center"><div className="loader" />Učitavanje Restaurant Autopilota…</div>
   if (recoveryMode && session) return <PasswordRecovery onDone={recoveryDone}/>
   if (!session) {
@@ -182,12 +183,12 @@ function App() {
   }
   if (adminSetupRequested && !isSuperadmin) return <AdminSetup email={session.user.email || ''} onActivated={adminActivated} onCancel={() => { window.history.replaceState({}, '', window.location.pathname); void loadAccountState() }} />
   if (!isSuperadmin && appControls.maintenance_mode) return <MaintenanceScreen message={appControls.maintenance_message} version={appControls.app_version} onSignOut={signOut}/>
-  if (!isSuperadmin && !hasAccess) return <BillingPage email={session.user.email || ''} onAccessChanged={accessChanged} onSignOut={signOut} />
+  if (!isSuperadmin && !hasAccess) return <Suspense fallback={<LazyScreenFallback label="Učitavam paket i licencu…" />}><BillingPage email={session.user.email || ''} onAccessChanged={accessChanged} onSignOut={signOut} /></Suspense>
 
   if (addingRestaurant) return <Onboarding additional userId={session.user.id} onCancel={() => setAddingRestaurant(false)} onCreated={async () => { setAddingRestaurant(false); await loadAccountState(); await loadRestaurants(session.user.id); setActiveTab('launch') }} />
 
   if (!restaurant) {
-    if (isSuperadmin && activeTab === 'admin') return <div className="standalone-admin"><OwnerControlPlus setNotice={setNotice} onCloseApp={async()=>{await loadAppControls();setActiveTab('dashboard')}} />{notice && <div className="notice floating-notice"><span>{notice}</span><button onClick={() => setNotice('')}><X size={15}/></button></div>}</div>
+    if (isSuperadmin && activeTab === 'admin') return <div className="standalone-admin"><Suspense fallback={<LazyScreenFallback label="Učitavam OWNER Control…" />}><OwnerControlPlus setNotice={setNotice} onCloseApp={async()=>{await loadAppControls();setActiveTab('dashboard')}} /></Suspense>{notice && <div className="notice floating-notice"><span>{notice}</span><button onClick={() => setNotice('')}><X size={15}/></button></div>}</div>
     return <Onboarding userId={session.user.id} onCreated={async () => { await loadAccountState(); await loadRestaurants(session.user.id); setActiveTab('launch') }} />
   }
 
@@ -232,6 +233,7 @@ function App() {
     <main className={`main-area ${activeTab==='admin'?'admin-main-area':''}`}>
       {appControls.announcement_enabled&&appControls.announcement_text&&<div className={`global-announcement ${appControls.announcement_tone}`}><Megaphone size={15}/><span>{appControls.announcement_text}</span></div>}
       {notice&&<div className="notice"><span>{notice}</span><button onClick={()=>setNotice('')}><X size={15}/></button></div>}
+      <Suspense fallback={<LazyScreenFallback label="Učitavam modul…" />}>
       {activeTab==='launch'&&<LaunchCenter restaurant={restaurant} menuItems={menuItems} posts={posts} onNavigate={(tab)=>void openTab(tab as Tab)}/>} 
       {activeTab==='dashboard'&&<Dashboard restaurant={restaurant} menuItems={menuItems} posts={posts} onChanged={refreshContent} setNotice={setNotice}/>} 
       {activeTab==='creative'&&<CreativeHub restaurant={restaurant} menuItems={menuItems} entitlement={isSuperadmin?{active:true,is_superadmin:true,features:{campaign_pack:true}}:entitlement} onChanged={refreshContent} setNotice={setNotice}/>} 
@@ -246,9 +248,12 @@ function App() {
       {activeTab==='support'&&<SupportCenter restaurant={restaurant} setNotice={setNotice}/>} 
       {activeTab==='notifications'&&<NotificationsCenter setNotice={setNotice} onUnreadChanged={setUnreadNotifications} onNavigate={(target)=>void openTab(target)}/>} 
       {activeTab==='admin'&&isSuperadmin&&<OwnerControlPlus setNotice={setNotice} onCloseApp={async()=>{await loadAppControls();setActiveTab('dashboard')}}/>} 
+      </Suspense>
     </main>
   </div>
 }
+
+function LazyScreenFallback({label}:{label:string}){return <div className="screen-center lazy-screen-fallback"><div className="loader"/>{label}</div>}
 
 function MaintenanceScreen({message,version,onSignOut}:{message:string|null;version:string;onSignOut:()=>Promise<void>}){
   return <div className="maintenance-screen"><div className="maintenance-card"><div className="maintenance-logo"><ChefHat size={30}/></div><span>RESTAURANT AUTOPILOT · v{version}</span><h1>Kratko održavanje.</h1><p>{message||'OWNER trenutno radi na sistemu. Tvoji podaci ostaju sačuvani i pristup će se vratiti čim održavanje bude završeno.'}</p><button className="secondary" onClick={onSignOut}><LogOut size={15}/> Odjavi se</button></div></div>
