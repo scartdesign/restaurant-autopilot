@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react'
-import { BarChart3, CheckCircle2, Download, MousePointerClick, Pencil, PieChart, RefreshCw, Save, Sparkles, Target, TrendingUp, X } from 'lucide-react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { BarChart3, CheckCircle2, Download, FileDown, MousePointerClick, Pencil, PieChart, RefreshCw, Save, Sparkles, Target, TrendingUp, Upload, X } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import type { MenuItem, Post, Restaurant } from '../types'
 
@@ -52,6 +52,8 @@ export function InsightsCenter({restaurant,posts,menuItems,setNotice}:{restauran
   const[editing,setEditing]=useState<Post|null>(null)
   const[form,setForm]=useState<FormState>(emptyForm)
   const[saving,setSaving]=useState(false)
+  const[importing,setImporting]=useState(false)
+  const importRef=useRef<HTMLInputElement|null>(null)
 
   useEffect(()=>{void load()},[restaurant.id])
 
@@ -161,6 +163,59 @@ export function InsightsCenter({restaurant,posts,menuItems,setNotice}:{restauran
     setSaving(false)
   }
 
+  function downloadImportTemplate(){
+    const header=['post_id','title','platform','reach','impressions','likes','comments','saves','shares','clicks','conversions','spend','revenue','currency','measured_at','notes']
+    const sample=postsForTracking.slice(0,3).map(post=>[post.id,post.title||'Objava','combined','','','','','','','','','','',menuItems[0]?.currency||'RSD',new Date().toISOString().slice(0,10),''])
+    const csv=[header,...sample].map(row=>row.map(csvCell).join(';')).join('\n')
+    const blob=new Blob(['\ufeff',csv],{type:'text/csv;charset=utf-8'})
+    const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`${slug(restaurant.name)}-performance-import-template.csv`;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)
+    setNotice('CSV šablon za performance import je preuzet.')
+  }
+
+  async function importPerformanceCsv(file:File){
+    setImporting(true)
+    try{
+      const text=await file.text()
+      const table=parseCsvTable(text)
+      if(table.length<2){setNotice('CSV nema podatke za import.');return}
+      const headers=table[0].map(normalizeHeader)
+      const rows=table.slice(1).filter(row=>row.some(cell=>String(cell||'').trim()))
+      const byTitle=new Map(posts.map(post=>[(post.title||'').trim().toLowerCase(),post]))
+      const payloads:any[]=[]
+      let skipped=0
+
+      for(const row of rows){
+        const record:Record<string,string>={}
+        headers.forEach((header,index)=>{if(header)record[header]=String(row[index]??'').trim()})
+        const postId=record.post_id||record.postid||record.id||''
+        const title=(record.title||record.naslov||record.objava||'').trim().toLowerCase()
+        const post=posts.find(item=>item.id===postId)||byTitle.get(title)
+        if(!post){skipped+=1;continue}
+        const rawPlatform=(record.platform||record.mreza||record.network||'combined').toLowerCase()
+        const platform:Platform=rawPlatform.includes('instagram')||rawPlatform==='ig'?'instagram':rawPlatform.includes('facebook')||rawPlatform==='fb'?'facebook':'combined'
+        const measuredRaw=record.measured_at||record.datum||record.date||''
+        const measuredDate=measuredRaw&&Number.isFinite(new Date(measuredRaw).getTime())?new Date(measuredRaw):new Date()
+        payloads.push({
+          post_id:post.id,restaurant_id:restaurant.id,platform,
+          impressions:csvNumber(record.impressions||record.prikazi),reach:csvNumber(record.reach||record.doseg),
+          likes:csvNumber(record.likes||record.lajkovi),comments:csvNumber(record.comments||record.komentari),
+          saves:csvNumber(record.saves||record.sacuvano),shares:csvNumber(record.shares||record.deljenja),
+          clicks:csvNumber(record.clicks||record.klikovi),conversions:csvNumber(record.conversions||record.konverzije),
+          spend:csvMoney(record.spend||record.trosak),revenue:csvMoney(record.revenue||record.prihod),
+          currency:(record.currency||record.valuta||menuItems[0]?.currency||'RSD').toUpperCase(),
+          notes:record.notes||record.napomena||null,source:'import',measured_at:measuredDate.toISOString(),
+        })
+      }
+
+      if(!payloads.length){setNotice('Nijedan CSV red nije povezan sa postojećom objavom. Koristi post_id ili isti naslov kao u Content Library.');return}
+      const{error}=await supabase.from('post_performance').upsert(payloads,{onConflict:'post_id,platform'})
+      if(error){setNotice(error.message);return}
+      await load()
+      setNotice(`Uvezeno ${payloads.length} performance redova${skipped?` · preskočeno ${skipped} bez odgovarajuće objave`:''}. Autopilot learning je osvežen.`)
+    }catch(error:any){setNotice(error?.message||'CSV import nije uspeo.')}
+    finally{setImporting(false);if(importRef.current)importRef.current.value=''}
+  }
+
   function exportCsv(){
     const header=['objava','datum','status','reach','impressions','likes','comments','saves','shares','clicks','conversions','engagement_%','spend','revenue','currency']
     const lines=ranking.map(item=>[
@@ -182,7 +237,7 @@ export function InsightsCenter({restaurant,posts,menuItems,setNotice}:{restauran
   const learningProgress=Math.min(100,Math.round((tracked.length/8)*100))
 
   return <div className="insights-center">
-    <header className="page-header insights-header"><div><p className="eyebrow">PERFORMANCE LOOP</p><h1>Rezultati</h1><p className="muted">Upiši stvarne rezultate objava i Autopilot dobija povratnu informaciju šta kod tvog restorana radi najbolje.</p></div><div className="insights-head-actions"><button className="secondary" onClick={()=>void load()} disabled={loading}><RefreshCw size={15}/>{loading?'Osvežavam…':'Osveži'}</button><button className="primary" onClick={exportCsv} disabled={!ranking.length}><Download size={15}/> Izvezi CSV</button></div></header>
+    <header className="page-header insights-header"><div><p className="eyebrow">PERFORMANCE LOOP</p><h1>Rezultati</h1><p className="muted">Upiši stvarne rezultate objava i Autopilot dobija povratnu informaciju šta kod tvog restorana radi najbolje.</p></div><div className="insights-head-actions"><input ref={importRef} className="performance-file-input" type="file" accept=".csv,text/csv" onChange={e=>{const file=e.target.files?.[0];if(file)void importPerformanceCsv(file)}}/><button className="secondary" onClick={downloadImportTemplate}><FileDown size={15}/> CSV šablon</button><button className="secondary" onClick={()=>importRef.current?.click()} disabled={importing}><Upload size={15}/>{importing?'Uvozim…':'Uvezi rezultate'}</button><button className="secondary" onClick={()=>void load()} disabled={loading}><RefreshCw size={15}/>{loading?'Osvežavam…':'Osveži'}</button><button className="primary" onClick={exportCsv} disabled={!ranking.length}><Download size={15}/> Izvezi CSV</button></div></header>
 
     <section className="insights-kpis">
       <article><span><Target size={16}/> Doseg</span><strong>{fmt(totals.reach)}</strong><small>{tracked.length} praćenih objava</small></article>
@@ -283,3 +338,25 @@ function dayInTimeZone(value:string,timeZone:string){
   }catch{return null}
 }
 function dayLabel(day:number){return ['Ponedeljak','Utorak','Sreda','Četvrtak','Petak','Subota','Nedelja'][day]||'—'}
+
+function parseCsvTable(text:string){
+  const clean=text.replace(/^\uFEFF/,'')
+  const first=(clean.split(/\r?\n/,1)[0]||'')
+  const delimiter=(first.match(/;/g)||[]).length>=(first.match(/,/g)||[]).length?';':','
+  const rows:string[][]=[];let row:string[]=[],cell='',quoted=false
+  for(let i=0;i<clean.length;i++){
+    const ch=clean[i]
+    if(ch==='"'){
+      if(quoted&&clean[i+1]==='"'){cell+='"';i+=1}else quoted=!quoted
+    }else if(ch===delimiter&&!quoted){row.push(cell);cell=''}
+    else if((ch==='\n'||ch==='\r')&&!quoted){
+      if(ch==='\r'&&clean[i+1]==='\n')i+=1
+      row.push(cell);rows.push(row);row=[];cell=''
+    }else cell+=ch
+  }
+  if(cell.length||row.length){row.push(cell);rows.push(row)}
+  return rows
+}
+function normalizeHeader(value:string){return value.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'_').replace(/^_|_$/g,'')}
+function csvNumber(value:string|undefined){const clean=String(value||'').trim().replace(/\s/g,'').replace(/(?<=\d)[.](?=\d{3}(?:\D|$))/g,'').replace(',','.');const n=Math.floor(Number(clean||0));return Number.isFinite(n)&&n>0?n:0}
+function csvMoney(value:string|undefined){const clean=String(value||'').trim().replace(/\s/g,'').replace(/(?<=\d)[.](?=\d{3}(?:\D|$))/g,'').replace(',','.');const n=Number(clean||0);return Number.isFinite(n)&&n>0?Math.round(n*100)/100:0}
