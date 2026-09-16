@@ -165,6 +165,7 @@ function DemoInsights() {
     <section className="learning-status panel">
       <div className="learning-status-head"><div><p className="eyebrow">AUTOPILOT LEARNING</p><h2>Učenje aktivno</h2><span>4 stvarne objave trenutno utiču na sledeću generaciju sadržaja.</span></div><strong>50%</strong></div>
       <div className="learning-progress"><i style={{width:'50%'}}/></div>
+      <div className="learning-coverage-row"><span>Performance coverage menija <b>2/5</b></span><div><i style={{width:'40%'}}/></div></div>
       <div className="learning-signals"><div><span>Najbolje jelo</span><strong>Pizza Capricciosa</strong></div><div><span>Najjači pillar</span><strong>Hero jelo</strong></div><div><span>Top engagement</span><strong>7.8%</strong></div><div><span>Najbolji termin</span><strong>18:30</strong></div><div><span>Najbolji dan</span><strong>Petak</strong></div><div><span>Praćeno</span><strong>4/4</strong></div></div>
       <p>Priority Engine već kombinuje ove rezultate sa HERO prioritetom, recency signalom i raznovrsnošću menija.</p>
     </section>
