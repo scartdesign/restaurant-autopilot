@@ -296,7 +296,7 @@ export type NotificationOutbox = {
   id: number
   user_id: string | null
   recipient_email: string | null
-  kind: 'order_created' | 'order_paid' | 'trial_started' | 'license_activated' | 'subscription_expiring' | 'subscription_expired' | 'admin_note' | 'support_created' | 'performance_reminder'
+  kind: 'order_created' | 'order_paid' | 'trial_started' | 'license_activated' | 'subscription_expiring' | 'subscription_expired' | 'admin_note' | 'support_created' | 'performance_reminder' | 'weekly_plan_ready'
   subject: string
   body: string
   payload: Record<string, unknown>
