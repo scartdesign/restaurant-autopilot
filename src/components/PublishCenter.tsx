@@ -246,6 +246,8 @@ export function PublishCenter({ restaurant, posts, onChanged, setNotice }: {
       const{error}=await supabase.from('posts').update({scheduled_for:row.scheduled_for}).eq('id',row.id).eq('restaurant_id',restaurant.id)
       if(error){setNotice(error.message);setBulkWorking(false);return}
     }
+    await supabase.functions.invoke('meta-publisher',{body:{action:'sync_schedule',restaurantId:restaurant.id,updates:updates.map(row=>({postId:row.id,publishAt:row.scheduled_for}))}})
+    await loadMetaJobs()
     await onChanged()
     await supabase.functions.invoke('content-engine',{body:{action:'log_activity',restaurantId:restaurant.id,eventType:'schedule_adjusted',metadata:{count:updates.length,learned:true}}})
     setNotice(`Autopilot je rasporedio ${updates.length} objava bez preklapanja i uz radno vreme restorana.`)
@@ -315,8 +317,10 @@ export function PublishCenter({ restaurant, posts, onChanged, setNotice }: {
     const { error } = await supabase.from('posts').update({ scheduled_for: scheduledIso }).eq('id', post.id)
     if (error) setNotice(error.message)
     else {
+      await supabase.functions.invoke('meta-publisher',{body:{action:'sync_schedule',restaurantId:restaurant.id,updates:[{postId:post.id,publishAt:scheduledIso}]}})
+      await loadMetaJobs()
       await supabase.functions.invoke('content-engine',{body:{action:'log_activity',restaurantId:restaurant.id,eventType:'schedule_adjusted',metadata:{post_id:post.id,learned:false,count:1}}})
-      setNotice(`Termin je sačuvan: ${formatDateLong(scheduledIso, restaurant.timezone)} u ${formatTime(scheduledIso, restaurant.timezone)} · ${restaurant.timezone}.`)
+      setNotice(`Termin je sačuvan: ${formatDateLong(scheduledIso, restaurant.timezone)} u ${formatTime(scheduledIso, restaurant.timezone)} · ${restaurant.timezone}. Meta queue je usklađen ako je objava već bila zakazana.`)
       setEditingId('')
       await onChanged()
     }
