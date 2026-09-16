@@ -403,6 +403,30 @@ Deno.serve(async(req)=>{
       return json({ok:true});
     }
 
+    if(action==="sync_insights"){
+      if(!connection||connection.status!=="connected")return json({error:"Prvo poveži Meta nalog."},409);
+      const cutoff=new Date(Date.now()-90*86400000).toISOString();
+      const{data:jobs,error:jobsError}=await service.from("social_publish_jobs").select("*")
+        .eq("restaurant_id",restaurantId).eq("status","published").not("provider_media_id","is",null)
+        .gte("published_at",cutoff).order("published_at",{ascending:false}).limit(50);
+      if(jobsError)return json({error:jobsError.message},400);
+      const cache=new Map<string,{connection:any;token:string}>();
+      let synced=0,failed=0;
+      const results:any[]=[];
+      for(const job of jobs||[]){
+        try{
+          const metrics=await syncMetaInsightJob(service,job,cache);
+          synced+=1;results.push({job_id:job.id,platform:job.platform,status:"synced",metrics});
+        }catch(error){
+          const message=error instanceof Error?error.message:String(error);
+          failed+=1;
+          await service.from("social_publish_jobs").update({insights_error:message.slice(0,1000),insights_synced_at:new Date().toISOString(),updated_at:new Date().toISOString()}).eq("id",job.id);
+          results.push({job_id:job.id,platform:job.platform,status:"failed",error:message});
+        }
+      }
+      return json({ok:true,processed:(jobs||[]).length,synced,failed,results});
+    }
+
     if(action==="sync_schedule"){
       const updates=Array.isArray(body.updates)?body.updates.slice(0,100):[];
       const ids=[...new Set(updates.map((row:any)=>String(row.postId||"")).filter(Boolean))];
