@@ -3,7 +3,7 @@ import { Activity, ArrowUpRight, CalendarDays, CheckCircle2, ChefHat, Clock3, Co
 import { supabase } from '../lib/supabase'
 import type { Entitlement, MenuItem, Post, Restaurant } from '../types'
 
-type TrendOpportunity={id:string;restaurant_id:string;candidate_id:string;menu_item_id:string|null;trend_query:string;seed_query:string;trend_type:'rising'|'top';trend_value:string|null;trend_signal:number;relevance_score:number;opportunity_score:number;recommended_pillar:string;recommended_action:'post'|'campaign';reason:string;status:'pending'|'created'|'dismissed'|'expired';expires_at:string;created_at:string}
+type TrendOpportunity={id:string;restaurant_id:string;candidate_id:string;menu_item_id:string|null;trend_query:string;seed_query:string;trend_type:'rising'|'top';trend_value:string|null;trend_signal:number;relevance_score:number;opportunity_score:number;performance_boost:number;performance_samples:number;recommended_pillar:string;recommended_action:'post'|'campaign';reason:string;status:'pending'|'created'|'dismissed'|'expired';expires_at:string;created_at:string}
 
 export function Dashboard({ restaurant, menuItems, posts, entitlement, onChanged, setNotice, onNavigate }: {
   restaurant: Restaurant
@@ -398,7 +398,7 @@ export function Dashboard({ restaurant, menuItems, posts, entitlement, onChanged
           <div className="trend-opportunity-top"><span className={item.trend_type==='rising'?'rising':'top'}><TrendingUp size={12}/>{item.trend_type==='rising'?'RISING':'TOP'}</span><strong>{item.opportunity_score}<small>/100</small></strong></div>
           <h3>{item.trend_query}</h3>
           <p>{item.reason}</p>
-          <div className="trend-opportunity-meta"><span><UtensilsCrossed size={12}/>{menuItem?.name||'Najbolje aktivno jelo'}</span><span><Clock3 size={12}/>{Math.max(0,Math.ceil((new Date(item.expires_at).getTime()-Date.now())/86400000))} dana</span></div>
+          <div className="trend-opportunity-meta"><span><UtensilsCrossed size={12}/>{menuItem?.name||'Najbolje aktivno jelo'}</span><span><Clock3 size={12}/>{Math.max(0,Math.ceil((new Date(item.expires_at).getTime()-Date.now())/86400000))} dana</span>{item.performance_samples>0&&<span className={'trend-learning '+(item.performance_boost>0?'positive':item.performance_boost<0?'negative':'neutral')}><Sparkles size={11}/> LEARNING {item.performance_boost>0?'+':''}{item.performance_boost} · {item.performance_samples} uz.</span>}</div>
           <div className="trend-opportunity-actions">
             <button className="primary" disabled={Boolean(trendWorking)} onClick={()=>void useTrendOpportunity(item,false)}>{trendWorking===item.id+':post'?<><Sparkles size={14}/> Pravim…</>:<><Sparkles size={14}/> Napravi objavu</>}</button>
             <button className="secondary" disabled={Boolean(trendWorking)||!campaignAllowed} title={campaignAllowed?'Feed + Story':'Mini kampanja je dostupna u paketu sa Campaign Autopilot funkcijom.'} onClick={()=>void useTrendOpportunity(item,true)}>{trendWorking===item.id+':campaign'?'Pravim…':'Mini kampanja'}</button>
