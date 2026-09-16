@@ -9,7 +9,7 @@ export function Dashboard({ restaurant, menuItems, posts, onChanged, setNotice, 
   posts: Post[]
   onChanged: () => Promise<void>
   setNotice: (value: string) => void
-  onNavigate?: (tab: 'menu' | 'publish') => void
+  onNavigate?: (tab: 'menu' | 'publish' | 'settings') => void
 }) {
   const [generating, setGenerating] = useState(false)
   const [workingId, setWorkingId] = useState('')
@@ -24,6 +24,24 @@ export function Dashboard({ restaurant, menuItems, posts, onChanged, setNotice, 
   const priorityCount = useMemo(() => activeItems.filter((item) => (item.marketing_priority || 0) >= 2).length, [activeItems])
   const heroItem = useMemo(() => activeItems.find((item) => (item.marketing_priority || 0) >= 3) || null, [activeItems])
   const marketingFocus = useMemo(() => activeItems.filter((item) => (item.marketing_priority || 0) > 0).slice(0, 3), [activeItems])
+  const autopilotHealth = useMemo(() => {
+    const hoursConfigured = Boolean(restaurant.opening_hours && Object.keys(restaurant.opening_hours).length >= 7)
+    const checks = [
+      { key: 'auto', label: 'Auto week', ok: Boolean(restaurant.weekly_autopilot_enabled) },
+      { key: 'menu', label: '3+ jela', ok: activeItems.length >= 3 },
+      { key: 'hero', label: 'HERO', ok: Boolean(heroItem) },
+      { key: 'photos', label: '70% fotografija', ok: photoCoverage >= 70 },
+      { key: 'hours', label: 'Radno vreme', ok: hoursConfigured },
+    ]
+    const done = checks.filter((check) => check.ok).length
+    const score = Math.round((done / checks.length) * 100)
+    const action = !restaurant.weekly_autopilot_enabled || !hoursConfigured
+      ? { label: 'Sredi automatizaciju', tab: 'settings' as const }
+      : activeItems.length < 3 || !heroItem || photoCoverage < 70
+        ? { label: 'Sredi meni', tab: 'menu' as const }
+        : null
+    return { checks, score, action }
+  }, [restaurant.weekly_autopilot_enabled, restaurant.opening_hours, activeItems.length, heroItem, photoCoverage])
   const orderedPosts = useMemo(() => [...posts].sort((a, b) => new Date(a.scheduled_for || 0).getTime() - new Date(b.scheduled_for || 0).getTime()), [posts])
   const filteredPosts=useMemo(()=>{
     const q=contentQuery.trim().toLocaleLowerCase('sr')
@@ -79,7 +97,7 @@ export function Dashboard({ restaurant, menuItems, posts, onChanged, setNotice, 
     if (!heroItem || (activeItems.length > 1 && weekQuality.uniqueDishes < Math.min(3, activeItems.length))) return { label: 'Sredi meni', kind: 'menu' as const }
     if (weekQuality.scheduled < orderedPosts.length || weekQuality.pastScheduled > 0) return { label: 'Sredi termine', kind: 'publish' as const }
     return { label: 'Auto popravi plan', kind: 'regenerate' as const }
-  }, [orderedPosts.length, weekQuality.score, weekQuality.uniqueDishes, weekQuality.scheduled, heroItem, activeItems.length])
+  }, [orderedPosts.length, weekQuality.score, weekQuality.uniqueDishes, weekQuality.scheduled, weekQuality.pastScheduled, heroItem, activeItems.length])
 
 
   async function generateWeek() {
@@ -278,6 +296,12 @@ export function Dashboard({ restaurant, menuItems, posts, onChanged, setNotice, 
             </div>
           )) : <div className="marketing-focus-empty"><Sparkles size={18} /><span>Još nema marketinški prioritetnih jela.</span></div>}
         </div>
+      </section>
+
+      <section className="autopilot-health panel">
+        <div className="autopilot-health-score"><span>{autopilotHealth.score}<small>%</small></span><div><p className="eyebrow">AUTOPILOT HEALTH</p><h2>{autopilotHealth.score===100?'Spreman za automatizaciju':autopilotHealth.score>=60?'Skoro spreman':'Treba podešavanje'}</h2><p>{autopilotHealth.score===100?'Svi ključni uslovi za automatsku nedelju su spremni.':'Dovrši crvene stavke da automatski plan radi bez ručnih intervencija.'}</p></div></div>
+        <div className="autopilot-health-checks">{autopilotHealth.checks.map(check=><span key={check.key} className={check.ok?'ok':'missing'}>{check.ok?<CheckCircle2 size={12}/>:<X size={12}/>} {check.label}</span>)}</div>
+        {autopilotHealth.action&&<button className="secondary autopilot-health-action" onClick={()=>onNavigate?.(autopilotHealth.action!.tab)}>{autopilotHealth.action.label}<ArrowUpRight size={14}/></button>}
       </section>
 
       <section className="week-quality-panel panel">
