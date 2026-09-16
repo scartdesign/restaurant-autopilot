@@ -238,13 +238,13 @@ export function Dashboard({ restaurant, menuItems, posts, onChanged, setNotice, 
     <>
       <section className={`wow-hero ${heroImage ? 'has-image' : ''}`} style={heroImage ? { backgroundImage: `linear-gradient(90deg, rgba(7,12,9,.96) 0%, rgba(7,12,9,.76) 45%, rgba(7,12,9,.16) 100%), url(${heroImage})` } : undefined}>
         <div className="wow-hero-copy">
-          <div className="hero-kicker"><span className="live-dot" /> AUTOPILOT ACTIVE</div>
+          <div className="hero-kicker"><span className="live-dot" /> AUTOPILOT ACTIVE <b className={restaurant.weekly_autopilot_enabled?'auto-week-on':'auto-week-off'}>{restaurant.weekly_autopilot_enabled?'AUTO WEEK ON':'MANUAL WEEK'}</b></div>
           <span className="wow-brand-label">{restaurant.name.toUpperCase()}</span>
           <h1>{restaurant.description || 'Sadržaj koji izgleda kao tvoj restoran.'}</h1>
           <p>{restaurant.cuisine_type ? `${restaurant.cuisine_type} · ` : ''}{restaurant.neighborhood || restaurant.city || 'Tvoj grad'} · planirano, brendirano i spremno za objavu.</p>
           <div className="wow-hero-actions">
             <button className="wow-primary" onClick={generateWeek} disabled={generating}><Sparkles size={18} /> {generating ? 'AI Autopilot radi…' : 'Kreiraj AI nedelju'}</button>
-            <div className="wow-hero-meta"><span><MapPin size={14} /> {restaurant.neighborhood || restaurant.city || 'lokalni discovery'}</span><span><Hash size={14} /> Smart Discovery</span></div>
+            <div className="wow-hero-meta"><span><MapPin size={14} /> {restaurant.neighborhood || restaurant.city || 'lokalni discovery'}</span><span><Hash size={14} /> Smart Discovery</span><span><Zap size={14}/> {restaurant.weekly_autopilot_enabled?'Nova nedelja se priprema automatski':'Automatska nedelja nije uključena'}</span></div>
           </div>
         </div>
         <div className="wow-score-card">
