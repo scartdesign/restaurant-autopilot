@@ -56,6 +56,23 @@ Deno.serve(async(req:Request)=>{
       return json({ok:true,provider:"stripe",configured:Boolean(!stripeConfigError&&stripeConfig?.configured),mode});
     }
 
+    if(action==="cancel_checkout"){
+      const orderId=String(body.orderId||"").trim();
+      if(!orderId)return json({error:"orderId je obavezan."},400);
+      const{data:order,error:orderError}=await service.from("sales_orders").select("id,status,payment_method,payment_provider,provider_payment_status").eq("id",orderId).eq("user_id",user.id).maybeSingle();
+      if(orderError||!order)return json({error:"Narudžbina nije pronađena."},404);
+      if(order.status!=="pending")return json({ok:true,unchanged:true,status:order.status});
+      if(order.payment_method!=="card")return json({error:"Ovo nije kartična narudžbina."},409);
+      const{data:cancelled,error:cancelError}=await service.from("sales_orders").update({
+        status:"cancelled",
+        provider_payment_status:"cancelled_by_customer",
+        admin_note:"Stripe Checkout otkazan od strane kupca",
+        updated_at:new Date().toISOString()
+      }).eq("id",order.id).eq("status","pending").select().single();
+      if(cancelError)return json({error:cancelError.message},400);
+      return json({ok:true,order:cancelled});
+    }
+
     if(action==="confirm_stripe"){
       if(stripeConfigError||!stripeConfig?.configured)return json({error:"Stripe provider nije konfigurisan."},503);
       const sessionId=String(body.sessionId||"").trim();
