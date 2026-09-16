@@ -165,7 +165,7 @@ function DemoPublish({ notify }: { notify: (value: string) => void }) {
   </>
 }
 
-function DemoInsights() {
+function DemoInsights({notify}:{notify:(message:string)=>void}) {
   const ranking = [
     {title:'Pizza Capricciosa', reach:'8.4k', engagement:'7.8%', width:92, detail:'HERO · Feed'},
     {title:'Sveža Carbonara', reach:'6.1k', engagement:'6.4%', width:76, detail:'Lunch · Story'},
@@ -199,9 +199,9 @@ function DemoInsights() {
     <section className="opportunity-radar panel">
       <div className="panel-heading"><div><p className="eyebrow">OPPORTUNITY RADAR</p><h2>Šta sledeće vredi testirati</h2></div><Target size={20}/></div>
       <div className="opportunity-list">
-        <article><div className="opportunity-kind gap">CONTENT GAP</div><strong>Sezonska salata</strong><span>Nije bila u sadržaju poslednjih 30 dana. Dobar kandidat za svežiji, lakši content slot.</span><small>STANDARDNO</small></article>
-        <article><div className="opportunity-kind test">TEST SIGNAL</div><strong>Carbonara</strong><span>Visok prioritet i dobar reach, ali treba još merenja konverzija pre jačeg boost-a.</span><small>VISOK PRIORITET</small></article>
-        <article><div className="opportunity-kind photo">PHOTO GAP</div><strong>Lasagne della casa</strong><span>Jelo ima potencijal za premium feed, ali sledeći dobitak je bolja fotografija.</span><small>PRIORITET</small></article>
+        <article><div className="opportunity-kind gap">CONTENT GAP</div><strong>Sezonska salata</strong><span>Nije bila u sadržaju poslednjih 30 dana. Dobar kandidat za svežiji, lakši content slot.</span><small>STANDARDNO</small><button className="opportunity-action" onClick={()=>notify('Demo: test draft za Sezonsku salatu je napravljen i dobio je prvi slobodan budući termin.')}>Testiraj sledeće</button></article>
+        <article><div className="opportunity-kind test">TEST SIGNAL</div><strong>Carbonara</strong><span>Visok prioritet i dobar reach, ali treba još merenja konverzija pre jačeg boost-a.</span><small>VISOK PRIORITET</small><button className="opportunity-action" onClick={()=>notify('Demo: Carbonara test draft je spreman za quality review.')}>Testiraj sledeće</button></article>
+        <article><div className="opportunity-kind photo">PHOTO GAP</div><strong>Lasagne della casa</strong><span>Jelo ima potencijal za premium feed, ali sledeći dobitak je bolja fotografija.</span><small>PRIORITET</small><button className="opportunity-action" onClick={()=>notify('Demo: prvo dodaj ili generiši fotografiju u Meniju, pa pokreni test.')}>Dodaj fotografiju</button></article>
       </div>
     </section>
 
