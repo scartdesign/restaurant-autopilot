@@ -383,6 +383,13 @@ function PostCard({ post, restaurant, menuItems, working, onEdit, onAiCopy, onOp
   const visualCta = design?.cta || post.cta || 'Svrati danas'
   const price = item?.price ? `${item.price} ${item.currency || 'RSD'}` : ''
   const photoPosition = design?.photo_position === 'left' ? 'left center' : design?.photo_position === 'right' ? 'right center' : 'center center'
+  const learning = post.generation_meta?.learning_signal
+  const selectionSignals = [
+    Number(learning?.marketing_priority || 0) >= 3 ? 'HERO' : Number(learning?.marketing_priority || 0) >= 2 ? 'PRIORITET' : '',
+    Number(learning?.item_score || 0) > 0 ? 'PERFORMANCE' : '',
+    Number(learning?.coverage_bonus || 0) > 0 ? 'COVERAGE' : '',
+    Number(learning?.exploration_bonus || 0) > 0 ? 'EXPLORATION' : '',
+  ].filter(Boolean).slice(0, 3)
 
   async function copyInstagram() {
     const caption = post.platform_content?.instagram?.caption || post.caption || ''
@@ -402,6 +409,7 @@ function PostCard({ post, restaurant, menuItems, working, onEdit, onAiCopy, onOp
       <div className="post-body post-body-pro">
         <div className="post-meta"><span>{post.scheduled_for ? formatDateLong(post.scheduled_for, restaurant.timezone) : 'Bez termina'}{post.scheduled_for && <> · <b className="post-time-strong"><Clock3 size={11} /> {formatTime(post.scheduled_for, restaurant.timezone)}</b></>}</span><span className={`status ${post.status}`}>{post.status}</span></div>
         <div className="post-title-line"><h3>{post.title}</h3><span className="visual-template-chip">{template}</span></div>
+        {selectionSignals.length > 0 && <div className="ai-selection-signals"><span>AI IZBOR</span>{selectionSignals.map((signal)=><b key={signal}>{signal}</b>)}</div>}
         <p className="caption-preview">{post.caption}</p>
         <div className="platform-discovery"><div className="platform-row"><div className="platform-label ig"><Instagram size={14} /> Instagram</div><div className="tag-cloud">{instagramTags.slice(0, 8).map((tag) => <span key={tag}>{tag}</span>)}</div></div><div className="platform-row"><div className="platform-label fb"><Facebook size={14} /> Facebook</div><div className="tag-cloud fb-tags">{facebookTags.slice(0, 3).map((tag) => <span key={tag}>{tag}</span>)}</div></div>{post.seo_keywords?.length > 0 && <div className="keyword-line"><Search size={13} /><span>{post.seo_keywords.slice(0, 4).join(' · ')}</span></div>}</div>
         <div className="post-actions post-actions-pro"><button className="icon-button" title="Kopiraj Instagram objavu" onClick={copyInstagram}><Copy size={15} /></button><button className="icon-button" title="Izmeni objavu i termin" onClick={onEdit}><Pencil size={15} /></button><button className="icon-button" title="Dupliraj kao draft" disabled={working} onClick={onDuplicate}><CopyPlus size={15}/></button><button className="icon-button ai-copy-button" title="AI napiši novu verziju teksta" disabled={working} onClick={onAiCopy}><WandSparkles size={16} /></button><button className="icon-button discovery-button" title="Optimizuj discovery" disabled={working} onClick={onOptimize}><Hash size={15} /></button>{post.status !== 'approved' && post.status !== 'published'&&<button className="icon-button danger-icon" title="Obriši draft" disabled={working} onClick={onDelete}><Trash2 size={15}/></button>}{post.status !== 'approved' && post.status !== 'published'? <button className="secondary action-grow" disabled={working} onClick={() => onStatus('approved')}><CheckCircle2 size={16} /> Proveri + odobri</button>: <button className="approved-button action-grow" onClick={() => onStatus('draft')}><CheckCircle2 size={16} /> Spremno</button>}</div>
