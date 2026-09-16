@@ -13,6 +13,7 @@ export function Dashboard({ restaurant, menuItems, posts, onChanged, setNotice, 
 }) {
   const [generating, setGenerating] = useState(false)
   const [workingId, setWorkingId] = useState('')
+  const [bulkReviewing,setBulkReviewing]=useState(false)
   const [editing, setEditing] = useState<Post | null>(null)
   const [contentQuery,setContentQuery]=useState('')
   const [contentStatus,setContentStatus]=useState<'all'|Post['status']>('all')
@@ -43,6 +44,7 @@ export function Dashboard({ restaurant, menuItems, posts, onChanged, setNotice, 
     return { checks, score, action }
   }, [restaurant.weekly_autopilot_enabled, restaurant.opening_hours, activeItems.length, heroItem, photoCoverage])
   const orderedPosts = useMemo(() => [...posts].sort((a, b) => new Date(a.scheduled_for || 0).getTime() - new Date(b.scheduled_for || 0).getTime()), [posts])
+  const reviewQueue = useMemo(() => orderedPosts.filter((post) => post.status === 'draft'), [orderedPosts])
   const filteredPosts=useMemo(()=>{
     const q=contentQuery.trim().toLocaleLowerCase('sr')
     return posts.filter(post=>{
@@ -99,6 +101,30 @@ export function Dashboard({ restaurant, menuItems, posts, onChanged, setNotice, 
     return { label: 'Auto popravi plan', kind: 'regenerate' as const }
   }, [orderedPosts.length, weekQuality.score, weekQuality.uniqueDishes, weekQuality.scheduled, weekQuality.pastScheduled, heroItem, activeItems.length])
 
+
+  async function reviewWholeWeek() {
+    if (!reviewQueue.length) { setNotice('Nema draft objava za proveru.'); return }
+    setBulkReviewing(true)
+    let approved = 0
+    const flagged: string[] = []
+    for (let index = 0; index < reviewQueue.length; index += 1) {
+      const post = reviewQueue[index]
+      setNotice(`Proveravam nedelju ${index + 1}/${reviewQueue.length} · ${post.title || 'objava'}…`)
+      const { data, error } = await supabase.functions.invoke('content-engine', {
+        body: { action: 'quality_check', restaurantId: restaurant.id, postId: post.id },
+      })
+      if (!error && !data?.error && Number(data?.score || 0) >= 70) {
+        const { error: updateError } = await supabase.from('posts').update({ status: 'approved' }).eq('id', post.id).eq('restaurant_id', restaurant.id)
+        if (!updateError) approved += 1
+        else flagged.push(post.title || 'Objava')
+      } else flagged.push(post.title || 'Objava')
+    }
+    await onChanged()
+    setNotice(flagged.length
+      ? `Review završen: ${approved} odobreno · ${flagged.length} ostavljeno za doradu (${flagged.slice(0,3).join(', ')}${flagged.length>3?'…':''}).`
+      : `Review završen: svih ${approved} draftova je prošlo quality gate i odobreno je.`)
+    setBulkReviewing(false)
+  }
 
   async function generateWeek() {
     if (!activeItems.length) {
@@ -303,6 +329,11 @@ export function Dashboard({ restaurant, menuItems, posts, onChanged, setNotice, 
         <div className="autopilot-health-checks">{autopilotHealth.checks.map(check=><span key={check.key} className={check.ok?'ok':'missing'}>{check.ok?<CheckCircle2 size={12}/>:<X size={12}/>} {check.label}</span>)}</div>
         {autopilotHealth.action&&<button className="secondary autopilot-health-action" onClick={()=>onNavigate?.(autopilotHealth.action!.tab)}>{autopilotHealth.action.label}<ArrowUpRight size={14}/></button>}
       </section>
+
+      {reviewQueue.length>0&&<section className="review-queue-bar panel">
+        <div><span><CheckCircle2 size={16}/> REVIEW QUEUE</span><strong>{reviewQueue.length} {reviewQueue.length===1?'draft čeka':'draftova čeka'} proveru</strong><small>Quality gate proverava copy, CTA, discovery, platform verzije, fotografiju i vizuelni sistem. Prolaz ≥70/100 može biti odobren.</small></div>
+        <button className="primary" onClick={()=>void reviewWholeWeek()} disabled={bulkReviewing}>{bulkReviewing?<><Sparkles size={15}/> Proveravam…</>:<><CheckCircle2 size={15}/> Proveri + odobri sve</>}</button>
+      </section>}
 
       <section className="week-quality-panel panel">
         <div className="week-quality-score">
