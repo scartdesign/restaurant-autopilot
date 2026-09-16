@@ -94,8 +94,10 @@ function App() {
       window.history.replaceState({},'',window.location.pathname+(qs?'?'+qs:'')+window.location.hash)
     }
     if(payment==='stripe-cancel'){
+      const orderId=query.get('order')||''
+      if(orderId)await supabase.functions.invoke('checkout-order',{body:{action:'cancel_checkout',orderId}}).catch(()=>null)
       clean()
-      setNotice('Kartično plaćanje je otkazano. Narudžbina nije naplaćena.')
+      setNotice('Kartično plaćanje je otkazano. Narudžbina nije naplaćena i više ne blokira novu kupovinu.')
       return
     }
     const sessionId=query.get('session_id')||''
