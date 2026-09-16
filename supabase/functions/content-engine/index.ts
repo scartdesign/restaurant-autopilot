@@ -321,6 +321,13 @@ function minutes(value: string) {
   return (Number.isFinite(h) ? h : 0) * 60 + (Number.isFinite(m) ? m : 0);
 }
 
+function learningConfidence(samples: number) {
+  if (samples <= 0) return 0;
+  if (samples === 1) return .55;
+  if (samples === 2) return .8;
+  return 1;
+}
+
 function performanceSignal(row: any) {
   const reach = Number(row?.reach || 0);
   const interactions = Number(row?.likes||0)+Number(row?.comments||0)+Number(row?.saves||0)+Number(row?.shares||0);
@@ -487,7 +494,7 @@ Deno.serve(async (req: Request) => {
         const { data: existing } = await supabase.from("content_plans").select("*").eq("restaurant_id", restaurantId).eq("week_start", weekTarget.weekStart).maybeSingle();
         if (existing?.id) {
           const { data: existingPosts } = await supabase.from("posts").select("*").eq("content_plan_id", existing.id).order("scheduled_for", { ascending: true });
-          return json({ ok: true, existing: true, created: false, plan: existing, posts: existingPosts || [], engine: "restaurant-autopilot-v21", week_start: weekTarget.weekStart, next_week: weekTarget.nextWeek });
+          return json({ ok: true, existing: true, created: false, plan: existing, posts: existingPosts || [], engine: "restaurant-autopilot-v22", week_start: weekTarget.weekStart, next_week: weekTarget.nextWeek });
         }
       }
 
@@ -505,13 +512,23 @@ Deno.serve(async (req: Request) => {
         performancePosts = data || [];
       }
       const performancePostMap = new Map(performancePosts.map((post:any)=>[post.id,post]));
-      const learnedScore = new Map<string,number>();
+      const learnedSum = new Map<string,number>();
+      const learnedSamples = new Map<string,number>();
       for (const row of performanceRows || []) {
         const post = performancePostMap.get(row.post_id);
         if (!post?.menu_item_id) continue;
         const score = performanceSignal(row);
         const id=String(post.menu_item_id);
-        learnedScore.set(id,(learnedScore.get(id)||0)+score);
+        learnedSum.set(id,(learnedSum.get(id)||0)+score);
+        learnedSamples.set(id,(learnedSamples.get(id)||0)+1);
+      }
+      const learnedScore = new Map<string,number>();
+      for (const item of menuItems) {
+        const id=String(item.id);
+        const samples=learnedSamples.get(id)||0;
+        if (!samples) continue;
+        const average=(learnedSum.get(id)||0)/samples;
+        learnedScore.set(id,average*learningConfidence(samples));
       }
       const rankedMenu=[...menuItems].sort((a:any,b:any)=>{
         const aId=String(a.id), bId=String(b.id);
@@ -603,7 +620,7 @@ Deno.serve(async (req: Request) => {
           visual_brief: visualBrief(restaurant, item, pillar, postType),
           status: "draft",
           generation_meta: {
-            engine: "restaurant-autopilot-v21",
+            engine: "restaurant-autopilot-v22",
             generation_source: action === "ensure_week" ? "weekly_autopilot" : "manual_week",
             pillar,
             variation: index,
@@ -614,6 +631,8 @@ Deno.serve(async (req: Request) => {
             learning_signal: {
               performance_samples: (performanceRows || []).length,
               item_score: Math.round((learnedScore.get(String(item.id)) || 0) * 10) / 10,
+              performance_samples_item: learnedSamples.get(String(item.id)) || 0,
+              performance_confidence: Math.round(learningConfidence(learnedSamples.get(String(item.id)) || 0) * 100),
               marketing_priority: Number(item.marketing_priority || 0),
               recent_uses_30d: recentUse.get(String(item.id)) || 0,
               coverage_bonus: (recentUse.get(String(item.id)) || 0) === 0 ? 22 : (recentUse.get(String(item.id)) || 0) === 1 ? 8 : 0,
@@ -643,7 +662,7 @@ Deno.serve(async (req: Request) => {
         });
         if (noticeError) console.error("weekly_plan_ready notice failed", noticeError.message);
       }
-      return json({ ok: true, existing: false, created: action === "ensure_week", plan, posts, engine: "restaurant-autopilot-v21", pillars, timezone: timeZone, schedule_days: scheduleDays, week_start: weekStart, next_week: weekTarget.nextWeek, learning:{performance_samples:(performanceRows||[]).length,schedule_hours:learnedScheduleHours,schedule_days:learnedScheduleDays,ranked_menu:rankedMenu.map((item:any)=>({id:item.id,name:item.name,score:Math.round(((learnedScore.get(String(item.id))||0)+Number(item.marketing_priority||0)*35)*10)/10,marketing_priority:Number(item.marketing_priority||0),recent_uses_30d:recentUse.get(String(item.id))||0,coverage_bonus:(recentUse.get(String(item.id))||0)===0?22:(recentUse.get(String(item.id))||0)===1?8:0,exploration_bonus:Number(item.marketing_priority||0)>=2&&!(learnedScore.get(String(item.id))||0)?12:0}))} });
+      return json({ ok: true, existing: false, created: action === "ensure_week", plan, posts, engine: "restaurant-autopilot-v22", pillars, timezone: timeZone, schedule_days: scheduleDays, week_start: weekStart, next_week: weekTarget.nextWeek, learning:{performance_samples:(performanceRows||[]).length,schedule_hours:learnedScheduleHours,schedule_days:learnedScheduleDays,ranked_menu:rankedMenu.map((item:any)=>({id:item.id,name:item.name,score:Math.round(((learnedScore.get(String(item.id))||0)+Number(item.marketing_priority||0)*35)*10)/10,performance_samples_item:learnedSamples.get(String(item.id))||0,performance_confidence:Math.round(learningConfidence(learnedSamples.get(String(item.id))||0)*100),marketing_priority:Number(item.marketing_priority||0),recent_uses_30d:recentUse.get(String(item.id))||0,coverage_bonus:(recentUse.get(String(item.id))||0)===0?22:(recentUse.get(String(item.id))||0)===1?8:0,exploration_bonus:Number(item.marketing_priority||0)>=2&&!(learnedScore.get(String(item.id))||0)?12:0}))} });
     }
 
     if (action === "promotion") {
@@ -673,7 +692,7 @@ Deno.serve(async (req: Request) => {
       const feedCaption = `${[title, discountText, description].filter(Boolean).join(" · ")}. ${goalClose(restaurant)}`;
       const storyCaption = `${discountText || title}. ${description || "Važi ograničeno vreme."} ${ctaFor(restaurant, "promotion")}.`;
       const cta = ctaFor(restaurant, "promotion");
-      const commonMeta = { engine: "restaurant-autopilot-v21", source: "promotion", image_url: visualItem?.image_url || null, selected_menu_item_id: visualItem?.id || null, generated_at: new Date().toISOString(), pillar: "promotion" };
+      const commonMeta = { engine: "restaurant-autopilot-v22", source: "promotion", image_url: visualItem?.image_url || null, selected_menu_item_id: visualItem?.id || null, generated_at: new Date().toISOString(), pillar: "promotion" };
       const feedTitle = discountText || title;
       const feed = {
         restaurant_id: restaurantId, promotion_id: promotion.id, post_type: "promotion", scheduled_for: startsAt, title: feedTitle, caption: feedCaption, cta,
@@ -690,7 +709,7 @@ Deno.serve(async (req: Request) => {
       };
       const { data: posts, error: postError } = await supabase.from("posts").insert([feed, story]).select();
       if (postError) return json({ error: postError.message }, 400);
-      return json({ ok: true, promotion, posts, engine: "restaurant-autopilot-v21" });
+      return json({ ok: true, promotion, posts, engine: "restaurant-autopilot-v22" });
     }
 
     if (action === "regenerate" || action === "optimize_discovery") {
@@ -710,10 +729,10 @@ Deno.serve(async (req: Request) => {
         ...discovery,
         cta: post.cta || ctaFor(restaurant, pillar),
         status: "draft",
-        generation_meta: { ...(post.generation_meta || {}), engine: "restaurant-autopilot-v21", pillar, variation, visual_design: nextVisual, regenerated_at: new Date().toISOString() },
+        generation_meta: { ...(post.generation_meta || {}), engine: "restaurant-autopilot-v22", pillar, variation, visual_design: nextVisual, regenerated_at: new Date().toISOString() },
       }).eq("id", postId).select().single();
       if (updateError) return json({ error: updateError.message }, 400);
-      return json({ ok: true, post: updated, engine: "restaurant-autopilot-v21" });
+      return json({ ok: true, post: updated, engine: "restaurant-autopilot-v22" });
     }
 
     if (action === "quality_check") {
