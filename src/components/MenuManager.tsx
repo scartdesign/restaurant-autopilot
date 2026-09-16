@@ -166,20 +166,44 @@ export function MenuManager({ restaurant, userId, items, onChanged, setNotice }:
       const text = await file.text()
       const parsed = parseMenuCsv(text)
       if (!parsed.length) throw new Error('Nisam našao nijedno validno jelo. Proveri kolone u CSV fajlu.')
-      const payload = parsed.slice(0, 500).map((row) => ({
-        restaurant_id: restaurant.id,
-        name: row.name,
-        description: row.description || null,
-        category: row.category || null,
-        price: row.price === '' ? null : Number(row.price),
-        currency: row.currency || 'RSD',
-        is_active: true,
-        marketing_priority: 0,
-      }))
+      const limited = parsed.slice(0, 500)
+      const heroIndex = limited.findIndex((row) => row.marketing_priority === 3)
+      let extraHeroes = 0
+      const payload = limited.map((row, index) => {
+        const requestedPriority = Math.max(0, Math.min(3, Number(row.marketing_priority || 0)))
+        if (requestedPriority === 3 && index !== heroIndex) extraHeroes += 1
+        return {
+          restaurant_id: restaurant.id,
+          name: row.name,
+          description: row.description || null,
+          category: row.category || null,
+          price: row.price === '' ? null : Number(row.price),
+          currency: row.currency || 'RSD',
+          is_active: true,
+          marketing_priority: requestedPriority === 3 ? 2 : requestedPriority,
+        }
+      })
       if (payload.some((row) => row.price !== null && Number.isNaN(row.price))) throw new Error('Jedna ili više cena nisu broj. Koristi npr. 890 ili 12.50.')
-      const { error } = await supabase.from('menu_items').insert(payload)
+      const { data: inserted, error } = await supabase.from('menu_items').insert(payload).select('id,name')
       if (error) throw error
-      setNotice(`Uvezeno je ${payload.length} stavki. Za jela bez fotografije sada možeš koristiti AI sliku direktno iz menija.`)
+
+      let heroMessage = ''
+      if (heroIndex >= 0 && inserted?.[heroIndex]?.id) {
+        const newHero = inserted[heroIndex]
+        const previousHero = currentHero
+        if (previousHero) {
+          const { error: demoteError } = await supabase.from('menu_items').update({ marketing_priority: 2 }).eq('id', previousHero.id).eq('restaurant_id', restaurant.id)
+          if (demoteError) throw demoteError
+        }
+        const { error: promoteError } = await supabase.from('menu_items').update({ marketing_priority: 3 }).eq('id', newHero.id).eq('restaurant_id', restaurant.id)
+        if (promoteError) {
+          if (previousHero) await supabase.from('menu_items').update({ marketing_priority: 3 }).eq('id', previousHero.id).eq('restaurant_id', restaurant.id)
+          throw promoteError
+        }
+        heroMessage = ` · HERO: ${newHero.name}${previousHero ? ` (prethodni ${previousHero.name} je spušten na VISOK)` : ''}`
+      }
+      const extraHeroMessage = extraHeroes ? ` · još ${extraHeroes} HERO oznaka je spušteno na VISOK jer restoran može imati samo jedan HERO` : ''
+      setNotice(`Uvezeno je ${payload.length} stavki${heroMessage}${extraHeroMessage}. Za jela bez fotografije možeš koristiti AI sliku direktno iz menija.`)
       await onChanged()
     } catch (error) {
       setNotice(error instanceof Error ? error.message : 'Greška pri uvozu menija.')
@@ -188,7 +212,7 @@ export function MenuManager({ restaurant, userId, items, onChanged, setNotice }:
   }
 
   function downloadTemplate() {
-    const csv = 'naziv;opis;kategorija;cena;valuta\nPizza Capricciosa;Pelat, mozzarella, šunka, pečurke;Pizza;890;RSD\nCarbonara;Guanciale, jaje, pecorino;Pasta;940;RSD\n'
+    const csv = 'naziv;opis;kategorija;cena;valuta;prioritet\nPizza Capricciosa;Pelat, mozzarella, šunka, pečurke;Pizza;890;RSD;3\nCarbonara;Guanciale, jaje, pecorino;Pasta;940;RSD;2\nTiramisu;Mascarpone, espresso i kakao;Desert;520;RSD;0\n'
     const blob = new Blob(['\ufeff', csv], { type: 'text/csv;charset=utf-8' })
     const link = document.createElement('a')
     link.href = URL.createObjectURL(blob)
@@ -274,7 +298,7 @@ export function MenuManager({ restaurant, userId, items, onChanged, setNotice }:
       </div>
 
       <div className="menu-import-bar">
-        <div className="menu-import-copy"><FileSpreadsheet size={20} /><div><strong>Imaš veći meni?</strong><span>Uvezi do 500 jela odjednom iz CSV-a. Prihvatamo kolone naziv/opis/kategorija/cena/valuta.</span></div></div>
+        <div className="menu-import-copy"><FileSpreadsheet size={20} /><div><strong>Imaš veći meni?</strong><span>Uvezi do 500 jela odjednom iz CSV-a. Kolone: naziv/opis/kategorija/cena/valuta/prioritet (0–3, gde je 3 HERO).</span></div></div>
         <div className="menu-import-actions"><button type="button" className="secondary" onClick={downloadTemplate}><Download size={16} /> CSV šablon</button><label className="primary csv-upload"><Upload size={16} /> Uvezi CSV<input type="file" accept=".csv,text/csv" onChange={importCsv} /></label></div>
       </div>
 
@@ -322,7 +346,7 @@ export function MenuManager({ restaurant, userId, items, onChanged, setNotice }:
   )
 }
 
-type CsvMenuRow = { name: string; description: string; category: string; price: string; currency: string }
+type CsvMenuRow = { name: string; description: string; category: string; price: string; currency: string; marketing_priority: number }
 
 function parseMenuCsv(text: string): CsvMenuRow[] {
   const rows = text.replace(/^\ufeff/, '').split(/\r?\n/).filter((line) => line.trim())
@@ -335,6 +359,7 @@ function parseMenuCsv(text: string): CsvMenuRow[] {
     if (['category','kategorija','grupa'].includes(header)) return 'category'
     if (['price','cena','cijena'].includes(header)) return 'price'
     if (['currency','valuta'].includes(header)) return 'currency'
+    if (['priority','prioritet','marketing_priority','marketingprioritet','hero'].includes(header)) return 'marketing_priority'
     return ''
   })
   const nameIndex = keys.indexOf('name')
@@ -342,7 +367,7 @@ function parseMenuCsv(text: string): CsvMenuRow[] {
 
   return rows.slice(1).map((line) => {
     const cells = splitCsvLine(line, delimiter)
-    const result: CsvMenuRow = { name: '', description: '', category: '', price: '', currency: 'RSD' }
+    const result: CsvMenuRow = { name: '', description: '', category: '', price: '', currency: 'RSD', marketing_priority: 0 }
     keys.forEach((key, index) => {
       if (!key) return
       const value = (cells[index] || '').trim()
@@ -351,6 +376,7 @@ function parseMenuCsv(text: string): CsvMenuRow[] {
       if (key === 'category') result.category = value
       if (key === 'price') result.price = value.replace(',', '.')
       if (key === 'currency') result.currency = value.toUpperCase() || 'RSD'
+      if (key === 'marketing_priority') result.marketing_priority = parseMarketingPriority(value)
     })
     return result
   }).filter((row) => row.name)
@@ -382,4 +408,13 @@ function splitCsvLine(line: string, delimiter: string) {
   }
   cells.push(current)
   return cells
+}
+
+function parseMarketingPriority(value:string){
+  const clean=value.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+  if(['hero','glavno','hero jelo','3'].includes(clean))return 3
+  if(['visok','high','visoki','2'].includes(clean))return 2
+  if(['prioritet','priority','blagi','1'].includes(clean))return 1
+  const n=Math.round(Number(clean))
+  return Number.isFinite(n)?Math.max(0,Math.min(3,n)):0
 }
