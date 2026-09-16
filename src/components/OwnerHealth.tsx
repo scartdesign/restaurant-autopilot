@@ -13,6 +13,10 @@ type State={
   aiImages:boolean
   card:boolean
   paypal:boolean
+  meta:boolean
+  metaConnections:number
+  publishQueued:number
+  publishFailed:number
   activeCustomers:number
   pendingOrders:number
   openSupport:number
@@ -20,7 +24,7 @@ type State={
   version:string
 }
 
-const initial:State={ai:false,email:false,emailFrom:false,bank:false,legal:false,salesOpen:true,maintenance:false,aiImages:true,card:false,paypal:false,activeCustomers:0,pendingOrders:0,openSupport:0,failedEmails:0,version:'1.0'}
+const initial:State={ai:false,email:false,emailFrom:false,bank:false,legal:false,salesOpen:true,maintenance:false,aiImages:true,card:false,paypal:false,meta:false,metaConnections:0,publishQueued:0,publishFailed:0,activeCustomers:0,pendingOrders:0,openSupport:0,failedEmails:0,version:'1.0'}
 
 export function OwnerHealth({setNotice}:{setNotice:(v:string)=>void}){
   const[state,setState]=useState<State>(initial)
@@ -29,19 +33,23 @@ export function OwnerHealth({setNotice}:{setNotice:(v:string)=>void}){
 
   async function load(){
     setWorking(true)
-    const [ai,email,settings,controls,subs,orders,support,failed]=await Promise.all([
+    const [ai,email,meta,settings,controls,subs,orders,support,failed,metaConnections,publishQueued,publishFailed]=await Promise.all([
       supabase.rpc('admin_ai_provider_status'),
       supabase.rpc('admin_email_provider_status'),
+      supabase.rpc('admin_meta_provider_status'),
       supabase.from('sales_settings').select('legal_name,tax_id,bank_account,email_from,allow_card,allow_paypal,terms_url,privacy_url').eq('id',1).maybeSingle(),
       supabase.from('app_controls').select('app_version,maintenance_mode,sales_open,ai_images_enabled').eq('id',1).maybeSingle(),
       supabase.from('customer_subscriptions').select('id',{count:'exact',head:true}).in('status',['active','trialing']),
       supabase.from('sales_orders').select('id',{count:'exact',head:true}).eq('status','pending'),
       supabase.from('support_tickets').select('id',{count:'exact',head:true}).neq('status','resolved'),
       supabase.from('notification_outbox').select('id',{count:'exact',head:true}).eq('delivery_status','failed'),
+      supabase.from('social_connections').select('id',{count:'exact',head:true}).eq('status','connected'),
+      supabase.from('social_publish_jobs').select('id',{count:'exact',head:true}).eq('status','queued'),
+      supabase.from('social_publish_jobs').select('id',{count:'exact',head:true}).eq('status','failed'),
     ])
-    const err=ai.error||email.error||settings.error||controls.error||subs.error||orders.error||support.error||failed.error
+    const err=ai.error||email.error||meta.error||settings.error||controls.error||subs.error||orders.error||support.error||failed.error||metaConnections.error||publishQueued.error||publishFailed.error
     if(err)setNotice(err.message)
-    const a=(ai.data||{}) as any, e=(email.data||{}) as any, s=settings.data as any, c=controls.data as any
+    const a=(ai.data||{}) as any, e=(email.data||{}) as any, m=(meta.data||{}) as any, s=settings.data as any, c=controls.data as any
     setState({
       ai:Boolean(a.configured),
       email:Boolean(e.configured),
@@ -53,6 +61,10 @@ export function OwnerHealth({setNotice}:{setNotice:(v:string)=>void}){
       aiImages:c?.ai_images_enabled!==false,
       card:Boolean(s?.allow_card),
       paypal:Boolean(s?.allow_paypal),
+      meta:Boolean(m.configured),
+      metaConnections:metaConnections.count||0,
+      publishQueued:publishQueued.count||0,
+      publishFailed:publishFailed.count||0,
       activeCustomers:subs.count||0,
       pendingOrders:orders.count||0,
       openSupport:support.count||0,
@@ -68,6 +80,7 @@ export function OwnerHealth({setNotice}:{setNotice:(v:string)=>void}){
     {label:'Firma / naplata',ok:state.legal&&state.bank,detail:state.legal&&state.bank?'Pravni, bankarski i legal linkovi su uneti':'Dopuni pravni naziv, PIB, račun, uslove i privatnost',icon:BadgeEuro},
     {label:'Prodaja',ok:state.salesOpen,detail:state.salesOpen?'Kupovina paketa je otvorena':'Prodaja je trenutno zatvorena',icon:CreditCard},
     {label:'AI slike',ok:state.aiImages,detail:state.aiImages?'AI slike su dozvoljene sistemski':'AI slike su globalno ugašene',icon:Image},
+    {label:'Meta publishing',ok:state.meta,detail:state.meta?`Provider spreman · ${state.metaConnections} povezanih restorana`:'Unesi Meta App ID + Secret u OWNER Controlu',icon:Send},
   ],[state])
   const score=Math.round((checks.filter(x=>x.ok).length/checks.length)*100)
 
@@ -76,7 +89,7 @@ export function OwnerHealth({setNotice}:{setNotice:(v:string)=>void}){
     <section className="email-metrics"><div><span>Aktivni kupci</span><strong>{state.activeCustomers}</strong></div><div><span>Uplate čekaju</span><strong>{state.pendingOrders}</strong></div><div><span>Support otvoren</span><strong>{state.openSupport}</strong></div><div><span>Email greške</span><strong>{state.failedEmails}</strong></div></section>
     <div className="health-grid">{checks.map(({label,ok,detail,icon:Icon})=><article className={`health-card ${ok?'ok':'warn'}`} key={label}><div>{ok?<CheckCircle2 size={20}/>:<AlertTriangle size={20}/>}</div><section><span>{label}</span><strong>{ok?'SPREMNO':'AKCIJA POTREBNA'}</strong><p>{detail}</p></section><Icon size={21}/></article>)}</div>
     <section className="admin-panel health-external"><div className="admin-panel-head"><div><p className="eyebrow">SPOLJNE INTEGRACIJE</p><h2>Šta još zavisi od naloga provajdera</h2></div><Activity size={22}/></div>
-      <div className="health-external-grid"><div><Send size={18}/><strong>Meta auto-publish</strong><span>Nije označen kao aktivan dok se ne povežu Meta App/OAuth dozvole.</span></div><div><CreditCard size={18}/><strong>Kartično plaćanje</strong><span>{state.card?'Uključeno u prodajnim podešavanjima.':'Nije uključeno — potreban je konkretan payment gateway.'}</span></div><div><BadgeEuro size={18}/><strong>PayPal</strong><span>{state.paypal?'PayPal metoda je uključena.':'PayPal trenutno nije uključen.'}</span></div><div><ShieldCheck size={18}/><strong>Maintenance</strong><span>{state.maintenance?'Aplikacija je u maintenance modu.':'Aplikacija je dostupna kupcima.'}</span></div></div>
+      <div className="health-external-grid"><div className={state.meta?'external-ready':''}><Send size={18}/><strong>Meta auto-publish</strong><span>{state.meta?`Provider spreman · ${state.metaConnections} connected · ${state.publishQueued} queued · ${state.publishFailed} failed`:'Meta App nije konfigurisan. OAuth i publishing queue su spremni čim se unesu kredencijali.'}</span></div><div><CreditCard size={18}/><strong>Kartično plaćanje</strong><span>{state.card?'Uključeno u prodajnim podešavanjima.':'Nije uključeno — potreban je konkretan payment gateway.'}</span></div><div><BadgeEuro size={18}/><strong>PayPal</strong><span>{state.paypal?'PayPal metoda je uključena.':'PayPal trenutno nije uključen.'}</span></div><div><ShieldCheck size={18}/><strong>Maintenance</strong><span>{state.maintenance?'Aplikacija je u maintenance modu.':'Aplikacija je dostupna kupcima.'}</span></div></div>
     </section>
     <button className="secondary health-refresh" onClick={()=>void load()} disabled={working}><RefreshCw size={15}/>{working?'Proveravam…':'Ponovo proveri sistem'}</button>
   </div>
