@@ -1,5 +1,5 @@
 import { ChangeEvent, FormEvent, useMemo, useState } from 'react'
-import { Eye, EyeOff, Hash, Image as ImageIcon, MapPin, Palette, Save, Settings, Share2, Target, Trash2, Upload } from 'lucide-react'
+import { CalendarClock, Eye, EyeOff, Hash, Image as ImageIcon, MapPin, Palette, Save, Settings, Share2, Sparkles, Target, Trash2, Upload } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import type { LogoBadge, LogoPosition, LogoSize, Restaurant } from '../types'
 import { AccountDataTools } from './AccountDataTools'
@@ -41,6 +41,7 @@ export function SettingsPanel({ restaurant, onSaved, setNotice }: {
     default_logo_badge: restaurant.default_logo_badge || 'white' as LogoBadge,
     default_overlay_strength: Number(restaurant.default_overlay_strength ?? .68),
     opening_hours: normalizeOpeningHours(restaurant.opening_hours),
+    weekly_autopilot_enabled: Boolean(restaurant.weekly_autopilot_enabled),
   })
   const [working, setWorking] = useState(false)
   const [logoFile, setLogoFile] = useState<File | null>(null)
@@ -121,6 +122,7 @@ export function SettingsPanel({ restaurant, onSaved, setNotice }: {
         default_logo_badge: form.default_logo_badge,
         default_overlay_strength: form.default_overlay_strength,
         opening_hours: form.opening_hours,
+        weekly_autopilot_enabled: form.weekly_autopilot_enabled,
       }
       if (uploadedLogo) payload.logo_url = uploadedLogo
       const { error } = await supabase.from('restaurants').update(payload).eq('id', restaurant.id)
@@ -129,7 +131,7 @@ export function SettingsPanel({ restaurant, onSaved, setNotice }: {
         setLogoPreview(uploadedLogo)
         setLogoFile(null)
       }
-      setNotice('Podešavanja su sačuvana. Visual Studio sada koristi novi logo, boje i podrazumevani raspored.')
+      setNotice(form.weekly_autopilot_enabled ? 'Podešavanja su sačuvana. Autopilot nedelja je uključena i koristiće nova pravila.' : 'Podešavanja su sačuvana. Visual Studio sada koristi novi logo, boje i podrazumevani raspored.')
       await onSaved()
     } catch (error) {
       setNotice(error instanceof Error ? error.message : 'Greška pri čuvanju podešavanja.')
@@ -176,6 +178,18 @@ export function SettingsPanel({ restaurant, onSaved, setNotice }: {
             <label>Hashtag strategija<select value={form.hashtag_mode} onChange={(e) => setForm({ ...form, hashtag_mode: e.target.value as Restaurant['hashtag_mode'] })}><option value="smart">Smart — automatski balans</option><option value="local">Local — maksimalan lokalni fokus</option><option value="balanced">Balanced — lokalno + niša + širi reach</option><option value="minimal">Minimal — 5 najrelevantnijih</option></select></label>
             <label>Objava nedeljno<select value={form.posting_frequency} onChange={(e) => setForm({ ...form, posting_frequency: e.target.value })}>{[3,4,5,6,7].map((n) => <option value={n} key={n}>{n} objava</option>)}</select></label>
             <label>Ton<select value={form.tone} onChange={(e) => setForm({ ...form, tone: e.target.value as Restaurant['tone'] })}><option value="friendly">Prijateljski</option><option value="premium">Premium</option><option value="playful">Razigran</option><option value="traditional">Tradicionalan</option><option value="direct">Direktan</option></select></label>
+          </div>
+          <div className={`weekly-autopilot-card ${form.weekly_autopilot_enabled ? 'active' : ''}`}>
+            <div className="weekly-autopilot-icon"><Sparkles size={20}/></div>
+            <div className="weekly-autopilot-copy">
+              <span>AUTOPILOT NEDELJA</span>
+              <strong>Automatski pripremi novu nedelju</strong>
+              <p>Kada prvi put otvoriš aplikaciju u novoj nedelji, Autopilot proverava da li plan već postoji. Ako ne postoji, sam ga kreira. Postojeći draftovi, odobrene i objavljene objave se ne pregaze.</p>
+              <small><CalendarClock size={12}/> Koristi HERO prioritet, performance learning, najbolji dan/vreme i diversity guardrail.</small>
+            </div>
+            <button type="button" className={form.weekly_autopilot_enabled ? 'toggle active' : 'toggle'} onClick={()=>setForm({...form,weekly_autopilot_enabled:!form.weekly_autopilot_enabled})}>
+              <span>{form.weekly_autopilot_enabled ? 'UKLJUČEN' : 'ISKLJUČEN'}</span>
+            </button>
           </div>
         </section>
 
