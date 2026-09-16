@@ -1,5 +1,5 @@
 import { type ReactNode, useEffect, useMemo, useState } from 'react'
-import { Activity, BadgeEuro, Ban, Bell, BookOpenCheck, CheckCircle2, CircleDollarSign, Copy, CreditCard, Download, Eye, EyeOff, Facebook, Image as ImageIcon, KeyRound, Mail, Megaphone, Power, RefreshCw, Save, Search, Settings2, ShieldCheck, Sparkles, Store, TicketCheck, UsersRound, WalletCards, WandSparkles } from 'lucide-react'
+import { Activity, BadgeEuro, Ban, Bell, BookOpenCheck, CheckCircle2, CircleDollarSign, Copy, CreditCard, Download, Eye, EyeOff, Facebook, Image as ImageIcon, KeyRound, Mail, Megaphone, Plus, Power, RefreshCw, Save, Search, Settings2, ShieldCheck, Sparkles, Store, TicketCheck, Trash2, UsersRound, WalletCards, WandSparkles } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import type { AdminAuditLog, CustomerProfile, CustomerSubscription, LicenseCodeRow, NotificationOutbox, SalesOrder, SalesPlan, SalesSettings } from '../types'
 
@@ -11,6 +11,8 @@ type PaymentEvent={id:string;event_type:string;order_id:string|null;status:strin
 type DiscoveryHealth={mode:string;live_search_volume:boolean;external_provider_configured:boolean;external_provider?:string;external_terms?:number;external_latest_at?:string|null;total_terms:number;active_terms:number;stale_7d:number;stale_30d:number;latest_verified_at:string|null;oldest_verified_at:string|null;sources:Record<string,number>;platforms:Record<string,number>;categories:Record<string,number>;performance_samples:number;performance_restaurants:number;learned_terms:number;learning_samples:number;last_learned_at:string|null;last_sync_run:Record<string,unknown>|null;last_learning_run:Record<string,unknown>|null}
 type DiscoverySyncRun={id:string;source:string;mode:string;status:'started'|'success'|'skipped'|'failed';terms_seen:number;terms_updated:number;started_at:string;finished_at:string|null;error_message:string|null;metadata:Record<string,unknown>}
 type DiscoveryCandidate={id:string;provider:string;seed_query:string;query:string;geo:string;trend_type:'rising'|'top';trend_value:string|null;extracted_value:number;relevance_score:number;status:'pending'|'approved'|'rejected';first_seen_at:string;last_seen_at:string;decided_at:string|null;metadata:Record<string,unknown>}
+type DiscoverySeed={id:string;geo:string;query:string;active:boolean;sort_order:number;created_at:string;updated_at:string}
+type DiscoveryEngineConfig={provider_enabled:boolean;per_sync_call_limit:number;daily_call_limit:number;candidate_seed_limit:number;daily_calls_used:number;updated_at:string|null;seeds:DiscoverySeed[]}
 type AppControls = {
   id:number; app_name:string; app_version:string; maintenance_mode:boolean; maintenance_message:string|null
   sales_open:boolean; signup_open:boolean; ai_images_enabled:boolean; announcement_enabled:boolean
@@ -24,22 +26,23 @@ const methods=[['manual','Ručno / ostalo'],['bank_transfer','Uplata na račun']
 const freshSale:SaleForm={userId:'',planId:'',days:'',amount:'',paymentMethod:'manual',note:''}
 const freshLicense:LicenseForm={planId:'',email:'',days:'',amount:'',paymentMethod:'manual',note:''}
 const defaultControls:AppControls={id:1,app_name:'Restaurant Autopilot',app_version:'1.0',maintenance_mode:false,maintenance_message:null,sales_open:true,signup_open:true,ai_images_enabled:true,announcement_enabled:false,announcement_text:null,announcement_tone:'info',support_whatsapp:null,updated_at:''}
+const defaultDiscoveryEngine:DiscoveryEngineConfig={provider_enabled:true,per_sync_call_limit:18,daily_call_limit:60,candidate_seed_limit:8,daily_calls_used:0,updated_at:null,seeds:[]}
 
 export function OwnerControl({onCloseApp,setNotice}:{onCloseApp?:()=>void;setNotice:(v:string)=>void}){
   const [view,setView]=useState<View>('overview')
   const [profiles,setProfiles]=useState<CustomerProfile[]>([]),[restaurants,setRestaurants]=useState<RestaurantLite[]>([]),[plans,setPlans]=useState<SalesPlan[]>([])
   const [subs,setSubs]=useState<CustomerSubscription[]>([]),[orders,setOrders]=useState<SalesOrder[]>([]),[licenses,setLicenses]=useState<LicenseCodeRow[]>([])
-  const [settings,setSettings]=useState<SalesSettings|null>(null),[controls,setControls]=useState<AppControls>(defaultControls),[outbox,setOutbox]=useState<NotificationOutbox[]>([]),[audit,setAudit]=useState<AdminAuditLog[]>([]),[paymentEvents,setPaymentEvents]=useState<PaymentEvent[]>([]),[discoveryRuns,setDiscoveryRuns]=useState<DiscoverySyncRun[]>([]),[discoveryCandidates,setDiscoveryCandidates]=useState<DiscoveryCandidate[]>([])
+  const [settings,setSettings]=useState<SalesSettings|null>(null),[controls,setControls]=useState<AppControls>(defaultControls),[outbox,setOutbox]=useState<NotificationOutbox[]>([]),[audit,setAudit]=useState<AdminAuditLog[]>([]),[paymentEvents,setPaymentEvents]=useState<PaymentEvent[]>([]),[discoveryRuns,setDiscoveryRuns]=useState<DiscoverySyncRun[]>([]),[discoveryCandidates,setDiscoveryCandidates]=useState<DiscoveryCandidate[]>([]),[discoveryEngine,setDiscoveryEngine]=useState<DiscoveryEngineConfig>(defaultDiscoveryEngine)
   const [posts,setPosts]=useState<PostLite[]>([]),[creative,setCreative]=useState<CreativeLite[]>([]),[aiConfigured,setAiConfigured]=useState(false),[emailConfigured,setEmailConfigured]=useState(false),[metaConfigured,setMetaConfigured]=useState(false),[stripeConfigured,setStripeConfigured]=useState(false),[stripeMode,setStripeMode]=useState<'test'|'live'|'unknown'>('unknown'),[discoveryHealth,setDiscoveryHealth]=useState<DiscoveryHealth|null>(null)
   const [working,setWorking]=useState(false),[search,setSearch]=useState(''),[sale,setSale]=useState<SaleForm>(freshSale),[license,setLicense]=useState<LicenseForm>(freshLicense),[generated,setGenerated]=useState<Generated|null>(null)
-  const [noteTarget,setNoteTarget]=useState<CustomerProfile|null>(null),[detailTarget,setDetailTarget]=useState<CustomerProfile|null>(null),[noteSubject,setNoteSubject]=useState('Restaurant Autopilot'),[noteBody,setNoteBody]=useState(''),[aiKey,setAiKey]=useState(''),[emailKey,setEmailKey]=useState(''),[metaAppId,setMetaAppId]=useState(''),[metaAppSecret,setMetaAppSecret]=useState(''),[stripeSecretKey,setStripeSecretKey]=useState(''),[stripeWebhookSecret,setStripeWebhookSecret]=useState(''),[discoveryProviderKey,setDiscoveryProviderKey]=useState('')
+  const [noteTarget,setNoteTarget]=useState<CustomerProfile|null>(null),[detailTarget,setDetailTarget]=useState<CustomerProfile|null>(null),[noteSubject,setNoteSubject]=useState('Restaurant Autopilot'),[noteBody,setNoteBody]=useState(''),[aiKey,setAiKey]=useState(''),[emailKey,setEmailKey]=useState(''),[metaAppId,setMetaAppId]=useState(''),[metaAppSecret,setMetaAppSecret]=useState(''),[stripeSecretKey,setStripeSecretKey]=useState(''),[stripeWebhookSecret,setStripeWebhookSecret]=useState(''),[discoveryProviderKey,setDiscoveryProviderKey]=useState(''),[newDiscoverySeed,setNewDiscoverySeed]=useState({query:'',geo:'RS'})
 
   useEffect(()=>{void load(true)},[])
 
   async function load(housekeeping=false){
     setWorking(true)
     if(housekeeping) await supabase.rpc('admin_housekeeping')
-    const [a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u]=await Promise.all([
+    const [a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v]=await Promise.all([
       supabase.from('customer_profiles').select('*').order('created_at',{ascending:false}),
       supabase.from('restaurants').select('id,owner_id,name,city,created_at').order('created_at',{ascending:false}),
       supabase.from('sales_plans').select('*').order('sort_order'),
@@ -61,10 +64,11 @@ export function OwnerControl({onCloseApp,setNotice}:{onCloseApp?:()=>void;setNot
       supabase.rpc('admin_discovery_health'),
       supabase.rpc('admin_discovery_sync_feed',{p_limit:12}),
       supabase.rpc('admin_discovery_candidate_feed',{p_limit:30}),
+      supabase.rpc('admin_discovery_engine_config'),
     ])
-    const err=a.error||b.error||c.error||d.error||e.error||f.error||g.error||h.error||i.error||j.error||k.error||l.error||m.error||n.error||o.error||p.error||q.error||r.error||s.error||t.error||u.error
+    const err=a.error||b.error||c.error||d.error||e.error||f.error||g.error||h.error||i.error||j.error||k.error||l.error||m.error||n.error||o.error||p.error||q.error||r.error||s.error||t.error||u.error||v.error
     if(err)setNotice(err.message)
-    setProfiles((a.data||[]) as CustomerProfile[]);setRestaurants((b.data||[]) as RestaurantLite[]);setPlans((c.data||[]) as SalesPlan[]);setSubs((d.data||[]) as CustomerSubscription[]);setOrders((e.data||[]) as SalesOrder[]);setLicenses((f.data||[]) as LicenseCodeRow[]);setSettings((g.data||null) as SalesSettings|null);setOutbox((h.data||[]) as NotificationOutbox[]);setAudit((i.data||[]) as AdminAuditLog[]);setControls((j.data||defaultControls) as AppControls);setPosts((k.data||[]) as PostLite[]);setCreative((l.data||[]) as CreativeLite[]);setAiConfigured(Boolean((m.data as any)?.configured));setEmailConfigured(Boolean((n.data as any)?.configured));setMetaConfigured(Boolean((o.data as any)?.configured));setStripeConfigured(Boolean((p.data as any)?.configured));setPaymentEvents((q.data||[]) as PaymentEvent[]);setStripeMode(((r.data as any)?.mode||'unknown') as 'test'|'live'|'unknown');setDiscoveryHealth((s.data||null) as DiscoveryHealth|null);setDiscoveryRuns((t.data||[]) as DiscoverySyncRun[]);setDiscoveryCandidates((u.data||[]) as DiscoveryCandidate[]);setWorking(false)
+    setProfiles((a.data||[]) as CustomerProfile[]);setRestaurants((b.data||[]) as RestaurantLite[]);setPlans((c.data||[]) as SalesPlan[]);setSubs((d.data||[]) as CustomerSubscription[]);setOrders((e.data||[]) as SalesOrder[]);setLicenses((f.data||[]) as LicenseCodeRow[]);setSettings((g.data||null) as SalesSettings|null);setOutbox((h.data||[]) as NotificationOutbox[]);setAudit((i.data||[]) as AdminAuditLog[]);setControls((j.data||defaultControls) as AppControls);setPosts((k.data||[]) as PostLite[]);setCreative((l.data||[]) as CreativeLite[]);setAiConfigured(Boolean((m.data as any)?.configured));setEmailConfigured(Boolean((n.data as any)?.configured));setMetaConfigured(Boolean((o.data as any)?.configured));setStripeConfigured(Boolean((p.data as any)?.configured));setPaymentEvents((q.data||[]) as PaymentEvent[]);setStripeMode(((r.data as any)?.mode||'unknown') as 'test'|'live'|'unknown');setDiscoveryHealth((s.data||null) as DiscoveryHealth|null);setDiscoveryRuns((t.data||[]) as DiscoverySyncRun[]);setDiscoveryCandidates((u.data||[]) as DiscoveryCandidate[]);setDiscoveryEngine((v.data||defaultDiscoveryEngine) as DiscoveryEngineConfig);setWorking(false)
   }
 
   const active=useMemo(()=>subs.filter(s=>['active','trialing'].includes(s.status)&&(!s.expires_at||new Date(s.expires_at).getTime()>Date.now())),[subs])
@@ -109,6 +113,41 @@ export function OwnerControl({onCloseApp,setNotice}:{onCloseApp?:()=>void;setNot
   async function saveDiscoveryProvider(){if(discoveryProviderKey.trim().length<20){setNotice('Unesi validan SerpApi API ključ.');return}setWorking(true);const{error}=await supabase.rpc('admin_set_discovery_provider_key',{p_key:discoveryProviderKey.trim()});if(error)setNotice(error.message);else{setDiscoveryProviderKey('');setNotice('Google Trends provider je aktiviran server-side. Ključ je sačuvan u Vault-u.');await load()}setWorking(false)}
   async function syncExternalDiscovery(){if(!discoveryHealth?.external_provider_configured){setNotice('Prvo podesi SerpApi ključ za Google Trends.');return}setWorking(true);const{data,error}=await supabase.functions.invoke('discovery-sync',{body:{action:'sync_now'}});if(error||data?.error)setNotice(data?.error||error?.message||'Discovery sync nije uspeo.');else{const updated=Number(data?.updated||0),calls=Number(data?.api_calls||0),failed=Number(data?.failed_batches||0);setNotice(`Google Trends sync: osveženo ${updated} termina · ${calls} API poziva${failed?` · ${failed} batch grešaka`:''}.`);await load()}setWorking(false)}
   async function decideDiscoveryCandidate(item:DiscoveryCandidate,status:'approved'|'rejected'|'pending'){setWorking(true);const{error}=await supabase.rpc('admin_set_discovery_candidate_status',{p_id:item.id,p_status:status});if(error)setNotice(error.message);else{setNotice(status==='approved'?'Trend „'+item.query+'“ je odobren za SEO i AUTO WEEK trend signal.':status==='rejected'?'Trend „'+item.query+'“ je odbijen.':'Trend „'+item.query+'“ je vraćen na čekanje.');await load()}setWorking(false)}
+
+  async function saveDiscoveryEngineSettings(){
+    setWorking(true)
+    const{data,error}=await supabase.rpc('admin_update_discovery_engine_settings',{
+      p_provider_enabled:discoveryEngine.provider_enabled,
+      p_per_sync_call_limit:Number(discoveryEngine.per_sync_call_limit),
+      p_daily_call_limit:Number(discoveryEngine.daily_call_limit),
+      p_candidate_seed_limit:Number(discoveryEngine.candidate_seed_limit),
+    })
+    if(error)setNotice(error.message)
+    else{setDiscoveryEngine((data||discoveryEngine) as DiscoveryEngineConfig);setNotice('Discovery Engine budžet i provider kontrola su sačuvani.')}
+    setWorking(false)
+  }
+  function patchDiscoverySeed(id:string,patch:Partial<DiscoverySeed>){setDiscoveryEngine(current=>({...current,seeds:current.seeds.map(seed=>seed.id===id?{...seed,...patch}:seed)}))}
+  async function saveDiscoverySeed(seed:DiscoverySeed){
+    setWorking(true)
+    const{error}=await supabase.rpc('admin_upsert_discovery_seed',{p_id:seed.id,p_query:seed.query.trim(),p_geo:seed.geo,p_active:seed.active,p_sort_order:Number(seed.sort_order)})
+    if(error)setNotice(error.message);else{setNotice('Discovery seed „'+seed.query+'“ je sačuvan.');await load()}
+    setWorking(false)
+  }
+  async function addDiscoverySeed(){
+    const query=newDiscoverySeed.query.trim()
+    if(query.length<2){setNotice('Upiši seed termin.');return}
+    const nextOrder=(discoveryEngine.seeds.reduce((max,seed)=>Math.max(max,Number(seed.sort_order||0)),0)||0)+10
+    setWorking(true)
+    const{error}=await supabase.rpc('admin_upsert_discovery_seed',{p_id:null,p_query:query,p_geo:newDiscoverySeed.geo,p_active:true,p_sort_order:nextOrder})
+    if(error)setNotice(error.message);else{setNewDiscoverySeed({query:'',geo:'RS'});setNotice('Novi Discovery seed je dodat.');await load()}
+    setWorking(false)
+  }
+  async function deleteDiscoverySeed(seed:DiscoverySeed){
+    setWorking(true)
+    const{error}=await supabase.rpc('admin_delete_discovery_seed',{p_id:seed.id})
+    if(error)setNotice(error.message);else{setNotice('Seed „'+seed.query+'“ je obrisan.');await load()}
+    setWorking(false)
+  }
   async function tryDispatchOwnerQueue(){if(!emailConfigured||!settings?.email_from)return;await supabase.functions.invoke('email-dispatch',{body:{action:'send_queue',limit:25}}).catch(()=>null)}
   async function dispatchEmails(){setWorking(true);const{data,error}=await supabase.functions.invoke('email-dispatch',{body:{action:'send_queue',limit:25}});if(error)setNotice(error.message);else if(data?.error)setNotice(data.error);else{setNotice(`Email Outbox: poslato ${data?.sent||0}, neuspešno ${data?.failed||0}.`);await load()}setWorking(false)}
   async function retryFailedEmails(){setWorking(true);const{data,error}=await supabase.functions.invoke('email-dispatch',{body:{action:'retry_failed'}});if(error)setNotice(error.message);else if(data?.error)setNotice(data.error);else{setNotice('Neuspele poruke su vraćene u red za slanje.');await load()}setWorking(false)}
