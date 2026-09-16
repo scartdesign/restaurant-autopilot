@@ -42,6 +42,7 @@ export function SettingsPanel({ restaurant, onSaved, setNotice }: {
     default_overlay_strength: Number(restaurant.default_overlay_strength ?? .68),
     opening_hours: normalizeOpeningHours(restaurant.opening_hours),
     weekly_autopilot_enabled: Boolean(restaurant.weekly_autopilot_enabled),
+    trend_autopilot_mode: restaurant.trend_autopilot_mode || 'suggest' as 'off'|'suggest'|'auto',
   })
   const [working, setWorking] = useState(false)
   const [logoFile, setLogoFile] = useState<File | null>(null)
@@ -123,6 +124,7 @@ export function SettingsPanel({ restaurant, onSaved, setNotice }: {
         default_overlay_strength: form.default_overlay_strength,
         opening_hours: form.opening_hours,
         weekly_autopilot_enabled: form.weekly_autopilot_enabled,
+        trend_autopilot_mode: form.trend_autopilot_mode,
       }
       if (uploadedLogo) payload.logo_url = uploadedLogo
       const { error } = await supabase.from('restaurants').update(payload).eq('id', restaurant.id)
@@ -190,6 +192,16 @@ export function SettingsPanel({ restaurant, onSaved, setNotice }: {
             <button type="button" className={form.weekly_autopilot_enabled ? 'toggle active' : 'toggle'} onClick={()=>setForm({...form,weekly_autopilot_enabled:!form.weekly_autopilot_enabled})}>
               <span>{form.weekly_autopilot_enabled ? 'UKLJUČEN' : 'ISKLJUČEN'}</span>
             </button>
+          </div>
+          <div className="trend-autopilot-setting">
+            <div className="trend-autopilot-copy">
+              <span>TREND AUTOPILOT</span>
+              <strong>{form.trend_autopilot_mode==='off'?'Trend Radar je ugašen':form.trend_autopilot_mode==='auto'?'Jaki trendovi mogu sami da naprave draft':'Trendovi se predlažu za tvoju odluku'}</strong>
+              <p>{form.trend_autopilot_mode==='off'?'Restoran ne dobija trend opportunities i trend signal se ne koristi za nove prilike.':form.trend_autopilot_mode==='auto'?'Samo rising prilika sa score 85+ može da napravi najviše jedan novi draft u 24h. Paket i mesečna kvota se proveravaju. Nikada se ne objavljuje automatski.':'Trend Radar prikazuje relevantne prilike, a ti biraš da li želiš objavu ili mini kampanju.'}</p>
+            </div>
+            <div className="trend-mode-picker">
+              {(['off','suggest','auto'] as const).map(mode=><button type="button" key={mode} className={form.trend_autopilot_mode===mode?'active':''} onClick={()=>setForm({...form,trend_autopilot_mode:mode})}><b>{mode==='off'?'OFF':mode==='suggest'?'SUGGEST':'AUTO'}</b><small>{mode==='off'?'bez trendova':mode==='suggest'?'ti odlučuješ':'draft only'}</small></button>)}
+            </div>
           </div>
         </section>
 
