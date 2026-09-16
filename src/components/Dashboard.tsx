@@ -1,15 +1,16 @@
 import { FormEvent, useMemo, useState, type CSSProperties } from 'react'
 import { ArrowUpRight, CalendarDays, CheckCircle2, ChefHat, Clock3, Copy, CopyPlus, Facebook, Hash, Instagram, MapPin, Pencil, Save, Search, Sparkles, Trash2, TrendingUp, UtensilsCrossed, WandSparkles, X, Zap } from 'lucide-react'
 import { supabase } from '../lib/supabase'
-import type { MenuItem, Post, Restaurant } from '../types'
+import type { Entitlement, MenuItem, Post, Restaurant } from '../types'
 
-export function Dashboard({ restaurant, menuItems, posts, onChanged, setNotice, onNavigate }: {
+export function Dashboard({ restaurant, menuItems, posts, entitlement, onChanged, setNotice, onNavigate }: {
   restaurant: Restaurant
   menuItems: MenuItem[]
   posts: Post[]
+  entitlement?: Entitlement | null
   onChanged: () => Promise<void>
   setNotice: (value: string) => void
-  onNavigate?: (tab: 'menu' | 'publish' | 'settings') => void
+  onNavigate?: (tab: 'menu' | 'publish' | 'settings' | 'billing') => void
 }) {
   const [generating, setGenerating] = useState(false)
   const [workingId, setWorkingId] = useState('')
@@ -27,8 +28,10 @@ export function Dashboard({ restaurant, menuItems, posts, onChanged, setNotice, 
   const marketingFocus = useMemo(() => activeItems.filter((item) => (item.marketing_priority || 0) > 0).slice(0, 3), [activeItems])
   const autopilotHealth = useMemo(() => {
     const hoursConfigured = Boolean(restaurant.opening_hours && Object.keys(restaurant.opening_hours).length >= 7)
+    const quotaOk = entitlement?.is_superadmin === true || entitlement?.generation_limit == null || Number(entitlement?.generated_this_month || 0) < Number(entitlement?.generation_limit || 0)
     const checks = [
       { key: 'auto', label: 'Auto week', ok: Boolean(restaurant.weekly_autopilot_enabled) },
+      { key: 'quota', label: 'Generation quota', ok: quotaOk },
       { key: 'menu', label: '3+ jela', ok: activeItems.length >= 3 },
       { key: 'hero', label: 'HERO', ok: Boolean(heroItem) },
       { key: 'photos', label: '70% fotografija', ok: photoCoverage >= 70 },
@@ -36,13 +39,15 @@ export function Dashboard({ restaurant, menuItems, posts, onChanged, setNotice, 
     ]
     const done = checks.filter((check) => check.ok).length
     const score = Math.round((done / checks.length) * 100)
-    const action = !restaurant.weekly_autopilot_enabled || !hoursConfigured
+    const action = !quotaOk
+      ? { label: 'Otvori paket', tab: 'billing' as const }
+      : !restaurant.weekly_autopilot_enabled || !hoursConfigured
       ? { label: 'Sredi automatizaciju', tab: 'settings' as const }
       : activeItems.length < 3 || !heroItem || photoCoverage < 70
         ? { label: 'Sredi meni', tab: 'menu' as const }
         : null
     return { checks, score, action }
-  }, [restaurant.weekly_autopilot_enabled, restaurant.opening_hours, activeItems.length, heroItem, photoCoverage])
+  }, [restaurant.weekly_autopilot_enabled, restaurant.opening_hours, activeItems.length, heroItem, photoCoverage, entitlement?.is_superadmin, entitlement?.generation_limit, entitlement?.generated_this_month])
   const orderedPosts = useMemo(() => [...posts].sort((a, b) => new Date(a.scheduled_for || 0).getTime() - new Date(b.scheduled_for || 0).getTime()), [posts])
   const reviewQueue = useMemo(() => orderedPosts.filter((post) => post.status === 'draft'), [orderedPosts])
   const filteredPosts=useMemo(()=>{
