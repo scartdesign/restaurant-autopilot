@@ -385,6 +385,24 @@ export function Dashboard({ restaurant, menuItems, posts, entitlement, onChanged
         </div>
       </section>
 
+      <section className="trend-opportunities-panel panel">
+        <div className="trend-opportunities-head">
+          <div><p className="eyebrow">TREND RADAR</p><h2>Content opportunities</h2><span>{trendOpportunities.length?trendOpportunities.length+' aktuelnih prilika iz odobrenih trendova.':'Nema aktivnih prilika. Pojaviće se kada OWNER odobri relevantan rising trend.'}</span></div>
+          <button className="secondary" onClick={()=>void loadTrendOpportunities()}><RefreshCw size={13}/> Osveži</button>
+        </div>
+        {trendOpportunities.length?<div className="trend-opportunities-grid">{trendOpportunities.slice(0,4).map(item=>{const menuItem=menuItems.find(x=>x.id===item.menu_item_id);const campaignAllowed=entitlement?.is_superadmin===true||entitlement?.features?.campaigns===true;return <article className="trend-opportunity-card" key={item.id}>
+          <div className="trend-opportunity-top"><span className={item.trend_type==='rising'?'rising':'top'}><TrendingUp size={12}/>{item.trend_type==='rising'?'RISING':'TOP'}</span><strong>{item.opportunity_score}<small>/100</small></strong></div>
+          <h3>{item.trend_query}</h3>
+          <p>{item.reason}</p>
+          <div className="trend-opportunity-meta"><span><UtensilsCrossed size={12}/>{menuItem?.name||'Najbolje aktivno jelo'}</span><span><Clock3 size={12}/>{Math.max(0,Math.ceil((new Date(item.expires_at).getTime()-Date.now())/86400000))} dana</span></div>
+          <div className="trend-opportunity-actions">
+            <button className="primary" disabled={Boolean(trendWorking)} onClick={()=>void useTrendOpportunity(item,false)}>{trendWorking===item.id+':post'?<><Sparkles size={14}/> Pravim…</>:<><Sparkles size={14}/> Napravi objavu</>}</button>
+            <button className="secondary" disabled={Boolean(trendWorking)||!campaignAllowed} title={campaignAllowed?'Feed + Story':'Mini kampanja je dostupna u paketu sa Campaign Autopilot funkcijom.'} onClick={()=>void useTrendOpportunity(item,true)}>{trendWorking===item.id+':campaign'?'Pravim…':'Mini kampanja'}</button>
+            <button className="trend-dismiss" disabled={Boolean(trendWorking)} onClick={()=>void dismissTrendOpportunity(item)}>Skloni</button>
+          </div>
+        </article>})}</div>:<div className="trend-opportunities-empty"><TrendingUp size={20}/><div><strong>Trend Radar je spreman.</strong><span>Kada odobreni Google Trends signal odgovara meniju, ovde dobijaš konkretnu preporuku za sadržaj.</span></div></div>}
+      </section>
+
       <section className={'autopilot-preflight panel '+(preflight?.status||'loading')}>
         <div className="preflight-head">
           <div className="preflight-icon"><ShieldCheck size={20}/></div>
