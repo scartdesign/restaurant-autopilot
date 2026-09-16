@@ -161,6 +161,7 @@ export function Dashboard({ restaurant, menuItems, posts, entitlement, onChanged
   useEffect(()=>{void loadPreflight(false);void loadActivity()},[restaurant.id,menuItems.length,posts.length,entitlement?.generated_this_month])
   useEffect(()=>{void loadTrendOpportunities()},[restaurant.id,menuItems.length])
   useEffect(()=>{if(!highlightTrendId||!trendOpportunities.some(x=>x.id===highlightTrendId))return;const id=highlightTrendId;window.setTimeout(()=>document.getElementById('trend-opportunity-'+id)?.scrollIntoView({behavior:'smooth',block:'center'}),120);sessionStorage.removeItem('autopilot-trend-opportunity');window.setTimeout(()=>setHighlightTrendId(''),3600)},[trendOpportunities,highlightTrendId])
+  useEffect(()=>{const id=sessionStorage.getItem('autopilot-trend-post');if(!id||!posts.some(post=>post.id===id))return;sessionStorage.removeItem('autopilot-trend-post');window.setTimeout(()=>{const el=document.getElementById('post-card-'+id);el?.scrollIntoView({behavior:'smooth',block:'center'});el?.classList.add('alert-highlight');window.setTimeout(()=>el?.classList.remove('alert-highlight'),3800)},140)},[posts])
   async function reviewWholeWeek() {
     if (!reviewQueue.length) { setNotice('Nema draft objava za proveru.'); return }
     setBulkReviewing(true)
@@ -558,7 +559,7 @@ function PostCard({ post, restaurant, menuItems, working, onEdit, onAiCopy, onOp
   }
 
   return (
-    <article className="post-card post-card-pro wow-post-card">
+    <article id={'post-card-'+post.id} className="post-card post-card-pro wow-post-card">
       <div className={`post-preview post-preview-pro wow-post-preview card-template-${template} ${imageUrl ? 'has-photo' : ''}`} style={imageUrl ? { backgroundImage: `url(${imageUrl})`, backgroundPosition: photoPosition } : { background: `radial-gradient(circle at 80% 20%, ${restaurant.secondary_color || '#b9df72'}33, transparent 32%), linear-gradient(145deg, ${restaurant.primary_color || '#17211b'}, #27352b)` }}>
         <div className="wow-preview-shade" />
         <div className="preview-top"><span className="format-badge">{post.post_type === 'story' ? 'STORY 9:16' : post.post_type === 'promotion' ? 'PROMO 4:5' : 'FEED 4:5'}</span><span className="score-pill">{post.discovery_score || 0}<small>/100</small></span></div>
