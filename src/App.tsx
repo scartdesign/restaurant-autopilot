@@ -254,16 +254,16 @@ function App() {
       .select('id,title,generation_meta')
       .eq('restaurant_id',target.id)
       .eq('status','draft')
-      .eq('generation_meta->>needs_ai_polish','true')
       .order('created_at',{ascending:true})
       .limit(12)
-    if(!pending?.length)return 0
+    const needsPolish=(pending||[]).filter(post=>post.generation_meta?.needs_ai_polish===true)
+    if(!needsPolish.length)return 0
     const{data:aiStatus}=await supabase.functions.invoke('creative-advisor',{body:{action:'status',restaurantId:target.id}})
     if(!aiStatus?.ai_text_ready)return 0
     let done=0
-    for(let index=0;index<pending.length;index+=1){
-      const post=pending[index]
-      setNotice(`Background AUTO WEEK · AI polish ${index+1}/${pending.length} · ${post.title||'objava'}…`)
+    for(let index=0;index<needsPolish.length;index+=1){
+      const post=needsPolish[index]
+      setNotice(`Background AUTO WEEK · AI polish ${index+1}/${needsPolish.length} · ${post.title||'objava'}…`)
       const{data,error}=await supabase.functions.invoke('creative-advisor',{body:{action:'post_copy',restaurantId:target.id,postId:post.id}})
       if(!error&&!data?.error)done+=1
     }
