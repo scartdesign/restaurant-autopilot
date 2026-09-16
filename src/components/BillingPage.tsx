@@ -29,7 +29,9 @@ export function BillingPage({ email, onAccessChanged, onSignOut }: { email: stri
     const params=new URLSearchParams(window.location.search)
     const payment=params.get('payment')
     if(payment==='stripe-cancel'){
-      setMessage('Kartično plaćanje je otkazano. Narudžbina nije naplaćena.')
+      const orderId=params.get('order')||''
+      if(orderId)await supabase.functions.invoke('checkout-order',{body:{action:'cancel_checkout',orderId}}).catch(()=>null)
+      setMessage('Kartično plaćanje je otkazano. Narudžbina nije naplaćena i možeš odmah pokušati ponovo.')
       params.delete('payment');params.delete('order')
       window.history.replaceState({},'',window.location.pathname+(params.toString()?`?${params.toString()}`:''))
       await load()
