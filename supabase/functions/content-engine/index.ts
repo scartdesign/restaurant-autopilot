@@ -737,6 +737,7 @@ Deno.serve(async (req: Request) => {
     }
 
     if (action === "refresh_trend_opportunities") {
+      if(String(restaurant.trend_autopilot_mode||"suggest")==="off")return json({ok:true,refresh:{ok:true,matched:0,upserted:0},opportunities:[],mode:"off",engine:"restaurant-autopilot-v29"});
       const { data: refreshData, error: refreshError } = await service.rpc("service_refresh_trend_content_opportunities",{p_restaurant_id:restaurantId});
       if (refreshError) return json({ error: refreshError.message }, 400);
       const { data: opportunities, error: opportunityError } = await service.from("trend_content_opportunities")
@@ -765,6 +766,7 @@ Deno.serve(async (req: Request) => {
     }
 
     if (action === "trend_opportunity_post" || action === "trend_opportunity_campaign") {
+      if(String(restaurant.trend_autopilot_mode||"suggest")==="off")return json({error:"Trend Autopilot je isključen u Podešavanjima.",code:"TREND_AUTOPILOT_OFF"},409);
       const opportunityId=String(body.opportunityId||"").trim();
       if(!opportunityId)return json({error:"opportunityId is required"},400);
       const { data: opportunity, error: opportunityError } = await service.from("trend_content_opportunities")
