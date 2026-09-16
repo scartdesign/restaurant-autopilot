@@ -1,13 +1,19 @@
 {
+  "id": "./",
   "name": "Restaurant Autopilot",
   "short_name": "Autopilot",
-  "description": "AI marketing, content and visual system for restaurants.",
-  "start_url": "./",
+  "description": "AI marketing, content, visuals and publishing workflow for restaurants.",
+  "start_url": "./?source=pwa",
   "scope": "./",
   "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
+  "orientation": "portrait-primary",
   "background_color": "#f5f6f1",
   "theme_color": "#17211b",
   "lang": "sr",
+  "dir": "ltr",
+  "categories": ["business", "food", "productivity"],
+  "prefer_related_applications": false,
   "icons": [
     {
       "src": "./autopilot-icon.svg",
