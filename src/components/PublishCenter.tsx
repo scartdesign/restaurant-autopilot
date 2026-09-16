@@ -150,6 +150,20 @@ export function PublishCenter({ restaurant, posts, onChanged, setNotice }: {
     setBulkWorking(false)
   }
 
+  async function markOverduePublished(){
+    if(!overdue.length)return
+    const confirmed=window.confirm(`Potvrdi da je ${overdue.length} odobrenih objava zaista objavljeno na društvenim mrežama. Ova akcija samo menja status u Restaurant Autopilotu.`)
+    if(!confirmed)return
+    setBulkWorking(true)
+    const ids=overdue.map(post=>post.id)
+    const{error}=await supabase.from('posts').update({status:'published'}).in('id',ids).eq('restaurant_id',restaurant.id).eq('status','approved')
+    if(error){setNotice(error.message);setBulkWorking(false);return}
+    await supabase.functions.invoke('content-engine',{body:{action:'log_activity',restaurantId:restaurant.id,eventType:'publishing_confirmed',metadata:{count:ids.length}}})
+    await onChanged()
+    setNotice(`${ids.length} objava je potvrđeno kao objavljeno. Performance reminder će se pojaviti kada dođe vreme za unos rezultata.`)
+    setBulkWorking(false)
+  }
+
   async function markPublished(post: Post) {
     setWorkingId(post.id)
     const { error } = await supabase.from('posts').update({ status: 'published' }).eq('id', post.id)
