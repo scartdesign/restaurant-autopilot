@@ -147,8 +147,15 @@ Deno.serve(async(req)=>{
     }
 
     const topOpportunityByRestaurant=new Map<string,any>();
+    const weakOpportunityByRestaurant=new Map<string,any>();
     for(const opp of opportunityRows||[]){
       const id=String(opp.restaurant_id);
+      const samples=Number(opp.performance_samples||0);
+      const boost=Number(opp.performance_boost||0);
+      if(samples>=3&&boost<=-4){
+        if(!weakOpportunityByRestaurant.has(id))weakOpportunityByRestaurant.set(id,opp);
+        continue;
+      }
       if(!topOpportunityByRestaurant.has(id))topOpportunityByRestaurant.set(id,opp);
     }
 
@@ -159,7 +166,18 @@ Deno.serve(async(req)=>{
       const restaurantId=String(restaurant.id);
       const ownerId=String(restaurant.owner_id);
       const opp=topOpportunityByRestaurant.get(restaurantId);
-      if(!opp){skipped+=1;results.push({restaurant_id:restaurantId,status:"no_opportunity"});continue}
+      if(!opp){
+        const weak=weakOpportunityByRestaurant.get(restaurantId);
+        skipped+=1;
+        results.push(weak?{
+          restaurant_id:restaurantId,
+          status:"local_performance_guard",
+          opportunity_id:weak.id,
+          performance_boost:Number(weak.performance_boost||0),
+          performance_samples:Number(weak.performance_samples||0),
+        }:{restaurant_id:restaurantId,status:"no_opportunity"});
+        continue
+      }
       if(recentAutoRestaurants.has(restaurantId)){skipped+=1;results.push({restaurant_id:restaurantId,status:"daily_guard"});continue}
 
       const isAdmin=adminOwners.has(ownerId);
