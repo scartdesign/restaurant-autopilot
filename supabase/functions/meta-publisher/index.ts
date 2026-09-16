@@ -315,6 +315,18 @@ Deno.serve(async(req)=>{
       return json({ok:true,jobs,results});
     }
 
+    if(action==="cancel_job"){
+      const jobId=String(body.jobId||"");
+      if(!jobId)return json({error:"jobId is required"},400);
+      const{data:job,error:jobError}=await service.from("social_publish_jobs").select("id,status,post_id,platform").eq("id",jobId).eq("restaurant_id",restaurantId).maybeSingle();
+      if(jobError||!job)return json({error:"Publish job not found"},404);
+      if(job.status==="published")return json({error:"Objavljena Meta objava ne može da se otkaže iz queue-a."},409);
+      if(job.status==="processing")return json({error:"Objava se upravo šalje i više ne može bezbedno da se otkaže."},409);
+      const{error:cancelError}=await service.from("social_publish_jobs").update({status:"cancelled",updated_at:new Date().toISOString()}).eq("id",job.id);
+      if(cancelError)return json({error:cancelError.message},400);
+      return json({ok:true,job_id:job.id});
+    }
+
     if(action==="retry_job"){
       const jobId=String(body.jobId||"");
       const{data:job}=await service.from("social_publish_jobs").select("*").eq("id",jobId).eq("restaurant_id",restaurantId).maybeSingle();
