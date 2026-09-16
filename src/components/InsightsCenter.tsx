@@ -245,6 +245,7 @@ export function InsightsCenter({restaurant,posts,menuItems,setNotice}:{restauran
       const{error}=await supabase.from('post_performance').upsert(payloads,{onConflict:'post_id,platform'})
       if(error){setNotice(error.message);return}
       await load()
+      await supabase.functions.invoke('content-engine',{body:{action:'log_activity',restaurantId:restaurant.id,eventType:'performance_imported',metadata:{imported:payloads.length,skipped}}})
       setNotice(`Uvezeno ${payloads.length} performance redova${skipped?` · preskočeno ${skipped} bez odgovarajuće objave`:''}. Autopilot learning je osvežen.`)
     }catch(error:any){setNotice(error?.message||'CSV import nije uspeo.')}
     finally{setImporting(false);if(importRef.current)importRef.current.value=''}
