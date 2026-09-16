@@ -141,27 +141,84 @@ function DemoPromotions({ notify }: { notify: (value: string) => void }) {
 }
 
 function DemoPublish({ notify }: { notify: (value: string) => void }) {
+  type DemoMetaStatus='idle'|'queued'|'published'|'failed'
+  type DemoMetaJobs={facebook:DemoMetaStatus;instagram:DemoMetaStatus}
   const [times, setTimes] = useState<Record<string, string>>(() => Object.fromEntries(demoPosts.map((post) => [post.title, post.time])))
   const [editing, setEditing] = useState('')
   const [draft, setDraft] = useState('')
+  const [metaJobs,setMetaJobs]=useState<Record<string,DemoMetaJobs>>({
+    'Pizza Capricciosa':{facebook:'queued',instagram:'queued'},
+    'Sveža Carbonara':{facebook:'published',instagram:'published'},
+    'Tiramisu':{facebook:'idle',instagram:'failed'},
+    'Vikend pasta':{facebook:'idle',instagram:'idle'},
+  })
 
   function begin(title: string) { setEditing(title); setDraft(times[title] || '18:30') }
-  function save(title: string) { setTimes({ ...times, [title]: draft }); setEditing(''); notify(`Termin za ${title} je sačuvan u ${draft}.`) }
+  function save(title: string) {
+    setTimes({ ...times, [title]: draft })
+    setEditing('')
+    notify(`Termin za ${title} je sačuvan u ${draft}. Meta queue bi automatski pratio novi termin.`)
+  }
+  function setJob(title:string,platform:'facebook'|'instagram',status:DemoMetaStatus){
+    setMetaJobs(current=>({...current,[title]:{...(current[title]||{facebook:'idle',instagram:'idle'}),[platform]:status}}))
+  }
+  function queueMeta(title:string){
+    setMetaJobs(current=>({...current,[title]:{facebook:'queued',instagram:'queued'}}))
+    notify(`Demo: ${title} je zakazan za Facebook + Instagram.`)
+  }
+  function publishMeta(title:string){
+    setMetaJobs(current=>({...current,[title]:{facebook:'published',instagram:'published'}}))
+    notify(`Demo: ${title} je objavljen na Facebook + Instagram.`)
+  }
+  function cancelMeta(title:string){
+    setMetaJobs(current=>({...current,[title]:{facebook:'idle',instagram:'idle'}}))
+    notify(`Demo: Meta zakazivanje za ${title} je otkazano.`)
+  }
 
   return <>
-    <header className="page-header wow-simple-header"><div><p className="eyebrow">PUBLISH CENTER</p><h1>Tačan dan. Tačno vreme.</h1><p className="muted">Autopilot predlaže termin, a ti ga menjaš jednim klikom pre objave.</p></div><button className="primary" onClick={() => notify('Demo kalendar je spreman sa datumima i vremenima.')}><CalendarClock size={17} /> Export kalendara</button></header>
-    <section className="publish-gate ready"><div className="publish-gate-icon"><CheckCircle2 size={20}/></div><div><span>WEEK GATE</span><strong>Spremno za publishing</strong><small>Nema tehničkih blokera: termini i approval status su spremni.</small></div><b>0/4</b></section>
-    <div className="demo-next-time"><div><Clock3 size={22} /></div><span>SLEDEĆA OBJAVA<strong>Ponedeljak, 14. septembar · {times['Pizza Capricciosa']}</strong><small>FEED · Pizza Capricciosa</small></span></div>
-    <div className="panel wow-publish-demo demo-publish-pro">{demoPosts.map((post) => <div className={`wow-publish-row ${editing === post.title ? 'editing' : ''}`} key={post.title}>
-      <div className="wow-publish-thumb" style={{ backgroundImage: `url(${post.image})` }} />
-      <div className="demo-publish-copy">
-        <span className="demo-publish-meta">{post.day} · {post.type}</span>
-        <strong className="demo-publish-title">{post.title}</strong>
-        <p className="demo-publish-caption">{post.caption}</p>
-        {editing === post.title && <div className="demo-time-editor"><label>Vreme objave<input type="time" value={draft} onChange={(event) => setDraft(event.target.value)} /></label><button className="secondary" onClick={() => setDraft(post.type === 'STORY' ? '11:30' : post.type === 'PROMO' ? '17:30' : '18:30')}><Sparkles size={13} /> Autopilot</button><button className="primary" onClick={() => save(post.title)}><Save size={13} /> Sačuvaj</button><button className="icon-button" onClick={() => setEditing('')}><X size={14} /></button></div>}
+    <header className="page-header wow-simple-header"><div><p className="eyebrow">PUBLISH CENTER</p><h1>Tačan dan. Tačno vreme.</h1><p className="muted">Autopilot predlaže termin, a Meta queue može da objavi i kada aplikacija nije otvorena.</p></div><button className="primary" onClick={() => notify('Demo kalendar je spreman sa datumima i vremenima.')}><CalendarClock size={17} /> Export kalendara</button></header>
+
+    <section className="meta-connect-panel connected demo-meta-connected">
+      <div className="meta-connect-brand"><div><Facebook size={20}/><Instagram size={20}/></div><span><small>META PUBLISHING · DEMO</small><strong>Facebook + Instagram povezani</strong><p>Bella Napoli Beograd · @bellanapoli · token server-side · queue proverava objave svakih 5 min</p></span></div>
+      <div className="meta-connect-actions"><span className="meta-connected-chip"><CheckCircle2 size={14}/> CONNECTED</span><button className="secondary" onClick={()=>notify('Demo: Meta konekcija je proverena. Page i Instagram profesionalni nalog su dostupni.')}><CheckCircle2 size={14}/> Proveri konekciju</button></div>
+    </section>
+
+    <section className="publish-gate ready"><div className="publish-gate-icon"><CheckCircle2 size={20}/></div><div><span>WEEK GATE</span><strong>Spremno za publishing</strong><small>Nema tehničkih blokera: termini, approval i Meta konekcija su spremni.</small></div><b>1/4</b></section>
+    <div className="demo-next-time"><div><Clock3 size={22} /></div><span>SLEDEĆA OBJAVA<strong>Ponedeljak, 14. septembar · {times['Pizza Capricciosa']}</strong><small>FEED · Pizza Capricciosa · FB + IG queued</small></span></div>
+
+    <div className="panel wow-publish-demo demo-publish-pro">{demoPosts.map((post) => {
+      const jobs=metaJobs[post.title]||{facebook:'idle',instagram:'idle'}
+      const approved=post.status==='approved'
+      const hasQueued=jobs.facebook==='queued'||jobs.instagram==='queued'
+      return <div className={`wow-publish-row ${editing === post.title ? 'editing' : ''}`} key={post.title}>
+        <div className="wow-publish-thumb" style={{ backgroundImage: `url(${post.image})` }} />
+        <div className="demo-publish-copy">
+          <span className="demo-publish-meta">{post.day} · {post.type}</span>
+          <strong className="demo-publish-title">{post.title}</strong>
+          <p className="demo-publish-caption">{post.caption}</p>
+          <div className="meta-job-strip">
+            {(['facebook','instagram'] as const).map(platform=>{
+              const status=jobs[platform]
+              if(status==='idle')return null
+              return <span className={`meta-job-chip ${status}`} key={platform}><b>{platform==='facebook'?'FB':'IG'}</b> {status}{status==='queued'&&<small>{times[post.title]}</small>}{status==='failed'&&<button onClick={()=>{setJob(post.title,platform,'published');notify(`Demo: ${platform==='facebook'?'Facebook':'Instagram'} retry je uspeo.`)}}>Retry</button>}</span>
+            })}
+          </div>
+          {editing === post.title && <div className="demo-time-editor"><label>Vreme objave<input type="time" value={draft} onChange={(event) => setDraft(event.target.value)} /></label><button className="secondary" onClick={() => setDraft(post.type === 'STORY' ? '11:30' : post.type === 'PROMO' ? '17:30' : '18:30')}><Sparkles size={13} /> Autopilot</button><button className="primary" onClick={() => save(post.title)}><Save size={13} /> Sačuvaj</button><button className="icon-button" onClick={() => setEditing('')}><X size={14} /></button></div>}
+        </div>
+        <div className="demo-publish-actions">
+          <span className="demo-publish-time"><Clock3 size={13} /> {times[post.title]}</span>
+          {post.title==='Pizza Capricciosa'&&<span className="learned-time-chip"><Sparkles size={11}/> LEARNED TIME</span>}
+          <span className="generation-source-chip auto">AUTO WEEK</span>
+          <span className={`status ${post.status}`}>{post.status}</span>
+          <button className="mini-schedule" onClick={() => begin(post.title)}><Pencil size={13} /> Promeni</button>
+          {approved&&<button className="mini-meta-now" onClick={()=>publishMeta(post.title)}><Send size={13}/> Meta sada</button>}
+          {approved&&!hasQueued&&<button className="mini-meta-queue" onClick={()=>queueMeta(post.title)}><CalendarClock size={13}/> Zakaži Meta</button>}
+          {hasQueued&&<button className="meta-disconnect demo-cancel-meta" onClick={()=>cancelMeta(post.title)}>Otkaži Meta</button>}
+        </div>
       </div>
-      <div className="demo-publish-actions"><span className="demo-publish-time"><Clock3 size={13} /> {times[post.title]}</span>{post.title==='Pizza Capricciosa'&&<span className="learned-time-chip"><Sparkles size={11}/> LEARNED TIME</span>}<span className="generation-source-chip auto">AUTO WEEK</span><span className={`status ${post.status}`}>{post.status}</span><button className="mini-schedule" onClick={() => begin(post.title)}><Pencil size={13} /> Promeni</button></div>
-    </div>)}</div>
+    })}</div>
+
+    <div className="meta-roadmap"><div><Send size={18}/><div><strong>Background publishing simulacija je aktivna</strong><span>Demo prikazuje connected nalog, queue, publish, cancel i retry. U produkciji se tokeni čuvaju u Vault-u i queue radi server-side.</span></div></div><span className="roadmap-badge">META CONNECTED</span></div>
   </>
 }
 
