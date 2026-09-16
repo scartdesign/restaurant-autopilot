@@ -467,7 +467,7 @@ Deno.serve(async (req: Request) => {
       const { data, error } = await supabase.rpc("current_entitlement");
       if (error) return json({ error: error.message }, 403);
       entitlement = data || {};
-      if (!entitlement.active) return json({ error: "Aktivan paket je potreban za generisanje sadržaja.", code: "ACTIVE_PLAN_REQUIRED" }, 402);
+      if (!entitlement.active && action !== "preflight") return json({ error: "Aktivan paket je potreban za generisanje sadržaja.", code: "ACTIVE_PLAN_REQUIRED" }, 402);
       if (action === "promotion" && entitlement.features?.campaigns !== true) {
         return json({ error: "Campaign Autopilot je dostupan u Pro i Business paketu.", code: "FEATURE_NOT_INCLUDED" }, 402);
       }
@@ -482,6 +482,84 @@ Deno.serve(async (req: Request) => {
       return json({ error: `Mesečni limit objava je dostignut. Preostalo: ${remaining}, potrebno: ${Math.max(0, additional)}.`, code: "GENERATION_LIMIT_REACHED", generated_this_month: generatedThisMonth, generation_limit: generationLimit, remaining }, 429);
     };
 
+
+    if (action === "preflight") {
+      const [{ data: menuItems, error: menuError }, { data: planRows }] = await Promise.all([
+        supabase.from("menu_items").select("id,name,image_url,is_active,marketing_priority").eq("restaurant_id", restaurantId).eq("is_active", true).order("marketing_priority", { ascending: false }),
+        supabase.from("content_plans").select("id,week_start,status").eq("restaurant_id", restaurantId).order("week_start", { ascending: false }).limit(8),
+      ]);
+      if (menuError) return json({ error: menuError.message }, 400);
+
+      const timeZone = String(restaurant.timezone || "Europe/Belgrade");
+      const weekTarget = generationWeekTarget(timeZone, restaurant.opening_hours);
+      const targetPlan = (planRows || []).find((row:any) => row.week_start === weekTarget.weekStart) || null;
+      let targetPosts:any[] = [];
+      if (targetPlan?.id) {
+        const { data } = await supabase.from("posts").select("id,status,scheduled_for,menu_item_id").eq("content_plan_id", targetPlan.id).order("scheduled_for", { ascending: true });
+        targetPosts = data || [];
+      }
+
+      const activeMenu = menuItems || [];
+      const frequency = clamp(Number(restaurant.posting_frequency || 5), 3, 7);
+      const hero = activeMenu.find((item:any) => Number(item.marketing_priority || 0) >= 3) || null;
+      const photoCount = activeMenu.filter((item:any) => Boolean(item.image_url)).length;
+      const photoCoverage = activeMenu.length ? Math.round((photoCount / activeMenu.length) * 100) : 0;
+      const opening = restaurant.opening_hours && typeof restaurant.opening_hours === "object" ? restaurant.opening_hours : {};
+      const configuredDays = dayKeys.filter((key) => opening?.[key] && typeof opening[key] === "object").length;
+      const openDays = dayKeys.filter((key) => opening?.[key]?.enabled !== false).length;
+      const remainingQuota = generationLimit === null ? null : Math.max(0, generationLimit - generatedThisMonth);
+      const lockedPosts = targetPosts.filter((post:any) => post.status === "approved" || post.status === "published").length;
+      const existingDrafts = targetPosts.filter((post:any) => post.status === "draft" || post.status === "rejected").length;
+      const planAlreadyExists = Boolean(targetPlan?.id);
+      const neededGeneration = planAlreadyExists ? 0 : frequency;
+      const quotaOk = isAdmin || generationLimit === null || remainingQuota! >= neededGeneration;
+
+      const checks = [
+        { key: "package", label: "Aktivan paket", ok: Boolean(entitlement.active || isAdmin), severity: "blocker" },
+        { key: "menu", label: "Aktivna jela", ok: activeMenu.length >= 1, severity: "blocker", value: activeMenu.length },
+        { key: "diversity", label: "3+ aktivna jela", ok: activeMenu.length >= 3, severity: "warning", value: activeMenu.length },
+        { key: "hero", label: "HERO jelo", ok: Boolean(hero), severity: "warning", value: hero?.name || null },
+        { key: "photos", label: "70% fotografija", ok: photoCoverage >= 70, severity: "warning", value: photoCoverage },
+        { key: "hours", label: "Radno vreme", ok: configuredDays >= 7 && openDays > 0, severity: "blocker", value: { configured_days: configuredDays, open_days: openDays } },
+        { key: "quota", label: "Generation quota", ok: quotaOk, severity: "blocker", value: { remaining: remainingQuota, needed: neededGeneration } },
+      ];
+      const blockers = checks.filter((check:any) => check.severity === "blocker" && !check.ok);
+      const warnings = checks.filter((check:any) => check.severity === "warning" && !check.ok);
+      const status = planAlreadyExists ? "existing" : blockers.length ? "blocked" : warnings.length ? "ready_with_warnings" : "ready";
+
+      if (body.recordActivity === true) {
+        await service.from("autopilot_activity").insert({
+          restaurant_id: restaurantId,
+          user_id: user.id,
+          event_type: "preflight_checked",
+          title: "AUTO WEEK preflight",
+          summary: planAlreadyExists
+            ? `Plan za ${weekTarget.weekStart} već postoji.`
+            : blockers.length
+              ? `Preflight je našao ${blockers.length} blokera i ${warnings.length} upozorenja.`
+              : `Preflight je spreman: ${warnings.length} upozorenja.`,
+          metadata: { status, week_start: weekTarget.weekStart, next_week: weekTarget.nextWeek, checks, blockers: blockers.map((x:any)=>x.key), warnings: warnings.map((x:any)=>x.key) },
+        });
+      }
+
+      return json({
+        ok: true,
+        status,
+        ready: blockers.length === 0,
+        existing: planAlreadyExists,
+        week_start: weekTarget.weekStart,
+        next_week: weekTarget.nextWeek,
+        frequency,
+        checks,
+        blockers,
+        warnings,
+        menu: { active: activeMenu.length, hero: hero ? { id: hero.id, name: hero.name } : null, photo_coverage: photoCoverage },
+        quota: { active: Boolean(entitlement.active || isAdmin), generated_this_month: generatedThisMonth, generation_limit: generationLimit, remaining: remainingQuota, needed: neededGeneration },
+        plan: targetPlan ? { ...targetPlan, posts: targetPosts.length, locked_posts: lockedPosts, replaceable_posts: existingDrafts } : null,
+        engine: "restaurant-autopilot-v23",
+      });
+    }
+
     if (action === "week" || action === "ensure_week") {
       const { data: menuItems, error: menuError } = await supabase.from("menu_items").select("*").eq("restaurant_id", restaurantId).eq("is_active", true).order("created_at", { ascending: false });
       if (menuError) return json({ error: menuError.message }, 400);
@@ -494,7 +572,7 @@ Deno.serve(async (req: Request) => {
         const { data: existing } = await supabase.from("content_plans").select("*").eq("restaurant_id", restaurantId).eq("week_start", weekTarget.weekStart).maybeSingle();
         if (existing?.id) {
           const { data: existingPosts } = await supabase.from("posts").select("*").eq("content_plan_id", existing.id).order("scheduled_for", { ascending: true });
-          return json({ ok: true, existing: true, created: false, plan: existing, posts: existingPosts || [], engine: "restaurant-autopilot-v22", week_start: weekTarget.weekStart, next_week: weekTarget.nextWeek });
+          return json({ ok: true, existing: true, created: false, plan: existing, posts: existingPosts || [], engine: "restaurant-autopilot-v23", week_start: weekTarget.weekStart, next_week: weekTarget.nextWeek });
         }
       }
 
@@ -620,7 +698,7 @@ Deno.serve(async (req: Request) => {
           visual_brief: visualBrief(restaurant, item, pillar, postType),
           status: "draft",
           generation_meta: {
-            engine: "restaurant-autopilot-v22",
+            engine: "restaurant-autopilot-v23",
             generation_source: action === "ensure_week" ? "weekly_autopilot" : "manual_week",
             pillar,
             variation: index,
@@ -646,6 +724,27 @@ Deno.serve(async (req: Request) => {
       });
       const { data: posts, error: insertError } = await supabase.from("posts").insert(payload).select();
       if (insertError) return json({ error: insertError.message }, 400);
+      const { error: activityError } = await service.from("autopilot_activity").insert({
+        restaurant_id: restaurantId,
+        user_id: user.id,
+        event_type: "weekly_plan_created",
+        title: action === "ensure_week" ? "AUTO WEEK je napravio plan" : "Nedelja je generisana ručno",
+        summary: `${posts?.length || 0} objava · nedelja ${weekStart} · ${rankedMenu.length} aktivnih jela`,
+        metadata: {
+          source: action === "ensure_week" ? "weekly_autopilot" : "manual_week",
+          content_plan_id: plan.id,
+          week_start: weekStart,
+          next_week: weekTarget.nextWeek,
+          posts: posts?.length || 0,
+          frequency,
+          hero_menu_item_id: rankedMenu.find((item:any)=>Number(item.marketing_priority||0)>=3)?.id || null,
+          performance_samples: (performanceRows || []).length,
+          learned_schedule_days: learnedScheduleDays,
+          learned_schedule_hours: learnedScheduleHours,
+        },
+      });
+      if (activityError) console.error("weekly activity log failed", activityError.message);
+
       if (action === "ensure_week") {
         const noticeBody = weekTarget.nextWeek
           ? `Autopilot je pripremio sledeću nedelju za ${restaurant.name}. Proveri sadržaj, termine i odobri objave kada budeš spreman.`
@@ -662,7 +761,7 @@ Deno.serve(async (req: Request) => {
         });
         if (noticeError) console.error("weekly_plan_ready notice failed", noticeError.message);
       }
-      return json({ ok: true, existing: false, created: action === "ensure_week", plan, posts, engine: "restaurant-autopilot-v22", pillars, timezone: timeZone, schedule_days: scheduleDays, week_start: weekStart, next_week: weekTarget.nextWeek, learning:{performance_samples:(performanceRows||[]).length,schedule_hours:learnedScheduleHours,schedule_days:learnedScheduleDays,ranked_menu:rankedMenu.map((item:any)=>({id:item.id,name:item.name,score:Math.round(((learnedScore.get(String(item.id))||0)+Number(item.marketing_priority||0)*35)*10)/10,performance_samples_item:learnedSamples.get(String(item.id))||0,performance_confidence:Math.round(learningConfidence(learnedSamples.get(String(item.id))||0)*100),marketing_priority:Number(item.marketing_priority||0),recent_uses_30d:recentUse.get(String(item.id))||0,coverage_bonus:(recentUse.get(String(item.id))||0)===0?22:(recentUse.get(String(item.id))||0)===1?8:0,exploration_bonus:Number(item.marketing_priority||0)>=2&&!(learnedScore.get(String(item.id))||0)?12:0}))} });
+      return json({ ok: true, existing: false, created: action === "ensure_week", plan, posts, engine: "restaurant-autopilot-v23", pillars, timezone: timeZone, schedule_days: scheduleDays, week_start: weekStart, next_week: weekTarget.nextWeek, learning:{performance_samples:(performanceRows||[]).length,schedule_hours:learnedScheduleHours,schedule_days:learnedScheduleDays,ranked_menu:rankedMenu.map((item:any)=>({id:item.id,name:item.name,score:Math.round(((learnedScore.get(String(item.id))||0)+Number(item.marketing_priority||0)*35)*10)/10,performance_samples_item:learnedSamples.get(String(item.id))||0,performance_confidence:Math.round(learningConfidence(learnedSamples.get(String(item.id))||0)*100),marketing_priority:Number(item.marketing_priority||0),recent_uses_30d:recentUse.get(String(item.id))||0,coverage_bonus:(recentUse.get(String(item.id))||0)===0?22:(recentUse.get(String(item.id))||0)===1?8:0,exploration_bonus:Number(item.marketing_priority||0)>=2&&!(learnedScore.get(String(item.id))||0)?12:0}))} });
     }
 
     if (action === "promotion") {
@@ -692,7 +791,7 @@ Deno.serve(async (req: Request) => {
       const feedCaption = `${[title, discountText, description].filter(Boolean).join(" · ")}. ${goalClose(restaurant)}`;
       const storyCaption = `${discountText || title}. ${description || "Važi ograničeno vreme."} ${ctaFor(restaurant, "promotion")}.`;
       const cta = ctaFor(restaurant, "promotion");
-      const commonMeta = { engine: "restaurant-autopilot-v22", source: "promotion", image_url: visualItem?.image_url || null, selected_menu_item_id: visualItem?.id || null, generated_at: new Date().toISOString(), pillar: "promotion" };
+      const commonMeta = { engine: "restaurant-autopilot-v23", source: "promotion", image_url: visualItem?.image_url || null, selected_menu_item_id: visualItem?.id || null, generated_at: new Date().toISOString(), pillar: "promotion" };
       const feedTitle = discountText || title;
       const feed = {
         restaurant_id: restaurantId, promotion_id: promotion.id, post_type: "promotion", scheduled_for: startsAt, title: feedTitle, caption: feedCaption, cta,
@@ -709,7 +808,7 @@ Deno.serve(async (req: Request) => {
       };
       const { data: posts, error: postError } = await supabase.from("posts").insert([feed, story]).select();
       if (postError) return json({ error: postError.message }, 400);
-      return json({ ok: true, promotion, posts, engine: "restaurant-autopilot-v22" });
+      return json({ ok: true, promotion, posts, engine: "restaurant-autopilot-v23" });
     }
 
     if (action === "regenerate" || action === "optimize_discovery") {
@@ -729,10 +828,10 @@ Deno.serve(async (req: Request) => {
         ...discovery,
         cta: post.cta || ctaFor(restaurant, pillar),
         status: "draft",
-        generation_meta: { ...(post.generation_meta || {}), engine: "restaurant-autopilot-v22", pillar, variation, visual_design: nextVisual, regenerated_at: new Date().toISOString() },
+        generation_meta: { ...(post.generation_meta || {}), engine: "restaurant-autopilot-v23", pillar, variation, visual_design: nextVisual, regenerated_at: new Date().toISOString() },
       }).eq("id", postId).select().single();
       if (updateError) return json({ error: updateError.message }, 400);
-      return json({ ok: true, post: updated, engine: "restaurant-autopilot-v22" });
+      return json({ ok: true, post: updated, engine: "restaurant-autopilot-v23" });
     }
 
     if (action === "quality_check") {
