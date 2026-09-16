@@ -56,6 +56,15 @@ export function InsightsCenter({restaurant,posts,menuItems,setNotice}:{restauran
   const importRef=useRef<HTMLInputElement|null>(null)
 
   useEffect(()=>{void load()},[restaurant.id])
+  useEffect(()=>{
+    if(loading)return
+    const postId=sessionStorage.getItem('autopilot-performance-post')
+    if(!postId)return
+    const post=posts.find(item=>item.id===postId&&(item.status==='published'||item.status==='approved'))
+    if(!post)return
+    sessionStorage.removeItem('autopilot-performance-post')
+    openEditor(post)
+  },[loading,restaurant.id,posts])
 
   async function load(){
     setLoading(true)
