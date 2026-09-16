@@ -86,12 +86,15 @@ Deno.serve(async(req:Request)=>{
         }
       }else if(eventType==="checkout.session.expired"||eventType==="checkout.session.async_payment_failed"){
         if(orderId){
+          const expired=eventType==="checkout.session.expired";
           await service.from("sales_orders").update({
+            status:expired?"cancelled":"pending",
             payment_provider:"stripe",
             provider_checkout_session_id:String(object?.id||"")||null,
             provider_payment_intent_id:typeof object?.payment_intent==="string"?object.payment_intent:null,
-            provider_payment_status:eventType==="checkout.session.expired"?"expired":"failed",
+            provider_payment_status:expired?"expired":"failed",
             provider_payload:{checkout_status:object?.status||null,expires_at:object?.expires_at||null},
+            admin_note:expired?"Stripe Checkout session expired":undefined,
             updated_at:new Date().toISOString()
           }).eq("id",orderId).eq("status","pending");
         }
