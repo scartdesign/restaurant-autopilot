@@ -9,6 +9,7 @@ type Performance = {
   post_id:string
   restaurant_id:string
   platform:Platform
+  views:number
   impressions:number
   reach:number
   likes:number
@@ -28,6 +29,7 @@ type Performance = {
 }
 type FormState={
   platform:Platform
+  views:string
   impressions:string
   reach:string
   likes:string
@@ -43,7 +45,7 @@ type FormState={
   measured_at:string
 }
 const emptyForm:FormState={
-  platform:'combined',impressions:'',reach:'',likes:'',comments:'',saves:'',shares:'',clicks:'',conversions:'',spend:'',revenue:'',currency:'RSD',notes:'',measured_at:new Date().toISOString().slice(0,10),
+  platform:'combined',views:'',impressions:'',reach:'',likes:'',comments:'',saves:'',shares:'',clicks:'',conversions:'',spend:'',revenue:'',currency:'RSD',notes:'',measured_at:new Date().toISOString().slice(0,10),
 }
 
 export function InsightsCenter({restaurant,posts,menuItems,setNotice,onChanged,onNavigate}:{restaurant:Restaurant;posts:Post[];menuItems:MenuItem[];setNotice:(value:string)=>void;onChanged:()=>Promise<void>;onNavigate?:(tab:'menu'|'publish'|'dashboard')=>void}){
@@ -107,10 +109,10 @@ export function InsightsCenter({restaurant,posts,menuItems,setNotice,onChanged,o
 
   const tracked=useMemo(()=>postsForTracking.filter(post=>metricsByPost.has(post.id)),[postsForTracking,metricsByPost])
   const totals=useMemo(()=>{
-    let reach=0,impressions=0,likes=0,comments=0,saves=0,shares=0,clicks=0,conversions=0,spend=0,revenue=0
-    for(const post of tracked){const m=metricsByPost.get(post.id)!;reach+=m.reach;impressions+=m.impressions;likes+=m.likes;comments+=m.comments;saves+=m.saves;shares+=m.shares;clicks+=m.clicks;conversions+=m.conversions;spend+=m.spend;revenue+=m.revenue}
+    let views=0,reach=0,impressions=0,likes=0,comments=0,saves=0,shares=0,clicks=0,conversions=0,spend=0,revenue=0
+    for(const post of tracked){const m=metricsByPost.get(post.id)!;views+=m.views;reach+=m.reach;impressions+=m.impressions;likes+=m.likes;comments+=m.comments;saves+=m.saves;shares+=m.shares;clicks+=m.clicks;conversions+=m.conversions;spend+=m.spend;revenue+=m.revenue}
     const interactions=likes+comments+saves+shares
-    return{reach,impressions,likes,comments,saves,shares,clicks,conversions,spend,revenue,interactions,engagement:reach?interactions/reach*100:0,ctr:reach?clicks/reach*100:0,roas:spend?revenue/spend:0}
+    return{views,reach,impressions,likes,comments,saves,shares,clicks,conversions,spend,revenue,interactions,engagement:reach?interactions/reach*100:0,ctr:reach?clicks/reach*100:0,roas:spend?revenue/spend:0}
   },[tracked,metricsByPost])
 
   const ranking=useMemo(()=>tracked.map(post=>{
@@ -193,7 +195,7 @@ export function InsightsCenter({restaurant,posts,menuItems,setNotice,onChanged,o
     const existing=rows.find(row=>row.post_id===post.id&&row.platform==='combined')||rows.find(row=>row.post_id===post.id)
     setEditing(post)
     setForm(existing?{
-      platform:existing.platform,impressions:String(existing.impressions||''),reach:String(existing.reach||''),likes:String(existing.likes||''),comments:String(existing.comments||''),saves:String(existing.saves||''),shares:String(existing.shares||''),clicks:String(existing.clicks||''),conversions:String(existing.conversions||''),spend:String(existing.spend||''),revenue:String(existing.revenue||''),currency:existing.currency||'RSD',notes:existing.notes||'',measured_at:new Date(existing.measured_at).toISOString().slice(0,10),
+      platform:existing.platform,views:String(existing.views||''),impressions:String(existing.impressions||''),reach:String(existing.reach||''),likes:String(existing.likes||''),comments:String(existing.comments||''),saves:String(existing.saves||''),shares:String(existing.shares||''),clicks:String(existing.clicks||''),conversions:String(existing.conversions||''),spend:String(existing.spend||''),revenue:String(existing.revenue||''),currency:existing.currency||'RSD',notes:existing.notes||'',measured_at:new Date(existing.measured_at).toISOString().slice(0,10),
     }:{...emptyForm,currency:menuItems[0]?.currency||'RSD',measured_at:new Date().toISOString().slice(0,10)})
   }
 
@@ -204,7 +206,7 @@ export function InsightsCenter({restaurant,posts,menuItems,setNotice,onChanged,o
       post_id:editing.id,
       restaurant_id:restaurant.id,
       platform:form.platform,
-      impressions:num(form.impressions),reach:num(form.reach),likes:num(form.likes),comments:num(form.comments),saves:num(form.saves),shares:num(form.shares),clicks:num(form.clicks),conversions:num(form.conversions),
+      views:num(form.views),impressions:num(form.impressions),reach:num(form.reach),likes:num(form.likes),comments:num(form.comments),saves:num(form.saves),shares:num(form.shares),clicks:num(form.clicks),conversions:num(form.conversions),
       spend:money(form.spend),revenue:money(form.revenue),currency:form.currency||'RSD',notes:form.notes.trim()||null,source:'manual',measured_at:new Date(form.measured_at+'T12:00:00').toISOString(),
     }
     const{error}=await supabase.from('post_performance').upsert(payload,{onConflict:'post_id,platform'})
@@ -214,8 +216,8 @@ export function InsightsCenter({restaurant,posts,menuItems,setNotice,onChanged,o
   }
 
   function downloadImportTemplate(){
-    const header=['post_id','title','platform','reach','impressions','likes','comments','saves','shares','clicks','conversions','spend','revenue','currency','measured_at','notes']
-    const sample=postsForTracking.slice(0,3).map(post=>[post.id,post.title||'Objava','combined','','','','','','','','','','',menuItems[0]?.currency||'RSD',new Date().toISOString().slice(0,10),''])
+    const header=['post_id','title','platform','views','reach','impressions','likes','comments','saves','shares','clicks','conversions','spend','revenue','currency','measured_at','notes']
+    const sample=postsForTracking.slice(0,3).map(post=>[post.id,post.title||'Objava','combined','','','','','','','','','','','',menuItems[0]?.currency||'RSD',new Date().toISOString().slice(0,10),''])
     const csv=[header,...sample].map(row=>row.map(csvCell).join(';')).join('\n')
     const blob=new Blob(['\ufeff',csv],{type:'text/csv;charset=utf-8'})
     const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`${slug(restaurant.name)}-performance-import-template.csv`;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)
@@ -247,7 +249,7 @@ export function InsightsCenter({restaurant,posts,menuItems,setNotice,onChanged,o
         const measuredDate=measuredRaw&&Number.isFinite(new Date(measuredRaw).getTime())?new Date(measuredRaw):new Date()
         payloads.push({
           post_id:post.id,restaurant_id:restaurant.id,platform,
-          impressions:csvNumber(record.impressions||record.prikazi),reach:csvNumber(record.reach||record.doseg),
+          views:csvNumber(record.views||record.pregledi),impressions:csvNumber(record.impressions||record.prikazi),reach:csvNumber(record.reach||record.doseg),
           likes:csvNumber(record.likes||record.lajkovi),comments:csvNumber(record.comments||record.komentari),
           saves:csvNumber(record.saves||record.sacuvano),shares:csvNumber(record.shares||record.deljenja),
           clicks:csvNumber(record.clicks||record.klikovi),conversions:csvNumber(record.conversions||record.konverzije),
@@ -268,9 +270,9 @@ export function InsightsCenter({restaurant,posts,menuItems,setNotice,onChanged,o
   }
 
   function exportCsv(){
-    const header=['objava','datum','status','reach','impressions','likes','comments','saves','shares','clicks','conversions','engagement_%','spend','revenue','currency']
+    const header=['objava','datum','status','views','reach','impressions','likes','comments','saves','shares','clicks','conversions','engagement_%','spend','revenue','currency']
     const lines=ranking.map(item=>[
-      item.post.title||'Objava',item.post.scheduled_for||'',item.post.status,item.m.reach,item.m.impressions,item.m.likes,item.m.comments,item.m.saves,item.m.shares,item.m.clicks,item.m.conversions,item.engagement.toFixed(2),item.m.spend,item.m.revenue,item.m.currency
+      item.post.title||'Objava',item.post.scheduled_for||'',item.post.status,item.m.views,item.m.reach,item.m.impressions,item.m.likes,item.m.comments,item.m.saves,item.m.shares,item.m.clicks,item.m.conversions,item.engagement.toFixed(2),item.m.spend,item.m.revenue,item.m.currency
     ].map(csvCell).join(';'))
     const blob=new Blob(['\ufeff'+[header.join(';'),...lines].join('\n')],{type:'text/csv;charset=utf-8'})
     const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`${slug(restaurant.name)}-performance.csv`;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)
@@ -294,7 +296,7 @@ export function InsightsCenter({restaurant,posts,menuItems,setNotice,onChanged,o
     <header className="page-header insights-header"><div><p className="eyebrow">PERFORMANCE LOOP</p><h1>Rezultati</h1><p className="muted">Upiši stvarne rezultate objava i Autopilot dobija povratnu informaciju šta kod tvog restorana radi najbolje.</p></div><div className="insights-head-actions"><label className="insights-period"><span>Period</span><select value={period} onChange={e=>setPeriod(e.target.value as '30'|'90'|'all')}><option value="30">30 dana</option><option value="90">90 dana</option><option value="all">Sve</option></select></label><input ref={importRef} className="performance-file-input" type="file" accept=".csv,text/csv" onChange={e=>{const file=e.target.files?.[0];if(file)void importPerformanceCsv(file)}}/><button className="secondary" onClick={downloadImportTemplate}><FileDown size={15}/> CSV šablon</button><button className="secondary" onClick={()=>importRef.current?.click()} disabled={importing}><Upload size={15}/>{importing?'Uvozim…':'Uvezi rezultate'}</button><button className="secondary" onClick={()=>void load()} disabled={loading}><RefreshCw size={15}/>{loading?'Osvežavam…':'Osveži'}</button><button className="primary" onClick={exportCsv} disabled={!ranking.length}><Download size={15}/> Izvezi CSV</button></div></header>
 
     <section className="insights-kpis">
-      <article><span><Target size={16}/> Doseg</span><strong>{fmt(totals.reach)}</strong><small>{tracked.length} praćenih objava</small></article>
+      <article><span><Target size={16}/> Doseg</span><strong>{fmt(totals.reach)}</strong><small>{totals.views?`${fmt(totals.views)} pregleda · `:''}{tracked.length} praćenih objava</small></article>
       <article><span><TrendingUp size={16}/> Engagement</span><strong>{totals.engagement.toFixed(1)}%</strong><small>{fmt(totals.interactions)} interakcija</small></article>
       <article><span><MousePointerClick size={16}/> Klikovi</span><strong>{fmt(totals.clicks)}</strong><small>CTR {totals.ctr.toFixed(1)}%</small></article>
       <article><span><CheckCircle2 size={16}/> Konverzije</span><strong>{fmt(totals.conversions)}</strong><small>{totals.spend>0?`ROAS ${totals.roas.toFixed(2)}x`:'bez unetog ad spend-a'}</small></article>
@@ -339,7 +341,7 @@ export function InsightsCenter({restaurant,posts,menuItems,setNotice,onChanged,o
 
       <section className="panel insights-details"><div className="panel-heading"><div><p className="eyebrow">SIGNALI</p><h2>Šta publika radi</h2></div><Target size={20}/></div>
         <div className="signal-grid"><div><span>Saves</span><strong>{fmt(totals.saves)}</strong></div><div><span>Shares</span><strong>{fmt(totals.shares)}</strong></div><div><span>Comments</span><strong>{fmt(totals.comments)}</strong></div><div><span>Revenue</span><strong>{totals.revenue?moneyFmt(totals.revenue,currency):'—'}</strong></div></div>
-        <div className="insights-note"><strong>Zašto ručni unos?</strong><span>Dok Meta nalog nije direktno povezan, ovo je siguran način da proizvod već koristi stvarne rezultate. Kada postoji integracija, isti model podataka može da se puni automatski.</span></div>
+        <div className="insights-note"><strong>Automatski + ručni podaci</strong><span>Kada je Meta nalog povezan sa Insights dozvolama, Autopilot periodično povlači views, reach i interakcije za objave koje je sam poslao. Ručni unos i CSV ostaju za konverzije, prihod i druge izvore.</span></div>
       </section>
     </div>
 
@@ -351,6 +353,7 @@ export function InsightsCenter({restaurant,posts,menuItems,setNotice,onChanged,o
       <div className="insights-form-grid">
         <label>Platforma<select value={form.platform} onChange={e=>setForm({...form,platform:e.target.value as Platform})}><option value="combined">Ukupno / kombinovano</option><option value="instagram">Instagram</option><option value="facebook">Facebook</option></select></label>
         <label>Datum merenja<input type="date" value={form.measured_at} onChange={e=>setForm({...form,measured_at:e.target.value})}/></label>
+        <label>Views / pregledi<input type="number" min="0" value={form.views} onChange={e=>setForm({...form,views:e.target.value})}/></label>
         <label>Reach<input type="number" min="0" value={form.reach} onChange={e=>setForm({...form,reach:e.target.value})}/></label>
         <label>Impressions<input type="number" min="0" value={form.impressions} onChange={e=>setForm({...form,impressions:e.target.value})}/></label>
         <label>Likes<input type="number" min="0" value={form.likes} onChange={e=>setForm({...form,likes:e.target.value})}/></label>
@@ -372,8 +375,8 @@ export function InsightsCenter({restaurant,posts,menuItems,setNotice,onChanged,o
 function mergeMetrics(rows:Performance[]){
   const combined=rows.find(row=>row.platform==='combined')
   if(combined)return combined
-  const seed={id:'',post_id:rows[0]?.post_id||'',restaurant_id:rows[0]?.restaurant_id||'',platform:'combined' as Platform,impressions:0,reach:0,likes:0,comments:0,saves:0,shares:0,clicks:0,conversions:0,spend:0,revenue:0,currency:rows[0]?.currency||'RSD',notes:null,source:'manual' as const,measured_at:rows[0]?.measured_at||new Date().toISOString(),created_at:'',updated_at:''}
-  return rows.reduce((a,b)=>({...a,impressions:a.impressions+Number(b.impressions||0),reach:a.reach+Number(b.reach||0),likes:a.likes+Number(b.likes||0),comments:a.comments+Number(b.comments||0),saves:a.saves+Number(b.saves||0),shares:a.shares+Number(b.shares||0),clicks:a.clicks+Number(b.clicks||0),conversions:a.conversions+Number(b.conversions||0),spend:a.spend+Number(b.spend||0),revenue:a.revenue+Number(b.revenue||0)}),seed)
+  const seed={id:'',post_id:rows[0]?.post_id||'',restaurant_id:rows[0]?.restaurant_id||'',platform:'combined' as Platform,views:0,impressions:0,reach:0,likes:0,comments:0,saves:0,shares:0,clicks:0,conversions:0,spend:0,revenue:0,currency:rows[0]?.currency||'RSD',notes:null,source:'manual' as const,measured_at:rows[0]?.measured_at||new Date().toISOString(),created_at:'',updated_at:''}
+  return rows.reduce((a,b)=>({...a,views:a.views+Number(b.views||0),impressions:a.impressions+Number(b.impressions||0),reach:a.reach+Number(b.reach||0),likes:a.likes+Number(b.likes||0),comments:a.comments+Number(b.comments||0),saves:a.saves+Number(b.saves||0),shares:a.shares+Number(b.shares||0),clicks:a.clicks+Number(b.clicks||0),conversions:a.conversions+Number(b.conversions||0),spend:a.spend+Number(b.spend||0),revenue:a.revenue+Number(b.revenue||0)}),seed)
 }
 function num(v:string){const n=Math.floor(Number(v||0));return Number.isFinite(n)&&n>0?n:0}
 function money(v:string){const n=Number(v||0);return Number.isFinite(n)&&n>0?Math.round(n*100)/100:0}
