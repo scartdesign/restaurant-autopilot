@@ -300,7 +300,7 @@ export type NotificationOutbox = {
   subject: string
   body: string
   payload: Record<string, unknown>
-  delivery_status: 'queued' | 'sent' | 'failed' | 'dismissed'
+  delivery_status: 'queued' | 'sent' | 'failed' | 'dismissed' | 'in_app'
   visible_in_app: boolean
   read_at: string | null
   sent_at: string | null
