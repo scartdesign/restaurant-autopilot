@@ -56,6 +56,45 @@ function relativeScore(target:number,anchor:number){
   return Math.round(clamp((100*target)/(target+anchor)));
 }
 
+function candidateRelevance(query:string,seed:string){
+  const q=query.toLowerCase();
+  const s=seed.toLowerCase();
+  let score=35;
+  if(q.includes(s))score+=20;
+  const positive=["restoran","restaurant","pizza","burger","pasta","hrana","food","roštilj","rostilj","ćevap","cevap","kafa","coffee","brunch","ručak","rucak","večera","vecera","doručak","dorucak","dostava","delivery","steak","sushi","salata","dessert","desert","kolač","kolac","piletina","chicken","riba","seafood"];
+  const local=["blizu","near me","beograd","belgrade","niš","nis","novi sad","sokobanja","vracar","vračar","zemun"];
+  const negative=["recept","recipe","kalor","calorie","diet","mršav","mrsav","weight loss","how to make","sastoj"];
+  if(positive.some(x=>q.includes(x)))score+=20;
+  if(local.some(x=>q.includes(x)))score+=15;
+  if(negative.some(x=>q.includes(x)))score-=35;
+  return clamp(score);
+}
+
+async function fetchRelatedQueries(apiKey:string,geo:string,seed:string){
+  const params=new URLSearchParams({
+    engine:"google_trends",
+    q:seed,
+    data_type:"RELATED_QUERIES",
+    date:"today 3-m",
+    api_key:apiKey,
+    output:"json",
+  });
+  if(geo)params.set("geo",geo);
+  if(geo==="RS"){
+    params.set("hl","sr");
+    params.set("tz","-120");
+  }
+  const res=await fetch("https://serpapi.com/search.json?"+params.toString(),{headers:{"Accept":"application/json"}});
+  const payload=await res.json().catch(()=>({}));
+  if(!res.ok||payload?.error)throw new Error(String(payload?.error||("SerpApi related queries HTTP "+res.status)));
+  const rising=(Array.isArray(payload?.related_queries?.rising)?payload.related_queries.rising:[]).slice(0,8);
+  const top=(Array.isArray(payload?.related_queries?.top)?payload.related_queries.top:[]).slice(0,4);
+  return [
+    ...rising.map((row:any)=>({type:"rising" as const,query:String(row?.query||"").trim(),value:String(row?.value||""),extracted:Number(row?.extracted_value||0)})),
+    ...top.map((row:any)=>({type:"top" as const,query:String(row?.query||"").trim(),value:String(row?.value||""),extracted:Number(row?.extracted_value||0)})),
+  ].filter(row=>row.query);
+}
+
 async function fetchTrendBatch(apiKey:string,geo:string,targets:string[]){
   const anchor=anchorFor(geo);
   const queries=[anchor,...targets];
@@ -117,6 +156,8 @@ async function recordSync(service:any,status:"success"|"skipped"|"failed",payloa
       unique_queries:Number(payload?.unique_queries||0),
       api_calls:Number(payload?.api_calls||0),
       failed_batches:Number(payload?.failed_batches||0),
+      candidate_api_calls:Number(payload?.candidate_api_calls||0),
+      candidates_upserted:Number(payload?.candidates_upserted||0),
       verified_at:payload?.verified_at||null,
       skipped:Boolean(payload?.skipped),
       reason:payload?.reason||null,
@@ -159,6 +200,8 @@ async function runSync(service:any,config:any){
   let apiCalls=0;
   let updated=0;
   let failedBatches=0;
+  let candidateApiCalls=0;
+  let candidatesUpserted=0;
   const errors:string[]=[];
   const verifiedAt=new Date().toISOString();
 
@@ -208,6 +251,41 @@ async function runSync(service:any,config:any){
     }
   }
 
+  const candidateSeeds=[
+    {geo:"RS",query:"restoran"},
+    {geo:"RS",query:"pizza"},
+    {geo:"RS",query:"burger"},
+    {geo:"RS",query:"domaća hrana"},
+    {geo:"",query:"restaurant"},
+    {geo:"",query:"street food"},
+  ];
+  for(const seed of candidateSeeds){
+    try{
+      const related=await fetchRelatedQueries(String(config.api_key),seed.geo,seed.query);
+      candidateApiCalls+=1;
+      for(const row of related){
+        const relevance=candidateRelevance(row.query,seed.query);
+        if(relevance<45)continue;
+        if(row.type==="rising"&&row.extracted>0&&row.extracted<100)continue;
+        const{error}=await service.rpc("service_upsert_discovery_candidate",{
+          p_provider:"serpapi_google_trends",
+          p_seed_query:seed.query,
+          p_query:row.query,
+          p_geo:seed.geo,
+          p_trend_type:row.type,
+          p_trend_value:row.value,
+          p_extracted_value:Math.max(0,Math.round(row.extracted||0)),
+          p_relevance_score:relevance,
+          p_metadata:{window:"today 3-m",discovered_at:verifiedAt},
+        });
+        if(error)errors.push(error.message); else candidatesUpserted+=1;
+      }
+    }catch(error){
+      failedBatches+=1;
+      errors.push(error instanceof Error?error.message:String(error));
+    }
+  }
+
   const result={
     ok:failedBatches===0,
     configured:true,
@@ -217,6 +295,8 @@ async function runSync(service:any,config:any){
     updated,
     api_calls:apiCalls,
     failed_batches:failedBatches,
+    candidate_api_calls:candidateApiCalls,
+    candidates_upserted:candidatesUpserted,
     verified_at:verifiedAt,
     errors:errors.slice(0,8),
   };
