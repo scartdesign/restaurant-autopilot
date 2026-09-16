@@ -455,7 +455,8 @@ function PostCard({ post, restaurant, menuItems, working, onEdit, onAiCopy, onOp
     Number(learning?.item_score || 0) > 0 ? 'PERFORMANCE' : '',
     Number(learning?.coverage_bonus || 0) > 0 ? 'COVERAGE' : '',
     Number(learning?.exploration_bonus || 0) > 0 ? 'EXPLORATION' : '',
-  ].filter(Boolean).slice(0, 3)
+    Number(learning?.performance_samples_item || 0) > 0 ? `CONF ${Number(learning?.performance_confidence || 0)}%` : '',
+  ].filter(Boolean).slice(0, 4)
 
   async function copyInstagram() {
     const caption = post.platform_content?.instagram?.caption || post.caption || ''
