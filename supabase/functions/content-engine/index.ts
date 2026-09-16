@@ -267,8 +267,10 @@ function rowForDay(openingHours: any, offset: number) {
   };
 }
 
-function scheduleOffsets(total: number, openingHours: any) {
-  const preferred = total <= 3 ? [0,2,4] : total === 4 ? [0,1,3,5] : total === 5 ? [0,1,2,4,5] : total === 6 ? [0,1,2,3,4,5] : [0,1,2,3,4,5,6];
+function scheduleOffsets(total: number, openingHours: any, learnedDays: number[] = []) {
+  const basePreferred = total <= 3 ? [0,2,4] : total === 4 ? [0,1,3,5] : total === 5 ? [0,1,2,4,5] : total === 6 ? [0,1,2,3,4,5] : [0,1,2,3,4,5,6];
+  const learned = learnedDays.filter((day,index,list) => day >= 0 && day <= 6 && list.indexOf(day) === index);
+  const preferred = learned.length ? [...learned, ...basePreferred.filter((day) => !learned.includes(day))].slice(0,total) : basePreferred;
   const open = dayKeys.map((_, index) => index).filter((offset) => rowForDay(openingHours, offset).enabled);
   if (!open.length) return preferred;
   const used = new Set<number>();
@@ -298,6 +300,14 @@ function localHour(value: string, timeZone: string) {
     const text = new Intl.DateTimeFormat("en-US", { timeZone, hour: "2-digit", hourCycle: "h23" }).format(new Date(value));
     const hour = Number(text);
     return Number.isFinite(hour) ? hour : null;
+  } catch { return null; }
+}
+
+function localDayOffset(value: string, timeZone: string) {
+  try {
+    const label = new Intl.DateTimeFormat("en-US", { timeZone, weekday: "short" }).format(new Date(value));
+    const map:Record<string,number> = {Mon:0,Tue:1,Wed:2,Thu:3,Fri:4,Sat:5,Sun:6};
+    return map[label] ?? null;
   } catch { return null; }
 }
 
@@ -460,6 +470,7 @@ Deno.serve(async (req: Request) => {
       });
       const timeZone = String(restaurant.timezone || "Europe/Belgrade");
       const hourBuckets = new Map<string,{score:number;count:number}>();
+      const dayBuckets = new Map<number,{score:number;count:number}>();
       for (const row of performanceRows || []) {
         const post = performancePostMap.get(row.post_id);
         if (!post?.scheduled_for) continue;
@@ -467,6 +478,11 @@ Deno.serve(async (req: Request) => {
         if (hour === null) continue;
         const type = String(post.post_type || "feed");
         const signal = performanceSignal(row);
+        const day = localDayOffset(String(post.scheduled_for), timeZone);
+        if (day !== null) {
+          const dayPrev = dayBuckets.get(day) || {score:0,count:0};
+          dayPrev.score += signal; dayPrev.count += 1; dayBuckets.set(day, dayPrev);
+        }
         for (const key of [`${type}:${hour}`, `all:${hour}`]) {
           const prev = hourBuckets.get(key) || {score:0,count:0};
           prev.score += signal; prev.count += 1; hourBuckets.set(key, prev);
@@ -485,6 +501,11 @@ Deno.serve(async (req: Request) => {
         story: bestLearnedHour("story") ?? fallbackLearnedHour,
         promotion: bestLearnedHour("promotion") ?? fallbackLearnedHour,
       };
+      const learnedScheduleDays=[...dayBuckets.entries()]
+        .filter(([,value])=>value.count>=2)
+        .map(([day,value])=>({day,avg:value.score/value.count,count:value.count}))
+        .sort((a,b)=>b.avg-a.avg||b.count-a.count)
+        .map((row)=>row.day);
       const monday = mondayOfCurrentWeek(timeZone);
       const weekStart = dateOnly(monday);
       const frequency = clamp(Number(restaurant.posting_frequency || 5), 3, 7);
@@ -506,7 +527,7 @@ Deno.serve(async (req: Request) => {
       if (planError || !plan) return json({ error: planError?.message || "Plan error" }, 400);
       await supabase.from("posts").delete().eq("content_plan_id", plan.id).in("status", ["draft", "rejected"]);
       const pillars = pillarSequence(frequency);
-      const scheduleDays = scheduleOffsets(frequency, restaurant.opening_hours);
+      const scheduleDays = scheduleOffsets(frequency, restaurant.opening_hours, learnedScheduleDays);
       const selectedMenu = selectWeekItems(rankedMenu, pillars, recentUse, learnedScore);
       const payload = Array.from({ length: frequency }).map((_, index) => {
         const item = selectedMenu[index] || rankedMenu[index % rankedMenu.length];
@@ -530,7 +551,7 @@ Deno.serve(async (req: Request) => {
           visual_brief: visualBrief(restaurant, item, pillar, postType),
           status: "draft",
           generation_meta: {
-            engine: "restaurant-autopilot-v12",
+            engine: "restaurant-autopilot-v13",
             pillar,
             variation: index,
             image_url: item.image_url || null,
@@ -543,6 +564,7 @@ Deno.serve(async (req: Request) => {
               marketing_priority: Number(item.marketing_priority || 0),
               recent_uses_30d: recentUse.get(String(item.id)) || 0,
               schedule_hour: learnedHour,
+              schedule_day: scheduleDays[index],
             },
             visual_design: visualDesign(restaurant, item, pillar, postType, title, caption, cta, index),
           },
@@ -550,7 +572,7 @@ Deno.serve(async (req: Request) => {
       });
       const { data: posts, error: insertError } = await supabase.from("posts").insert(payload).select();
       if (insertError) return json({ error: insertError.message }, 400);
-      return json({ ok: true, plan, posts, engine: "restaurant-autopilot-v12", pillars, timezone: timeZone, schedule_days: scheduleDays, learning:{performance_samples:(performanceRows||[]).length,schedule_hours:learnedScheduleHours,ranked_menu:rankedMenu.map((item:any)=>({id:item.id,name:item.name,score:Math.round(((learnedScore.get(String(item.id))||0)+Number(item.marketing_priority||0)*35)*10)/10,marketing_priority:Number(item.marketing_priority||0),recent_uses_30d:recentUse.get(String(item.id))||0}))} });
+      return json({ ok: true, plan, posts, engine: "restaurant-autopilot-v13", pillars, timezone: timeZone, schedule_days: scheduleDays, learning:{performance_samples:(performanceRows||[]).length,schedule_hours:learnedScheduleHours,schedule_days:learnedScheduleDays,ranked_menu:rankedMenu.map((item:any)=>({id:item.id,name:item.name,score:Math.round(((learnedScore.get(String(item.id))||0)+Number(item.marketing_priority||0)*35)*10)/10,marketing_priority:Number(item.marketing_priority||0),recent_uses_30d:recentUse.get(String(item.id))||0}))} });
     }
 
     if (action === "promotion") {
@@ -580,7 +602,7 @@ Deno.serve(async (req: Request) => {
       const feedCaption = `${[title, discountText, description].filter(Boolean).join(" · ")}. ${goalClose(restaurant)}`;
       const storyCaption = `${discountText || title}. ${description || "Važi ograničeno vreme."} ${ctaFor(restaurant, "promotion")}.`;
       const cta = ctaFor(restaurant, "promotion");
-      const commonMeta = { engine: "restaurant-autopilot-v12", source: "promotion", image_url: visualItem?.image_url || null, selected_menu_item_id: visualItem?.id || null, generated_at: new Date().toISOString(), pillar: "promotion" };
+      const commonMeta = { engine: "restaurant-autopilot-v13", source: "promotion", image_url: visualItem?.image_url || null, selected_menu_item_id: visualItem?.id || null, generated_at: new Date().toISOString(), pillar: "promotion" };
       const feedTitle = discountText || title;
       const feed = {
         restaurant_id: restaurantId, promotion_id: promotion.id, post_type: "promotion", scheduled_for: startsAt, title: feedTitle, caption: feedCaption, cta,
@@ -597,7 +619,7 @@ Deno.serve(async (req: Request) => {
       };
       const { data: posts, error: postError } = await supabase.from("posts").insert([feed, story]).select();
       if (postError) return json({ error: postError.message }, 400);
-      return json({ ok: true, promotion, posts, engine: "restaurant-autopilot-v12" });
+      return json({ ok: true, promotion, posts, engine: "restaurant-autopilot-v13" });
     }
 
     if (action === "regenerate" || action === "optimize_discovery") {
@@ -617,10 +639,10 @@ Deno.serve(async (req: Request) => {
         ...discovery,
         cta: post.cta || ctaFor(restaurant, pillar),
         status: "draft",
-        generation_meta: { ...(post.generation_meta || {}), engine: "restaurant-autopilot-v12", pillar, variation, visual_design: nextVisual, regenerated_at: new Date().toISOString() },
+        generation_meta: { ...(post.generation_meta || {}), engine: "restaurant-autopilot-v13", pillar, variation, visual_design: nextVisual, regenerated_at: new Date().toISOString() },
       }).eq("id", postId).select().single();
       if (updateError) return json({ error: updateError.message }, 400);
-      return json({ ok: true, post: updated, engine: "restaurant-autopilot-v12" });
+      return json({ ok: true, post: updated, engine: "restaurant-autopilot-v13" });
     }
 
     if (action === "quality_check") {
