@@ -53,6 +53,7 @@ export function InsightsCenter({restaurant,posts,menuItems,setNotice}:{restauran
   const[form,setForm]=useState<FormState>(emptyForm)
   const[saving,setSaving]=useState(false)
   const[importing,setImporting]=useState(false)
+  const[period,setPeriod]=useState<'30'|'90'|'all'>('90')
   const importRef=useRef<HTMLInputElement|null>(null)
 
   useEffect(()=>{void load()},[restaurant.id])
@@ -74,14 +75,19 @@ export function InsightsCenter({restaurant,posts,menuItems,setNotice}:{restauran
   }
 
   const menuMap=useMemo(()=>new Map(menuItems.map(item=>[item.id,item])),[menuItems])
+  const analysisRows=useMemo(()=>{
+    if(period==='all')return rows
+    const cutoff=Date.now()-Number(period)*86400000
+    return rows.filter(row=>new Date(row.measured_at).getTime()>=cutoff)
+  },[rows,period])
   const postsForTracking=useMemo(()=>posts.filter(post=>post.status==='published'||post.status==='approved').sort((a,b)=>new Date(b.scheduled_for||0).getTime()-new Date(a.scheduled_for||0).getTime()),[posts])
   const metricsByPost=useMemo(()=>{
     const grouped=new Map<string,Performance[]>()
-    for(const row of rows)grouped.set(row.post_id,[...(grouped.get(row.post_id)||[]),row])
+    for(const row of analysisRows)grouped.set(row.post_id,[...(grouped.get(row.post_id)||[]),row])
     const result=new Map<string,ReturnType<typeof mergeMetrics>>()
     for(const [postId,list] of grouped)result.set(postId,mergeMetrics(list))
     return result
-  },[rows])
+  },[analysisRows])
 
   const tracked=useMemo(()=>postsForTracking.filter(post=>metricsByPost.has(post.id)),[postsForTracking,metricsByPost])
   const totals=useMemo(()=>{
@@ -249,7 +255,7 @@ export function InsightsCenter({restaurant,posts,menuItems,setNotice}:{restauran
   const dishCoverage=activeDishCount?Math.round((learnedDishCount/activeDishCount)*100):0
 
   return <div className="insights-center">
-    <header className="page-header insights-header"><div><p className="eyebrow">PERFORMANCE LOOP</p><h1>Rezultati</h1><p className="muted">Upiši stvarne rezultate objava i Autopilot dobija povratnu informaciju šta kod tvog restorana radi najbolje.</p></div><div className="insights-head-actions"><input ref={importRef} className="performance-file-input" type="file" accept=".csv,text/csv" onChange={e=>{const file=e.target.files?.[0];if(file)void importPerformanceCsv(file)}}/><button className="secondary" onClick={downloadImportTemplate}><FileDown size={15}/> CSV šablon</button><button className="secondary" onClick={()=>importRef.current?.click()} disabled={importing}><Upload size={15}/>{importing?'Uvozim…':'Uvezi rezultate'}</button><button className="secondary" onClick={()=>void load()} disabled={loading}><RefreshCw size={15}/>{loading?'Osvežavam…':'Osveži'}</button><button className="primary" onClick={exportCsv} disabled={!ranking.length}><Download size={15}/> Izvezi CSV</button></div></header>
+    <header className="page-header insights-header"><div><p className="eyebrow">PERFORMANCE LOOP</p><h1>Rezultati</h1><p className="muted">Upiši stvarne rezultate objava i Autopilot dobija povratnu informaciju šta kod tvog restorana radi najbolje.</p></div><div className="insights-head-actions"><label className="insights-period"><span>Period</span><select value={period} onChange={e=>setPeriod(e.target.value as '30'|'90'|'all')}><option value="30">30 dana</option><option value="90">90 dana</option><option value="all">Sve</option></select></label><input ref={importRef} className="performance-file-input" type="file" accept=".csv,text/csv" onChange={e=>{const file=e.target.files?.[0];if(file)void importPerformanceCsv(file)}}/><button className="secondary" onClick={downloadImportTemplate}><FileDown size={15}/> CSV šablon</button><button className="secondary" onClick={()=>importRef.current?.click()} disabled={importing}><Upload size={15}/>{importing?'Uvozim…':'Uvezi rezultate'}</button><button className="secondary" onClick={()=>void load()} disabled={loading}><RefreshCw size={15}/>{loading?'Osvežavam…':'Osveži'}</button><button className="primary" onClick={exportCsv} disabled={!ranking.length}><Download size={15}/> Izvezi CSV</button></div></header>
 
     <section className="insights-kpis">
       <article><span><Target size={16}/> Doseg</span><strong>{fmt(totals.reach)}</strong><small>{tracked.length} praćenih objava</small></article>
