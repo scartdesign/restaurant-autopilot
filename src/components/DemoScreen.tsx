@@ -168,6 +168,15 @@ function DemoInsights() {
       <div className="learning-signals"><div><span>Najbolje jelo</span><strong>Pizza Capricciosa</strong></div><div><span>Najjači pillar</span><strong>Hero jelo</strong></div><div><span>Top engagement</span><strong>7.8%</strong></div><div><span>Najbolji termin</span><strong>18:30</strong></div><div><span>Praćeno</span><strong>4/4</strong></div></div>
       <p>Priority Engine već kombinuje ove rezultate sa HERO prioritetom, recency signalom i raznovrsnošću menija.</p>
     </section>
+    <section className="opportunity-radar panel">
+      <div className="panel-heading"><div><p className="eyebrow">OPPORTUNITY RADAR</p><h2>Šta sledeće vredi testirati</h2></div><Target size={20}/></div>
+      <div className="opportunity-list">
+        <article><div className="opportunity-kind gap">CONTENT GAP</div><strong>Sezonska salata</strong><span>Nije bila u sadržaju poslednjih 30 dana. Dobar kandidat za svežiji, lakši content slot.</span><small>STANDARDNO</small></article>
+        <article><div className="opportunity-kind test">TEST SIGNAL</div><strong>Carbonara</strong><span>Visok prioritet i dobar reach, ali treba još merenja konverzija pre jačeg boost-a.</span><small>VISOK PRIORITET</small></article>
+        <article><div className="opportunity-kind photo">PHOTO GAP</div><strong>Lasagne della casa</strong><span>Jelo ima potencijal za premium feed, ali sledeći dobitak je bolja fotografija.</span><small>PRIORITET</small></article>
+      </div>
+    </section>
+
     <div className="insights-grid">
       <section className="panel insights-ranking"><div className="panel-heading"><div><p className="eyebrow">TOP SADRŽAJ</p><h2>Šta radi najbolje</h2></div><BarChart3 size={20}/></div>
         {ranking.map((item,index)=><div className="ranking-row" key={item.title}><span className="ranking-no">0{index+1}</span><div className="ranking-copy"><strong>{item.title}</strong><small>{item.detail}</small><div className="ranking-track"><i style={{width:`${item.width}%`}}/></div></div><div className="ranking-value"><strong>{item.engagement}</strong><small>{item.reach} reach</small></div></div>)}
