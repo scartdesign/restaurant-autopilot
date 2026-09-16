@@ -142,7 +142,7 @@ function DemoPublish({ notify }: { notify: (value: string) => void }) {
         <p className="demo-publish-caption">{post.caption}</p>
         {editing === post.title && <div className="demo-time-editor"><label>Vreme objave<input type="time" value={draft} onChange={(event) => setDraft(event.target.value)} /></label><button className="secondary" onClick={() => setDraft(post.type === 'STORY' ? '11:30' : post.type === 'PROMO' ? '17:30' : '18:30')}><Sparkles size={13} /> Autopilot</button><button className="primary" onClick={() => save(post.title)}><Save size={13} /> Sačuvaj</button><button className="icon-button" onClick={() => setEditing('')}><X size={14} /></button></div>}
       </div>
-      <div className="demo-publish-actions"><span className="demo-publish-time"><Clock3 size={13} /> {times[post.title]}</span><span className={`status ${post.status}`}>{post.status}</span><button className="mini-schedule" onClick={() => begin(post.title)}><Pencil size={13} /> Promeni</button></div>
+      <div className="demo-publish-actions"><span className="demo-publish-time"><Clock3 size={13} /> {times[post.title]}</span>{post.title==='Pizza Capricciosa'&&<span className="learned-time-chip"><Sparkles size={11}/> LEARNED TIME</span>}<span className={`status ${post.status}`}>{post.status}</span><button className="mini-schedule" onClick={() => begin(post.title)}><Pencil size={13} /> Promeni</button></div>
     </div>)}</div>
   </>
 }
