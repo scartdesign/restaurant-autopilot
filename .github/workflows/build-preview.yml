@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: build-preview-main
+  group: build-preview-main-v2
   cancel-in-progress: true
 
 permissions:
@@ -44,7 +44,7 @@ jobs:
           set -euo pipefail
           SHA=$(git rev-parse HEAD)
           BASE="https://raw.githack.com/scartdesign/restaurant-autopilot/$SHA/preview-app"
-          curl --retry 12 --retry-delay 3 --retry-all-errors -fsSL -D /tmp/html.headers "$BASE/index.html" -o /tmp/app.html
+          curl --max-time 20 --retry 4 --retry-delay 2 --retry-all-errors -fsSL -D /tmp/html.headers "$BASE/index.html" -o /tmp/app.html
           tr -d '\r' < /tmp/html.headers > /tmp/html.clean
           grep -Eiq '^content-type: *text/html' /tmp/html.clean
           grep -Fq '<div id="root"></div>' /tmp/app.html
@@ -54,8 +54,8 @@ jobs:
           test -n "$CSS_PATH"
           JS_PATH="${JS_PATH#./}"
           CSS_PATH="${CSS_PATH#./}"
-          curl --retry 12 --retry-delay 3 --retry-all-errors -fsSL -D /tmp/js.headers "$BASE/$JS_PATH" -o /tmp/app.js
-          curl --retry 12 --retry-delay 3 --retry-all-errors -fsSL -D /tmp/css.headers "$BASE/$CSS_PATH" -o /tmp/app.css
+          curl --max-time 20 --retry 4 --retry-delay 2 --retry-all-errors -fsSL -D /tmp/js.headers "$BASE/$JS_PATH" -o /tmp/app.js
+          curl --max-time 20 --retry 4 --retry-delay 2 --retry-all-errors -fsSL -D /tmp/css.headers "$BASE/$CSS_PATH" -o /tmp/app.css
           tr -d '\r' < /tmp/js.headers > /tmp/js.clean
           tr -d '\r' < /tmp/css.headers > /tmp/css.clean
           grep -Eiq '^content-type: *(application|text)/(javascript|x-javascript)' /tmp/js.clean
