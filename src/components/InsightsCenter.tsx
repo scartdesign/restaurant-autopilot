@@ -137,6 +137,9 @@ export function InsightsCenter({restaurant,posts,menuItems,setNotice}:{restauran
   const bestPillar=pillarStats[0]
   const bestDish=dishStats[0]
   const currency=ranking.find(x=>x.m.currency)?.m.currency||menuItems[0]?.currency||'RSD'
+  const learningLevel=tracked.length>=8?'strong':tracked.length>=3?'learning':'starting'
+  const learningLabel=learningLevel==='strong'?'Jako učenje':learningLevel==='learning'?'Učenje aktivno':'Tek počinje'
+  const learningProgress=Math.min(100,Math.round((tracked.length/8)*100))
 
   return <div className="insights-center">
     <header className="page-header insights-header"><div><p className="eyebrow">PERFORMANCE LOOP</p><h1>Rezultati</h1><p className="muted">Upiši stvarne rezultate objava i Autopilot dobija povratnu informaciju šta kod tvog restorana radi najbolje.</p></div><div className="insights-head-actions"><button className="secondary" onClick={()=>void load()} disabled={loading}><RefreshCw size={15}/>{loading?'Osvežavam…':'Osveži'}</button><button className="primary" onClick={exportCsv} disabled={!ranking.length}><Download size={15}/> Izvezi CSV</button></div></header>
@@ -146,6 +149,21 @@ export function InsightsCenter({restaurant,posts,menuItems,setNotice}:{restauran
       <article><span><TrendingUp size={16}/> Engagement</span><strong>{totals.engagement.toFixed(1)}%</strong><small>{fmt(totals.interactions)} interakcija</small></article>
       <article><span><MousePointerClick size={16}/> Klikovi</span><strong>{fmt(totals.clicks)}</strong><small>CTR {totals.ctr.toFixed(1)}%</small></article>
       <article><span><CheckCircle2 size={16}/> Konverzije</span><strong>{fmt(totals.conversions)}</strong><small>{totals.spend>0?`ROAS ${totals.roas.toFixed(2)}x`:'bez unetog ad spend-a'}</small></article>
+    </section>
+
+    <section className="learning-status panel">
+      <div className="learning-status-head">
+        <div><p className="eyebrow">AUTOPILOT LEARNING</p><h2>{learningLabel}</h2><span>{tracked.length} stvarnih objava trenutno hrani sledeću generaciju sadržaja.</span></div>
+        <strong>{learningProgress}%</strong>
+      </div>
+      <div className="learning-progress"><i style={{width:`${learningProgress}%`}}/></div>
+      <div className="learning-signals">
+        <div><span>Najbolje jelo</span><strong>{bestDish?.name||'čeka podatke'}</strong></div>
+        <div><span>Najjači pillar</span><strong>{bestPillar?pillarLabel(bestPillar.pillar):'čeka podatke'}</strong></div>
+        <div><span>Top engagement</span><strong>{best?best.engagement.toFixed(1)+'%':'—'}</strong></div>
+        <div><span>Praćeno</span><strong>{tracked.length}/{postsForTracking.length}</strong></div>
+      </div>
+      <p>{learningLevel==='strong'?'Autopilot sada ima dovoljno lokalnih signala da prioritet, izbor jela i format više oslanja na rezultate ovog restorana, a manje na početne pretpostavke.':learningLevel==='learning'?'Model već koristi tvoje stvarne rezultate. Dodaj još nekoliko objava da preporuke budu stabilnije.':'Unesi rezultate za prve 3 objave. Do tada sistem koristi prioritet jela, recency i sigurni početni miks sadržaja.'}</p>
     </section>
 
     <section className="insights-smart panel">
