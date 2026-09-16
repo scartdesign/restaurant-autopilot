@@ -89,6 +89,7 @@ export type VisualDesignMeta = {
 export type GenerationMeta = Record<string, unknown> & {
   image_url?: string | null
   engine?: string
+  generation_source?: 'weekly_autopilot' | 'manual_week' | string
   pillar?: string
   variation?: number
   format?: string
