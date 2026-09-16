@@ -275,9 +275,21 @@ async function runSync(service:any,config:any,engineConfig:any){
     }
   }
 
-  const candidateSeeds=(Array.isArray(engineConfig?.seeds)?engineConfig.seeds:[])
-    .map((row:any)=>({geo:String(row?.geo||""),query:String(row?.query||"").trim()}))
+  const ownerSeeds=(Array.isArray(engineConfig?.seeds)?engineConfig.seeds:[])
+    .map((row:any)=>({geo:String(row?.geo||""),query:String(row?.query||"").trim(),source:"owner" as const}))
     .filter((row:any)=>row.query);
+  const autoSeeds=(Array.isArray(engineConfig?.auto_seeds)?engineConfig.auto_seeds:[])
+    .map((row:any)=>({geo:String(row?.geo||""),query:String(row?.query||"").trim(),source:"profile_auto" as const}))
+    .filter((row:any)=>row.query);
+  const seenSeedKeys=new Set<string>();
+  const candidateSeeds=[...ownerSeeds,...autoSeeds]
+    .filter((row:any)=>{
+      const key=row.geo+"|"+row.query.toLowerCase();
+      if(seenSeedKeys.has(key))return false;
+      seenSeedKeys.add(key);
+      return true;
+    })
+    .slice(0,Math.max(0,Number(engineConfig?.candidate_seed_limit||8)));
   for(const seed of candidateSeeds){
     if(apiCalls+candidateApiCalls>=callBudget){budgetExhausted=true;break}
     try{
@@ -296,7 +308,7 @@ async function runSync(service:any,config:any,engineConfig:any){
           p_trend_value:row.value,
           p_extracted_value:Math.max(0,Math.round(row.extracted||0)),
           p_relevance_score:relevance,
-          p_metadata:{window:"today 3-m",discovered_at:verifiedAt},
+          p_metadata:{window:"today 3-m",discovered_at:verifiedAt,seed_source:seed.source},
         });
         if(error)errors.push(error.message); else candidatesUpserted+=1;
       }
