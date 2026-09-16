@@ -129,6 +129,30 @@ function selectWeekItems(items: any[], pillars: Pillar[], recentUse: Map<string,
     usage.set(String(chosen.id), (usage.get(String(chosen.id)) || 0) + 1);
   }
 
+  const targetUnique = Math.min(3, items.length, pillars.length);
+  let uniqueCount = new Set(selected.map((item) => String(item.id))).size;
+  if (uniqueCount < targetUnique) {
+    const counts = new Map<string,number>();
+    for (const item of selected) counts.set(String(item.id),(counts.get(String(item.id))||0)+1);
+    const missing = items.filter((item) => !counts.has(String(item.id)));
+
+    for (const replacement of missing) {
+      if (uniqueCount >= targetUnique) break;
+      for (let index = selected.length - 1; index >= 0; index -= 1) {
+        const current = selected[index];
+        const currentId = String(current.id);
+        if ((counts.get(currentId) || 0) <= 1) continue;
+        if (index > 0 && selected[index - 1]?.id === replacement.id) continue;
+        if (index < selected.length - 1 && selected[index + 1]?.id === replacement.id) continue;
+        selected[index] = replacement;
+        counts.set(currentId,(counts.get(currentId)||1)-1);
+        counts.set(String(replacement.id),1);
+        uniqueCount += 1;
+        break;
+      }
+    }
+  }
+
   return selected;
 }
 
@@ -557,7 +581,7 @@ Deno.serve(async (req: Request) => {
           visual_brief: visualBrief(restaurant, item, pillar, postType),
           status: "draft",
           generation_meta: {
-            engine: "restaurant-autopilot-v15",
+            engine: "restaurant-autopilot-v16",
             pillar,
             variation: index,
             image_url: item.image_url || null,
@@ -580,7 +604,7 @@ Deno.serve(async (req: Request) => {
       });
       const { data: posts, error: insertError } = await supabase.from("posts").insert(payload).select();
       if (insertError) return json({ error: insertError.message }, 400);
-      return json({ ok: true, plan, posts, engine: "restaurant-autopilot-v15", pillars, timezone: timeZone, schedule_days: scheduleDays, learning:{performance_samples:(performanceRows||[]).length,schedule_hours:learnedScheduleHours,schedule_days:learnedScheduleDays,ranked_menu:rankedMenu.map((item:any)=>({id:item.id,name:item.name,score:Math.round(((learnedScore.get(String(item.id))||0)+Number(item.marketing_priority||0)*35)*10)/10,marketing_priority:Number(item.marketing_priority||0),recent_uses_30d:recentUse.get(String(item.id))||0,coverage_bonus:(recentUse.get(String(item.id))||0)===0?22:(recentUse.get(String(item.id))||0)===1?8:0,exploration_bonus:Number(item.marketing_priority||0)>=2&&!(learnedScore.get(String(item.id))||0)?12:0}))} });
+      return json({ ok: true, plan, posts, engine: "restaurant-autopilot-v16", pillars, timezone: timeZone, schedule_days: scheduleDays, learning:{performance_samples:(performanceRows||[]).length,schedule_hours:learnedScheduleHours,schedule_days:learnedScheduleDays,ranked_menu:rankedMenu.map((item:any)=>({id:item.id,name:item.name,score:Math.round(((learnedScore.get(String(item.id))||0)+Number(item.marketing_priority||0)*35)*10)/10,marketing_priority:Number(item.marketing_priority||0),recent_uses_30d:recentUse.get(String(item.id))||0,coverage_bonus:(recentUse.get(String(item.id))||0)===0?22:(recentUse.get(String(item.id))||0)===1?8:0,exploration_bonus:Number(item.marketing_priority||0)>=2&&!(learnedScore.get(String(item.id))||0)?12:0}))} });
     }
 
     if (action === "promotion") {
@@ -610,7 +634,7 @@ Deno.serve(async (req: Request) => {
       const feedCaption = `${[title, discountText, description].filter(Boolean).join(" · ")}. ${goalClose(restaurant)}`;
       const storyCaption = `${discountText || title}. ${description || "Važi ograničeno vreme."} ${ctaFor(restaurant, "promotion")}.`;
       const cta = ctaFor(restaurant, "promotion");
-      const commonMeta = { engine: "restaurant-autopilot-v15", source: "promotion", image_url: visualItem?.image_url || null, selected_menu_item_id: visualItem?.id || null, generated_at: new Date().toISOString(), pillar: "promotion" };
+      const commonMeta = { engine: "restaurant-autopilot-v16", source: "promotion", image_url: visualItem?.image_url || null, selected_menu_item_id: visualItem?.id || null, generated_at: new Date().toISOString(), pillar: "promotion" };
       const feedTitle = discountText || title;
       const feed = {
         restaurant_id: restaurantId, promotion_id: promotion.id, post_type: "promotion", scheduled_for: startsAt, title: feedTitle, caption: feedCaption, cta,
@@ -627,7 +651,7 @@ Deno.serve(async (req: Request) => {
       };
       const { data: posts, error: postError } = await supabase.from("posts").insert([feed, story]).select();
       if (postError) return json({ error: postError.message }, 400);
-      return json({ ok: true, promotion, posts, engine: "restaurant-autopilot-v15" });
+      return json({ ok: true, promotion, posts, engine: "restaurant-autopilot-v16" });
     }
 
     if (action === "regenerate" || action === "optimize_discovery") {
@@ -647,10 +671,10 @@ Deno.serve(async (req: Request) => {
         ...discovery,
         cta: post.cta || ctaFor(restaurant, pillar),
         status: "draft",
-        generation_meta: { ...(post.generation_meta || {}), engine: "restaurant-autopilot-v15", pillar, variation, visual_design: nextVisual, regenerated_at: new Date().toISOString() },
+        generation_meta: { ...(post.generation_meta || {}), engine: "restaurant-autopilot-v16", pillar, variation, visual_design: nextVisual, regenerated_at: new Date().toISOString() },
       }).eq("id", postId).select().single();
       if (updateError) return json({ error: updateError.message }, 400);
-      return json({ ok: true, post: updated, engine: "restaurant-autopilot-v15" });
+      return json({ ok: true, post: updated, engine: "restaurant-autopilot-v16" });
     }
 
     if (action === "quality_check") {
