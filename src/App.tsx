@@ -371,7 +371,7 @@ function App() {
       {appControls.announcement_enabled&&appControls.announcement_text&&<div className={`global-announcement ${appControls.announcement_tone}`}><Megaphone size={15}/><span>{appControls.announcement_text}</span></div>}
       {notice&&<div className="notice"><span>{notice}</span><button onClick={()=>setNotice('')}><X size={15}/></button></div>}
       <Suspense fallback={<LazyScreenFallback label="Učitavam modul…" />}>
-      {activeTab==='launch'&&<LaunchCenter restaurant={restaurant} menuItems={menuItems} posts={posts} onNavigate={(tab)=>void openTab(tab as Tab)}/>} 
+      {activeTab==='launch'&&<LaunchCenter restaurant={restaurant} menuItems={menuItems} posts={posts} pwaInstalled={pwaInstalled} onInstall={()=>void installPwa()} onNavigate={(tab)=>void openTab(tab as Tab)}/>} 
       {activeTab==='dashboard'&&<Dashboard restaurant={restaurant} menuItems={menuItems} posts={posts} entitlement={isSuperadmin?{active:true,is_superadmin:true,generation_limit:null,generated_this_month:0,features:{}}:entitlement} onChanged={refreshContent} setNotice={setNotice} onNavigate={(tab)=>void openTab(tab)}/>} 
       {activeTab==='creative'&&<CreativeHub restaurant={restaurant} menuItems={menuItems} entitlement={isSuperadmin?{active:true,is_superadmin:true,features:{campaign_pack:true}}:entitlement} onChanged={refreshContent} setNotice={setNotice}/>} 
       {activeTab==='studio'&&<VisualStudio restaurant={restaurant} menuItems={menuItems} posts={posts} setNotice={setNotice} onChanged={()=>loadPosts(restaurant.id)}/>} 
