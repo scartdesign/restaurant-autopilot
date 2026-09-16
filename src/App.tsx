@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
-import { BadgeEuro, BarChart3, Bell, Building2, CalendarDays, ChefHat, Image as ImageIcon, LifeBuoy, LockKeyhole, LogOut, Megaphone, Menu as MenuIcon, Palette, Plus, Rocket, Send, Settings, ShieldCheck, Sparkles, UtensilsCrossed, X } from 'lucide-react'
+import { BadgeEuro, BarChart3, Bell, Building2, CalendarDays, ChefHat, Download, Image as ImageIcon, LifeBuoy, LockKeyhole, LogOut, Megaphone, Menu as MenuIcon, Palette, Plus, RefreshCw, Rocket, Send, Settings, Share2, ShieldCheck, Smartphone, Sparkles, UtensilsCrossed, X } from 'lucide-react'
 import type { Session } from '@supabase/supabase-js'
 import { supabase } from './lib/supabase'
 import type { Entitlement, MenuItem, Post, Restaurant } from './types'
@@ -27,6 +27,7 @@ const SettingsPanel = lazy(() => import('./components/SettingsPanel').then((m) =
 const SupportCenter = lazy(() => import('./components/SupportCenter').then((m) => ({ default: m.SupportCenter })))
 const NotificationsCenter = lazy(() => import('./components/NotificationsCenter').then((m) => ({ default: m.NotificationsCenter })))
 
+type BeforeInstallPromptEvent = Event & { prompt:()=>Promise<void>; userChoice:Promise<{outcome:'accepted'|'dismissed';platform:string}> }
 type Tab = 'launch' | 'dashboard' | 'creative' | 'studio' | 'brand' | 'publish' | 'insights' | 'menu' | 'promotions' | 'settings' | 'support' | 'notifications' | 'billing' | 'admin'
 type AppControlsLite = { maintenance_mode:boolean; maintenance_message:string|null; sales_open:boolean; signup_open:boolean; announcement_enabled:boolean; announcement_text:string|null; announcement_tone:'info'|'success'|'warning'; app_version:string }
 const ACTIVE_RESTAURANT_KEY = 'restaurant-autopilot-active-restaurant'
@@ -52,6 +53,10 @@ function App() {
   const [mobileMenuOpen,setMobileMenuOpen]=useState(false)
   const [addingRestaurant, setAddingRestaurant] = useState(false)
   const [recoveryMode,setRecoveryMode]=useState(false)
+  const [installPrompt,setInstallPrompt]=useState<BeforeInstallPromptEvent|null>(null)
+  const [pwaInstalled,setPwaInstalled]=useState(()=>isStandaloneApp())
+  const [showIosInstall,setShowIosInstall]=useState(false)
+  const [pwaUpdateReady,setPwaUpdateReady]=useState(false)
   const params = new URLSearchParams(window.location.search)
   const adminSetupRequested = params.get('superadmin') === 'setup'
   const legalParam = params.get('legal') as 'terms'|'privacy'|'ai'|'refund'|null
@@ -71,6 +76,28 @@ function App() {
     if (!session) { setLoading(false); return }
     void boot(session)
   }, [session?.user.id])
+
+  useEffect(()=>{
+    const installHandler=(event:Event)=>{
+      const promptEvent=event as BeforeInstallPromptEvent
+      promptEvent.preventDefault()
+      setInstallPrompt(promptEvent)
+    }
+    const installedHandler=()=>{setPwaInstalled(true);setInstallPrompt(null);setShowIosInstall(false)}
+    const updateHandler=()=>setPwaUpdateReady(true)
+    window.addEventListener('beforeinstallprompt',installHandler)
+    window.addEventListener('appinstalled',installedHandler)
+    window.addEventListener('restaurant-autopilot-sw-update',updateHandler)
+    const media=window.matchMedia('(display-mode: standalone)')
+    const modeHandler=()=>setPwaInstalled(isStandaloneApp())
+    media.addEventListener?.('change',modeHandler)
+    return()=>{
+      window.removeEventListener('beforeinstallprompt',installHandler)
+      window.removeEventListener('appinstalled',installedHandler)
+      window.removeEventListener('restaurant-autopilot-sw-update',updateHandler)
+      media.removeEventListener?.('change',modeHandler)
+    }
+  },[])
 
   async function loadAppControls(){
     const {data}=await supabase.from('app_controls').select('maintenance_mode,maintenance_message,sales_open,signup_open,announcement_enabled,announcement_text,announcement_tone,app_version').eq('id',1).maybeSingle()
@@ -147,7 +174,9 @@ function App() {
       return
     }
     if (preflightData?.existing) {
+      const polished=await polishBackgroundDrafts(target)
       sessionStorage.setItem(attemptKey, 'done')
+      if(polished)setNotice(`Background AUTO WEEK je već bio spreman · AI je doradio ${polished} draftova.`)
       return
     }
     if (!preflightData?.ready) {
@@ -220,6 +249,50 @@ function App() {
     setActiveTab(tab)
   }
 
+  async function polishBackgroundDrafts(target:Restaurant){
+    const{data:pending}=await supabase.from('posts')
+      .select('id,title,generation_meta')
+      .eq('restaurant_id',target.id)
+      .eq('status','draft')
+      .eq('generation_meta->>needs_ai_polish','true')
+      .order('created_at',{ascending:true})
+      .limit(12)
+    if(!pending?.length)return 0
+    const{data:aiStatus}=await supabase.functions.invoke('creative-advisor',{body:{action:'status',restaurantId:target.id}})
+    if(!aiStatus?.ai_text_ready)return 0
+    let done=0
+    for(let index=0;index<pending.length;index+=1){
+      const post=pending[index]
+      setNotice(`Background AUTO WEEK · AI polish ${index+1}/${pending.length} · ${post.title||'objava'}…`)
+      const{data,error}=await supabase.functions.invoke('creative-advisor',{body:{action:'post_copy',restaurantId:target.id,postId:post.id}})
+      if(!error&&!data?.error)done+=1
+    }
+    if(done)await loadPosts(target.id)
+    return done
+  }
+
+  async function installPwa(){
+    if(pwaInstalled){setNotice('Restaurant Autopilot je već instaliran na ovom uređaju.');return}
+    if(installPrompt){
+      await installPrompt.prompt()
+      const choice=await installPrompt.userChoice
+      if(choice.outcome==='accepted'){setPwaInstalled(true);setNotice('Restaurant Autopilot je instaliran.')}
+      else setNotice('Instalacija je otkazana — možeš je pokrenuti kasnije iz menija.')
+      setInstallPrompt(null)
+      return
+    }
+    if(isIosDevice()){setShowIosInstall(true);return}
+    setNotice('U browser meniju izaberi „Install app“ / „Dodaj na početni ekran“. Ako opcija još nije dostupna, otvori aplikaciju preko HTTPS produkcionog domena.')
+  }
+
+  async function applyPwaUpdate(){
+    if(!('serviceWorker' in navigator)){setPwaUpdateReady(false);return}
+    const registration=await navigator.serviceWorker.getRegistration()
+    if(registration?.waiting){registration.waiting.postMessage({type:'SKIP_WAITING'});return}
+    await registration?.update()
+    setNotice('Proveravam novu verziju aplikacije…')
+  }
+
   async function accessChanged() { await loadAccountState(); await loadAppControls(); if (session) await loadRestaurants(session.user.id, restaurant?.id); setActiveTab('launch') }
   async function adminActivated() { window.history.replaceState({}, '', window.location.pathname); await loadAccountState(); await loadAppControls(); setActiveTab('admin') }
   async function signOut() { setMobileMenuOpen(false); await supabase.auth.signOut() }
@@ -253,6 +326,7 @@ function App() {
   }
 
   return <div className="app-shell"><NetworkStatus/>
+    {pwaUpdateReady&&<div className="pwa-update-banner"><div><RefreshCw size={16}/><span><strong>Nova verzija je spremna.</strong><small>Osveži aplikaciju bez gubitka podataka.</small></span></div><button onClick={()=>void applyPwaUpdate()}>Ažuriraj</button><button className="icon-button" onClick={()=>setPwaUpdateReady(false)}><X size={14}/></button></div>}
     <aside className="sidebar sidebar-pro"><div>
       <div className="brand-mark"><div className="brand-icon"><ChefHat size={21}/></div><span>Restaurant<br/><strong>Autopilot</strong></span></div>
       <div className="restaurant-chip restaurant-switcher">{restaurant.logo_url?<img className="sidebar-logo" src={restaurant.logo_url} alt=""/>:<div className="avatar" style={{background:restaurant.secondary_color||undefined}}>{restaurant.name.slice(0,1).toUpperCase()}</div>}<div className="restaurant-switch-copy"><strong>{restaurant.name}</strong><small>{restaurant.neighborhood||restaurant.city||restaurant.cuisine_type||'Restoran'}</small></div></div>
@@ -276,7 +350,7 @@ function App() {
         {isSuperadmin&&<button className={(activeTab==='admin'?'nav-active admin-nav':'admin-nav')+' mobile-hide'} onClick={()=>void openTab('admin')}><ShieldCheck size={18}/> Superadmin <span className="nav-beta">OWNER</span></button>}
         <button className="mobile-nav-more" onClick={()=>setMobileMenuOpen(true)}><MenuIcon size={18}/> Više</button>
       </nav>
-    </div><button className="logout" onClick={signOut}><LogOut size={18}/> Odjavi se</button></aside>
+    </div><div className="sidebar-bottom-actions">{!pwaInstalled&&<button className="pwa-install-sidebar" onClick={()=>void installPwa()}><Download size={17}/><span><strong>Instaliraj aplikaciju</strong><small>telefon / desktop</small></span></button>}<button className="logout" onClick={signOut}><LogOut size={18}/> Odjavi se</button></div></aside>
 
     {mobileMenuOpen&&<div className="mobile-drawer-backdrop" onMouseDown={()=>setMobileMenuOpen(false)}><div className="mobile-drawer" onMouseDown={e=>e.stopPropagation()}><div className="mobile-drawer-head"><div><strong>{restaurant.name}</strong><small>Restaurant Autopilot</small></div><button className="icon-button" onClick={()=>setMobileMenuOpen(false)}><X size={19}/></button></div><div className="mobile-drawer-grid">
       <button onClick={()=>mobileGo('brand')}><Palette size={19}/><span>Brend</span><small>logo i boje</small></button>
@@ -287,8 +361,11 @@ function App() {
       <button onClick={()=>mobileGo('settings')}><Settings size={19}/><span>Podešavanja</span><small>restoran i mreže</small></button>
       <button onClick={()=>mobileGo('support')}><LifeBuoy size={19}/><span>Podrška</span><small>pošalji zahtev</small></button>
       <button onClick={()=>mobileGo('notifications')}><Bell size={19}/><span>Obaveštenja</span><small>{unreadNotifications?unreadNotifications+' novo':'sve pročitano'}</small></button>
+      {!pwaInstalled&&<button onClick={()=>{setMobileMenuOpen(false);void installPwa()}}><Smartphone size={19}/><span>Instaliraj app</span><small>na početni ekran</small></button>}
       {isSuperadmin&&<button onClick={()=>mobileGo('admin')} className="owner"><ShieldCheck size={19}/><span>Superadmin</span><small>OWNER Control</small></button>}
     </div><button className="mobile-drawer-logout" onClick={signOut}><LogOut size={17}/> Odjavi se</button></div></div>}
+
+    {showIosInstall&&<div className="pwa-ios-backdrop" onMouseDown={()=>setShowIosInstall(false)}><div className="pwa-ios-card" onMouseDown={e=>e.stopPropagation()}><div className="pwa-ios-icon"><Smartphone size={26}/></div><button className="icon-button pwa-ios-close" onClick={()=>setShowIosInstall(false)}><X size={16}/></button><span>IPHONE / IPAD</span><h3>Dodaj Restaurant Autopilot na početni ekran</h3><ol><li>U Safariju dodirni <b>Share</b> <Share2 size={14}/></li><li>Izaberi <b>Add to Home Screen</b></li><li>Potvrdi sa <b>Add</b></li></ol><p>Posle toga aplikacija se otvara preko svoje ikonice, bez browser trake.</p></div></div>}
 
     <main className={`main-area ${activeTab==='admin'?'admin-main-area':''}`}>
       {appControls.announcement_enabled&&appControls.announcement_text&&<div className={`global-announcement ${appControls.announcement_tone}`}><Megaphone size={15}/><span>{appControls.announcement_text}</span></div>}
@@ -328,3 +405,9 @@ function localDateKey(timeZone:string){
     return `${get('year')}-${get('month')}-${get('day')}`
   }catch{return new Date().toISOString().slice(0,10)}
 }
+
+function isStandaloneApp(){
+  const iosStandalone=Boolean((navigator as Navigator & {standalone?:boolean}).standalone)
+  return window.matchMedia('(display-mode: standalone)').matches||iosStandalone
+}
+function isIosDevice(){return /iphone|ipad|ipod/i.test(navigator.userAgent)}
