@@ -71,7 +71,7 @@ export function OwnerHealth({setNotice}:{setNotice:(v:string)=>void}){
   ],[state])
   const score=Math.round((checks.filter(x=>x.ok).length/checks.length)*100)
 
-  return <div className="owner-health">
+  return <div className="owner-health-page">
     <header className="email-admin-head"><div><p className="eyebrow">OWNER · RELEASE READINESS</p><h1>System Health</h1><p>Jedan ekran za proveru da li je proizvod spreman za stvarne kupce i naplatu.</p></div><div className={`health-score ${score===100?'ready':''}`}><strong>{score}%</strong><span>launch readiness · v{state.version}</span></div></header>
     <section className="email-metrics"><div><span>Aktivni kupci</span><strong>{state.activeCustomers}</strong></div><div><span>Uplate čekaju</span><strong>{state.pendingOrders}</strong></div><div><span>Support otvoren</span><strong>{state.openSupport}</strong></div><div><span>Email greške</span><strong>{state.failedEmails}</strong></div></section>
     <div className="health-grid">{checks.map(({label,ok,detail,icon:Icon})=><article className={`health-card ${ok?'ok':'warn'}`} key={label}><div>{ok?<CheckCircle2 size={20}/>:<AlertTriangle size={20}/>}</div><section><span>{label}</span><strong>{ok?'SPREMNO':'AKCIJA POTREBNA'}</strong><p>{detail}</p></section><Icon size={21}/></article>)}</div>
