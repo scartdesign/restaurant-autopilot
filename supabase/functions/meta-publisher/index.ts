@@ -9,9 +9,9 @@ const corsHeaders={
 
 const json=(data:unknown,status=200)=>new Response(JSON.stringify(data),{status,headers:{...corsHeaders,"Content-Type":"application/json"}});
 const callbackUrl=(base:string)=>`${base}/functions/v1/meta-publisher?mode=callback`;
-const graph="https://graph.facebook.com";
-const oauth="https://www.facebook.com/dialog/oauth";
-const scopes=["pages_show_list","pages_read_engagement","pages_manage_posts","instagram_basic","instagram_content_publish"];
+const graph="https://graph.facebook.com/v26.0";
+const oauth="https://www.facebook.com/v26.0/dialog/oauth";
+const scopes=["pages_show_list","pages_read_engagement","pages_manage_posts","read_insights","instagram_basic","instagram_content_publish","instagram_manage_insights"];
 
 async function sha256(value:string){
   const digest=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(value));
@@ -49,6 +49,83 @@ async function formPost(url:string,body:Record<string,string>){
   return fetchJson(url,{method:"POST",headers:{"Content-Type":"application/x-www-form-urlencoded"},body:new URLSearchParams(body)});
 }
 
+function metricNumber(value:any):number{
+  if(typeof value==="number"&&Number.isFinite(value))return Math.max(0,Math.round(value));
+  if(typeof value==="string"&&value.trim()&&Number.isFinite(Number(value)))return Math.max(0,Math.round(Number(value)));
+  if(value&&typeof value==="object")return Object.values(value).reduce((sum:number,item:any)=>sum+metricNumber(item),0);
+  return 0;
+}
+function insightValue(payload:any,name:string):number{
+  const row=(payload?.data||[]).find((item:any)=>String(item?.name||"")===name);
+  return metricNumber(row?.total_value?.value??row?.values?.[0]?.value??row?.value??0);
+}
+async function syncMetaInsightJob(service:any,job:any,cache:Map<string,{connection:any;token:string}>){
+  let auth=cache.get(String(job.connection_id));
+  if(!auth){
+    const{data:connection,error:connectionError}=await service.from("social_connections").select("id,status,scopes").eq("id",job.connection_id).maybeSingle();
+    if(connectionError||!connection||connection.status!=="connected")throw new Error("Meta connection is not active");
+    const{data:token,error:tokenError}=await service.rpc("service_get_social_token",{p_connection_id:connection.id});
+    if(tokenError||!token)throw new Error("Meta token not found");
+    auth={connection,token:String(token)};cache.set(String(job.connection_id),auth);
+  }
+
+  const granted=Array.isArray(auth.connection.scopes)?auth.connection.scopes.map((x:any)=>String(x)):[];
+  const required=job.platform==="instagram"?["instagram_manage_insights"]:["read_insights"];
+  const missing=required.filter(scope=>!granted.includes(scope));
+  if(missing.length)throw new Error(`Meta Insights permission nedostaje (${missing.join(", ")}). Poveži Meta nalog ponovo da odobriš novu dozvolu.`);
+
+  const accessToken=auth.token;
+  const providerId=job.platform==="facebook"
+    ? String(job.result?.post_id||job.provider_media_id||"")
+    : String(job.provider_media_id||"");
+  if(!providerId)throw new Error("Provider media ID is missing");
+
+  let metrics={views:0,reach:0,likes:0,comments:0,saves:0,shares:0,clicks:0};
+  if(job.platform==="instagram"){
+    let insights:any;
+    try{
+      insights=await fetchJson(`${graph}/${providerId}/insights?${new URLSearchParams({metric:"views,reach,likes,comments,saved,shares,total_interactions",access_token:accessToken}).toString()}`);
+    }catch(error){
+      if(!(error instanceof MetaApiError)||error.code!==100)throw error;
+      insights=await fetchJson(`${graph}/${providerId}/insights?${new URLSearchParams({metric:"views,reach,saved,shares,total_interactions",access_token:accessToken}).toString()}`);
+    }
+    const media=await fetchJson(`${graph}/${providerId}?${new URLSearchParams({fields:"like_count,comments_count",access_token:accessToken}).toString()}`).catch(()=>({}));
+    metrics={
+      views:insightValue(insights,"views"),
+      reach:insightValue(insights,"reach"),
+      likes:insightValue(insights,"likes")||metricNumber(media?.like_count),
+      comments:insightValue(insights,"comments")||metricNumber(media?.comments_count),
+      saves:insightValue(insights,"saved"),
+      shares:insightValue(insights,"shares"),
+      clicks:0,
+    };
+  }else if(job.platform==="facebook"){
+    const insights=await fetchJson(`${graph}/${providerId}/insights?${new URLSearchParams({metric:"post_media_view,post_total_media_view_unique,post_clicks,post_reactions_by_type_total",access_token:accessToken}).toString()}`);
+    const post=await fetchJson(`${graph}/${providerId}?${new URLSearchParams({fields:"comments.limit(0).summary(true),shares",access_token:accessToken}).toString()}`).catch(()=>({}));
+    metrics={
+      views:insightValue(insights,"post_media_view"),
+      reach:insightValue(insights,"post_total_media_view_unique"),
+      likes:insightValue(insights,"post_reactions_by_type_total"),
+      comments:metricNumber(post?.comments?.summary?.total_count),
+      saves:0,
+      shares:metricNumber(post?.shares?.count),
+      clicks:insightValue(insights,"post_clicks"),
+    };
+  }else throw new Error("Unsupported insights platform");
+
+  const measuredAt=new Date().toISOString();
+  const{data:existing,error:existingError}=await service.from("post_performance").select("id").eq("post_id",job.post_id).eq("platform",job.platform).maybeSingle();
+  if(existingError)throw new Error(existingError.message);
+  const patch={views:metrics.views,reach:metrics.reach,likes:metrics.likes,comments:metrics.comments,saves:metrics.saves,shares:metrics.shares,clicks:metrics.clicks,source:"meta",measured_at:measuredAt,updated_at:measuredAt};
+  const write=existing
+    ? await service.from("post_performance").update(patch).eq("id",existing.id)
+    : await service.from("post_performance").insert({post_id:job.post_id,restaurant_id:job.restaurant_id,platform:job.platform,...patch});
+  if(write.error)throw new Error(write.error.message);
+
+  await service.from("social_publish_jobs").update({insights_synced_at:measuredAt,insights_error:null,updated_at:measuredAt}).eq("id",job.id);
+  return metrics;
+}
+
 async function publishJobWithService(service:any,job:any,actorUserId?:string|null){
   const{data:conn}=await service.from("social_connections").select("*").eq("id",job.connection_id).maybeSingle();
   const{data:post}=await service.from("posts").select("*").eq("id",job.post_id).maybeSingle();
@@ -78,7 +155,7 @@ async function publishJobWithService(service:any,job:any,actorUserId?:string|nul
   }else throw new Error("Unsupported platform");
 
   await service.from("social_publish_jobs").update({
-    status:"published",provider_media_id:String(result?.id||result?.post_id||""),result,
+    status:"published",provider_media_id:String(platform==="facebook"?(result?.post_id||result?.id||""):(result?.id||"")),result,
     error_message:null,published_at:new Date().toISOString(),updated_at:new Date().toISOString()
   }).eq("id",job.id);
 
@@ -205,6 +282,34 @@ Deno.serve(async(req)=>{
       return json({ok:true,processed:(due||[]).length,published,failed,results});
     }
 
+    if(action==="process_insights"){
+      const supplied=req.headers.get("x-cron-secret")||"";
+      const{data:expected,error:secretError}=await service.rpc("service_publish_cron_secret");
+      if(secretError||!expected||supplied!==String(expected))return json({error:"Unauthorized cron"},401);
+      const limit=Math.max(1,Math.min(Number(body.limit||40),100));
+      const cutoff=new Date(Date.now()-90*86400000).toISOString();
+      const{data:jobs,error:jobsError}=await service.from("social_publish_jobs").select("*")
+        .eq("status","published").not("provider_media_id","is",null).gte("published_at",cutoff)
+        .order("insights_synced_at",{ascending:true,nullsFirst:true}).order("published_at",{ascending:false}).limit(limit);
+      if(jobsError)return json({error:jobsError.message},400);
+      const cache=new Map<string,{connection:any;token:string}>();
+      let synced=0,failed=0,skipped=0;
+      const results:any[]=[];
+      for(const job of jobs||[]){
+        if(job.insights_synced_at&&Date.now()-new Date(job.insights_synced_at).getTime()<5*60*60*1000){skipped+=1;continue}
+        try{
+          const metrics=await syncMetaInsightJob(service,job,cache);
+          synced+=1;results.push({job_id:job.id,platform:job.platform,status:"synced",metrics});
+        }catch(error){
+          const message=error instanceof Error?error.message:String(error);
+          failed+=1;
+          await service.from("social_publish_jobs").update({insights_error:message.slice(0,1000),insights_synced_at:new Date().toISOString(),updated_at:new Date().toISOString()}).eq("id",job.id);
+          results.push({job_id:job.id,platform:job.platform,status:"failed",error:message});
+        }
+      }
+      return json({ok:true,processed:(jobs||[]).length,synced,failed,skipped,results});
+    }
+
     const authHeader=req.headers.get("Authorization")||"";
     if(!authHeader.startsWith("Bearer "))return json({error:"Authentication required"},401);
     const client=createClient(supabaseUrl,anonKey,{global:{headers:{Authorization:authHeader}}});
@@ -222,7 +327,9 @@ Deno.serve(async(req)=>{
     if(action==="status"){
       const expired=Boolean(connection?.token_expires_at&&new Date(connection.token_expires_at).getTime()<Date.now());
       if(expired&&connection?.status==="connected")await service.from("social_connections").update({status:"expired",updated_at:new Date().toISOString()}).eq("id",connection.id);
-      return json({ok:true,provider_configured:Boolean(config?.configured),connection:connection?{...connection,status:expired?"expired":connection.status}:null,callback_url:callbackUrl(supabaseUrl)});
+      const grantedScopes=Array.isArray(connection?.scopes)?connection.scopes.map((x:any)=>String(x)):[];
+      const missingInsightsScopes=["read_insights",...(connection?.instagram_business_account_id?["instagram_manage_insights"]:[])].filter(scope=>!grantedScopes.includes(scope));
+      return json({ok:true,provider_configured:Boolean(config?.configured),connection:connection?{...connection,status:expired?"expired":connection.status}:null,insights_ready:Boolean(connection&&connection.status==="connected"&&missingInsightsScopes.length===0),missing_insights_scopes:missingInsightsScopes,callback_url:callbackUrl(supabaseUrl)});
     }
 
     if(action==="verify_connection"){
