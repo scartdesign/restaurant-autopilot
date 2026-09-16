@@ -139,6 +139,24 @@ function App() {
     if (sessionStorage.getItem(attemptKey)) return
     sessionStorage.setItem(attemptKey, 'inflight')
 
+    const { data: preflightData, error: preflightError } = await supabase.functions.invoke('content-engine', {
+      body: { action: 'preflight', restaurantId: target.id },
+    })
+    if (preflightError || preflightData?.error) {
+      sessionStorage.removeItem(attemptKey)
+      return
+    }
+    if (preflightData?.existing) {
+      sessionStorage.setItem(attemptKey, 'done')
+      return
+    }
+    if (!preflightData?.ready) {
+      sessionStorage.setItem(attemptKey, 'blocked')
+      const blockers=(preflightData?.blockers||[]).map((item:any)=>item.label).filter(Boolean)
+      if(blockers.length)setNotice('AUTO WEEK nije pokrenut: '+blockers.join(', ')+'.')
+      return
+    }
+
     const { data, error } = await supabase.functions.invoke('content-engine', {
       body: { action: 'ensure_week', restaurantId: target.id },
     })
