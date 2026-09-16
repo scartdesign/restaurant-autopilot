@@ -40,3 +40,5 @@
   .queue-state{padding-left:0}
   .queue-date{max-width:100%;width:auto!important}
 }
+
+.learned-time-chip{display:inline-flex!important;align-items:center;gap:4px;padding:4px 7px;border-radius:999px;background:#eef7e4;color:#5d7a3b;border:1px solid #dbe9ca;font-size:7px!important;font-weight:950;letter-spacing:.07em;white-space:nowrap}.learned-time-chip svg{flex:0 0 auto}
