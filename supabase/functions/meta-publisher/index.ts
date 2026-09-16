@@ -251,6 +251,27 @@ Deno.serve(async(req)=>{
       return json({ok:true});
     }
 
+    if(action==="sync_schedule"){
+      const updates=Array.isArray(body.updates)?body.updates.slice(0,100):[];
+      const ids=[...new Set(updates.map((row:any)=>String(row.postId||"")).filter(Boolean))];
+      if(!ids.length)return json({ok:true,updated:0});
+      const{data:owned,error:ownedError}=await client.from("posts").select("id").eq("restaurant_id",restaurantId).in("id",ids);
+      if(ownedError)return json({error:ownedError.message},400);
+      const allowed=new Set((owned||[]).map((row:any)=>String(row.id)));
+      let changed=0;
+      for(const row of updates){
+        const postId=String(row.postId||"");
+        const publishAt=String(row.publishAt||"");
+        if(!allowed.has(postId)||!publishAt)continue;
+        const{data:jobs,error:updateError}=await service.from("social_publish_jobs")
+          .update({publish_at:publishAt,updated_at:new Date().toISOString()})
+          .eq("post_id",postId).eq("restaurant_id",restaurantId).eq("status","queued").select("id");
+        if(updateError)return json({error:updateError.message},400);
+        changed+=(jobs||[]).length;
+      }
+      return json({ok:true,updated:changed});
+    }
+
     if(action==="queue"){
       if(!connection||connection.status!=="connected")return json({error:"Prvo poveži Meta nalog."},409);
       const postId=String(body.postId||"");
