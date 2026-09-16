@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { AlertTriangle, BarChart3, CheckCircle2, Circle, Clock3, Download, Image as ImageIcon, Instagram, LayoutDashboard, Megaphone, Palette, RefreshCw, Send, Settings, ShieldCheck, Smartphone, Sparkles, UtensilsCrossed } from 'lucide-react'
+import { AlertTriangle, BarChart3, CheckCircle2, Circle, Clock3, Download, Image as ImageIcon, Instagram, LayoutDashboard, Megaphone, Palette, RefreshCw, Send, Settings, ShieldCheck, Sparkles, UtensilsCrossed } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import type { MenuItem, Post, Restaurant } from '../types'
 
