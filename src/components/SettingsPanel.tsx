@@ -197,7 +197,7 @@ export function SettingsPanel({ restaurant, onSaved, setNotice }: {
             <div className="trend-autopilot-copy">
               <span>TREND AUTOPILOT</span>
               <strong>{form.trend_autopilot_mode==='off'?'Trend Radar je ugašen':form.trend_autopilot_mode==='auto'?'Jaki trendovi mogu sami da naprave draft':'Trendovi se predlažu za tvoju odluku'}</strong>
-              <p>{form.trend_autopilot_mode==='off'?'Restoran ne dobija trend opportunities i trend signal se ne koristi za nove prilike.':form.trend_autopilot_mode==='auto'?'Samo rising prilika sa score 85+ može da napravi najviše jedan novi draft u 24h. Paket i mesečna kvota se proveravaju. Nikada se ne objavljuje automatski.':'Trend Radar prikazuje relevantne prilike, a ti biraš da li želiš objavu ili mini kampanju.'}</p>
+              <p>{form.trend_autopilot_mode==='off'?'Restoran ne dobija trend opportunities i trend signal se ne koristi za nove prilike.':form.trend_autopilot_mode==='auto'?'Samo rising prilika sa score 85+ može da napravi najviše jedan novi draft u 24h. Paket i mesečna kvota se proveravaju. Ako 3+ lokalna uzorka pokažu jasan pad (learning ≤ −4), AUTO je preskače. Nikada se ne objavljuje automatski.':'Trend Radar prikazuje relevantne prilike, a ti biraš da li želiš objavu ili mini kampanju.'}</p>
             </div>
             <div className="trend-mode-picker">
               {(['off','suggest','auto'] as const).map(mode=><button type="button" key={mode} className={form.trend_autopilot_mode===mode?'active':''} onClick={()=>setForm({...form,trend_autopilot_mode:mode})}><b>{mode==='off'?'OFF':mode==='suggest'?'SUGGEST':'AUTO'}</b><small>{mode==='off'?'bez trendova':mode==='suggest'?'ti odlučuješ':'draft only'}</small></button>)}
