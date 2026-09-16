@@ -463,10 +463,21 @@ Deno.serve(async (req: Request) => {
       return json({ error: `Mesečni limit objava je dostignut. Preostalo: ${remaining}, potrebno: ${Math.max(0, additional)}.`, code: "GENERATION_LIMIT_REACHED", generated_this_month: generatedThisMonth, generation_limit: generationLimit, remaining }, 429);
     };
 
-    if (action === "week") {
+    if (action === "week" || action === "ensure_week") {
       const { data: menuItems, error: menuError } = await supabase.from("menu_items").select("*").eq("restaurant_id", restaurantId).eq("is_active", true).order("created_at", { ascending: false });
       if (menuError) return json({ error: menuError.message }, 400);
       if (!menuItems?.length) return json({ error: "Dodaj bar jedno aktivno jelo u meni." }, 400);
+
+      if (action === "ensure_week") {
+        const ensureTimeZone = String(restaurant.timezone || "Europe/Belgrade");
+        const ensureMonday = mondayOfCurrentWeek(ensureTimeZone);
+        const ensureWeekStart = dateOnly(ensureMonday);
+        const { data: existing } = await supabase.from("content_plans").select("*").eq("restaurant_id", restaurantId).eq("week_start", ensureWeekStart).maybeSingle();
+        if (existing?.id) {
+          const { data: existingPosts } = await supabase.from("posts").select("*").eq("content_plan_id", existing.id).order("scheduled_for", { ascending: true });
+          return json({ ok: true, existing: true, created: false, plan: existing, posts: existingPosts || [], engine: "restaurant-autopilot-v17", week_start: ensureWeekStart });
+        }
+      }
 
       const recentSince = new Date(Date.now() - 30 * 86400000).toISOString();
       const [{ data: recentPosts }, { data: performanceRows }] = await Promise.all([
@@ -581,7 +592,7 @@ Deno.serve(async (req: Request) => {
           visual_brief: visualBrief(restaurant, item, pillar, postType),
           status: "draft",
           generation_meta: {
-            engine: "restaurant-autopilot-v16",
+            engine: "restaurant-autopilot-v17",
             pillar,
             variation: index,
             image_url: item.image_url || null,
@@ -604,7 +615,7 @@ Deno.serve(async (req: Request) => {
       });
       const { data: posts, error: insertError } = await supabase.from("posts").insert(payload).select();
       if (insertError) return json({ error: insertError.message }, 400);
-      return json({ ok: true, plan, posts, engine: "restaurant-autopilot-v16", pillars, timezone: timeZone, schedule_days: scheduleDays, learning:{performance_samples:(performanceRows||[]).length,schedule_hours:learnedScheduleHours,schedule_days:learnedScheduleDays,ranked_menu:rankedMenu.map((item:any)=>({id:item.id,name:item.name,score:Math.round(((learnedScore.get(String(item.id))||0)+Number(item.marketing_priority||0)*35)*10)/10,marketing_priority:Number(item.marketing_priority||0),recent_uses_30d:recentUse.get(String(item.id))||0,coverage_bonus:(recentUse.get(String(item.id))||0)===0?22:(recentUse.get(String(item.id))||0)===1?8:0,exploration_bonus:Number(item.marketing_priority||0)>=2&&!(learnedScore.get(String(item.id))||0)?12:0}))} });
+      return json({ ok: true, existing: false, created: action === "ensure_week", plan, posts, engine: "restaurant-autopilot-v17", pillars, timezone: timeZone, schedule_days: scheduleDays, learning:{performance_samples:(performanceRows||[]).length,schedule_hours:learnedScheduleHours,schedule_days:learnedScheduleDays,ranked_menu:rankedMenu.map((item:any)=>({id:item.id,name:item.name,score:Math.round(((learnedScore.get(String(item.id))||0)+Number(item.marketing_priority||0)*35)*10)/10,marketing_priority:Number(item.marketing_priority||0),recent_uses_30d:recentUse.get(String(item.id))||0,coverage_bonus:(recentUse.get(String(item.id))||0)===0?22:(recentUse.get(String(item.id))||0)===1?8:0,exploration_bonus:Number(item.marketing_priority||0)>=2&&!(learnedScore.get(String(item.id))||0)?12:0}))} });
     }
 
     if (action === "promotion") {
@@ -634,7 +645,7 @@ Deno.serve(async (req: Request) => {
       const feedCaption = `${[title, discountText, description].filter(Boolean).join(" · ")}. ${goalClose(restaurant)}`;
       const storyCaption = `${discountText || title}. ${description || "Važi ograničeno vreme."} ${ctaFor(restaurant, "promotion")}.`;
       const cta = ctaFor(restaurant, "promotion");
-      const commonMeta = { engine: "restaurant-autopilot-v16", source: "promotion", image_url: visualItem?.image_url || null, selected_menu_item_id: visualItem?.id || null, generated_at: new Date().toISOString(), pillar: "promotion" };
+      const commonMeta = { engine: "restaurant-autopilot-v17", source: "promotion", image_url: visualItem?.image_url || null, selected_menu_item_id: visualItem?.id || null, generated_at: new Date().toISOString(), pillar: "promotion" };
       const feedTitle = discountText || title;
       const feed = {
         restaurant_id: restaurantId, promotion_id: promotion.id, post_type: "promotion", scheduled_for: startsAt, title: feedTitle, caption: feedCaption, cta,
@@ -651,7 +662,7 @@ Deno.serve(async (req: Request) => {
       };
       const { data: posts, error: postError } = await supabase.from("posts").insert([feed, story]).select();
       if (postError) return json({ error: postError.message }, 400);
-      return json({ ok: true, promotion, posts, engine: "restaurant-autopilot-v16" });
+      return json({ ok: true, promotion, posts, engine: "restaurant-autopilot-v17" });
     }
 
     if (action === "regenerate" || action === "optimize_discovery") {
@@ -671,10 +682,10 @@ Deno.serve(async (req: Request) => {
         ...discovery,
         cta: post.cta || ctaFor(restaurant, pillar),
         status: "draft",
-        generation_meta: { ...(post.generation_meta || {}), engine: "restaurant-autopilot-v16", pillar, variation, visual_design: nextVisual, regenerated_at: new Date().toISOString() },
+        generation_meta: { ...(post.generation_meta || {}), engine: "restaurant-autopilot-v17", pillar, variation, visual_design: nextVisual, regenerated_at: new Date().toISOString() },
       }).eq("id", postId).select().single();
       if (updateError) return json({ error: updateError.message }, 400);
-      return json({ ok: true, post: updated, engine: "restaurant-autopilot-v16" });
+      return json({ ok: true, post: updated, engine: "restaurant-autopilot-v17" });
     }
 
     if (action === "quality_check") {
