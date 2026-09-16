@@ -43,6 +43,20 @@ function visualBrief(r:any,item:any){
   return "1080x1350 feed. "+(r.brand_style||"modern")+" stil. Hero fotografija jela "+item.name+", premium tipografija, minimalan tekst, bez generičkog AI izgleda.";
 }
 
+async function recordRun(service:any,status:"success"|"failed",restaurants:number,created:number,skipped:number,startedAt:string,results:any[],errorMessage:string|null=null){
+  try{
+    await service.rpc("service_record_trend_autopilot_run",{
+      p_status:status,
+      p_restaurants_seen:restaurants,
+      p_created_count:created,
+      p_skipped_count:skipped,
+      p_started_at:startedAt,
+      p_results:results,
+      p_error_message:errorMessage,
+    });
+  }catch(_){/* observability must not break worker execution */}
+}
+
 Deno.serve(async(req)=>{
   if(req.method==="OPTIONS")return new Response("ok",{headers:corsHeaders});
   if(req.method!=="POST")return json({error:"Method not allowed"},405);
@@ -50,6 +64,9 @@ Deno.serve(async(req)=>{
   const url=Deno.env.get("SUPABASE_URL")!;
   const serviceKey=Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
   const service=createClient(url,serviceKey);
+  const runStartedAt=new Date().toISOString();
+  let runRestaurants=0,runCreated=0,runSkipped=0;
+  const runResults:any[]=[];
 
   try{
     const body=await req.json().catch(()=>({}));
@@ -69,7 +86,11 @@ Deno.serve(async(req)=>{
       .select("*")
       .eq("trend_autopilot_mode","auto");
     if(restaurantError)throw new Error(restaurantError.message);
-    if(!autoRestaurants?.length)return json({ok:true,restaurants:0,created:0,skipped:0});
+    runRestaurants=autoRestaurants?.length||0;
+    if(!autoRestaurants?.length){
+      await recordRun(service,"success",0,0,0,runStartedAt,[]);
+      return json({ok:true,restaurants:0,created:0,skipped:0});
+    }
 
     const restaurantIds=autoRestaurants.map((r:any)=>r.id);
     const ownerIds=uniq(autoRestaurants.map((r:any)=>String(r.owner_id)));
@@ -160,7 +181,7 @@ Deno.serve(async(req)=>{
     }
 
     let created=0,skipped=0;
-    const results:any[]=[];
+    const results=runResults;
 
     for(const restaurant of autoRestaurants){
       const restaurantId=String(restaurant.id);
@@ -313,8 +334,12 @@ Deno.serve(async(req)=>{
       results.push({restaurant_id:restaurantId,status:"created",post_id:post.id,opportunity_id:opp.id});
     }
 
+    runCreated=created;runSkipped=skipped;
+    await recordRun(service,"success",runRestaurants,created,skipped,runStartedAt,results);
     return json({ok:true,restaurants:autoRestaurants.length,created,skipped,results});
   }catch(error){
-    return json({error:error instanceof Error?error.message:String(error)},500);
+    const message=error instanceof Error?error.message:String(error);
+    await recordRun(service,"failed",runRestaurants,runCreated,runSkipped,runStartedAt,runResults,message);
+    return json({error:message},500);
   }
 });
