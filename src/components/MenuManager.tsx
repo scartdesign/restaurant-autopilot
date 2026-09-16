@@ -19,9 +19,10 @@ export function MenuManager({ restaurant, userId, items, onChanged, setNotice }:
   const [bulkAiWorking,setBulkAiWorking]=useState(false)
   const [variantPicker,setVariantPicker]=useState<{item:MenuItem;assets:{id:string;image_url:string}[]}|null>(null)
   const [aiStatus,setAiStatus]=useState<{ready:boolean;enabled:boolean;used:number;limit:number|null}|null>(null)
+  const [itemSignals,setItemSignals]=useState<Record<string,{recentUses:number;samples:number;lastPromoted:string|null}>>({})
   const [query,setQuery]=useState('')
   const [categoryFilter,setCategoryFilter]=useState('all')
-  const [stateFilter,setStateFilter]=useState<'all'|'active'|'paused'|'missing-photo'|'priority'>('all')
+  const [stateFilter,setStateFilter]=useState<'all'|'active'|'paused'|'missing-photo'|'priority'|'learning-gap'>('all')
   const categories=useMemo(()=>[...new Set(items.map(item=>item.category?.trim()).filter(Boolean) as string[])].sort((a,b)=>a.localeCompare(b,'sr')),[items])
   const filteredItems=useMemo(()=>{
     const q=query.trim().toLocaleLowerCase('sr')
@@ -31,18 +32,50 @@ export function MenuManager({ restaurant, userId, items, onChanged, setNotice }:
       if(stateFilter==='paused'&&item.is_active)return false
       if(stateFilter==='missing-photo'&&item.image_url)return false
       if(stateFilter==='priority'&&Number(item.marketing_priority||0)<=0)return false
+      if(stateFilter==='learning-gap'){
+        const signal=itemSignals[item.id]||{recentUses:0,samples:0,lastPromoted:null}
+        if(!((Number(item.marketing_priority||0)>=2&&signal.samples<2)||signal.recentUses===0))return false
+      }
       if(q&&!([item.name,item.description||'',item.category||''].join(' ').toLocaleLowerCase('sr').includes(q)))return false
       return true
     })
-  },[items,query,categoryFilter,stateFilter])
+  },[items,query,categoryFilter,stateFilter,itemSignals])
   const photoCoverage = useMemo(() => items.length ? Math.round((items.filter((item) => item.image_url).length / items.length) * 100) : 0, [items])
   const aiBlocked=Boolean(aiStatus&&(!aiStatus.ready||(aiStatus.limit!==null&&aiStatus.used>=aiStatus.limit)))
   const currentHero=useMemo(()=>items.find(item=>Number(item.marketing_priority||0)===3)||null,[items])
 
-  useEffect(()=>{void loadAiStatus()},[restaurant.id])
+  useEffect(()=>{void loadAiStatus();void loadItemSignals()},[restaurant.id,items.length])
   async function loadAiStatus(){
     const{data}=await supabase.functions.invoke('creative-image',{body:{action:'status',restaurantId:restaurant.id}})
     if(data?.ok)setAiStatus({ready:Boolean(data.ai_image_ready),enabled:Boolean(data.ai_images_enabled),used:Number(data.ai_images_used||0),limit:data.ai_images_limit===null?null:Number(data.ai_images_limit||0)})
+  }
+
+  async function loadItemSignals(){
+    const[{data:postRows},{data:performanceRows}]=await Promise.all([
+      supabase.from('posts').select('id,menu_item_id,scheduled_for,created_at').eq('restaurant_id',restaurant.id).order('created_at',{ascending:false}).limit(1000),
+      supabase.from('post_performance').select('post_id').eq('restaurant_id',restaurant.id).eq('platform','combined').order('measured_at',{ascending:false}).limit(1000),
+    ])
+    const cutoff=Date.now()-30*86400000
+    const signals:Record<string,{recentUses:number;samples:number;lastPromoted:string|null}>={}
+    const postMap=new Map<string,{menu_item_id:string|null;scheduled_for:string|null;created_at:string}>()
+    for(const post of postRows||[]){
+      postMap.set(post.id,post as {menu_item_id:string|null;scheduled_for:string|null;created_at:string})
+      if(!post.menu_item_id)continue
+      const current=signals[post.menu_item_id]||{recentUses:0,samples:0,lastPromoted:null}
+      const usedAt=new Date(post.created_at).getTime()
+      if(usedAt>=cutoff)current.recentUses+=1
+      const promotedAt=post.scheduled_for||post.created_at
+      if(!current.lastPromoted||new Date(promotedAt).getTime()>new Date(current.lastPromoted).getTime())current.lastPromoted=promotedAt
+      signals[post.menu_item_id]=current
+    }
+    for(const row of performanceRows||[]){
+      const post=postMap.get(row.post_id)
+      if(!post?.menu_item_id)continue
+      const current=signals[post.menu_item_id]||{recentUses:0,samples:0,lastPromoted:null}
+      current.samples+=1
+      signals[post.menu_item_id]=current
+    }
+    setItemSignals(signals)
   }
 
   async function uploadImage(file: File) {
@@ -347,12 +380,12 @@ export function MenuManager({ restaurant, userId, items, onChanged, setNotice }:
 
         <section className="panel">
           <div className="panel-heading"><h2>Trenutni meni <span className="pill">{items.length}</span></h2><small>{items.filter((item) => item.is_active).length} aktivno</small></div>
-          {items.length>0&&<div className="menu-filterbar"><label className="menu-search"><Search size={15}/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Pretraži jelo, opis ili kategoriju…"/></label><select value={categoryFilter} onChange={e=>setCategoryFilter(e.target.value)}><option value="all">Sve kategorije</option>{categories.map(category=><option key={category} value={category}>{category}</option>)}</select><select value={stateFilter} onChange={e=>setStateFilter(e.target.value as typeof stateFilter)}><option value="all">Sve stavke</option><option value="active">Aktivne</option><option value="paused">Pauzirane</option><option value="missing-photo">Bez fotografije</option><option value="priority">Marketinški prioritet</option></select><span>{filteredItems.length} prikazano</span></div>}
+          {items.length>0&&<div className="menu-filterbar"><label className="menu-search"><Search size={15}/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Pretraži jelo, opis ili kategoriju…"/></label><select value={categoryFilter} onChange={e=>setCategoryFilter(e.target.value)}><option value="all">Sve kategorije</option>{categories.map(category=><option key={category} value={category}>{category}</option>)}</select><select value={stateFilter} onChange={e=>setStateFilter(e.target.value as typeof stateFilter)}><option value="all">Sve stavke</option><option value="active">Aktivne</option><option value="paused">Pauzirane</option><option value="missing-photo">Bez fotografije</option><option value="priority">Marketinški prioritet</option><option value="learning-gap">Treba test</option></select><span>{filteredItems.length} prikazano</span></div>}
           <div className="menu-list">
             {items.length === 0 ? <div className="empty-small">Još nema jela. Možeš ručno da dodaš prvo ili da uvezeš ceo CSV.</div> : filteredItems.length===0?<div className="empty-small">Nema stavki koje odgovaraju filteru.</div>:filteredItems.map((item) => (
               <div className={`menu-row ${item.is_active ? '' : 'inactive'}`} key={item.id}>
                 {item.image_url ? <img className="food-thumb" src={item.image_url} alt="" /> : <div className="food-icon"><ImageIcon size={18} /></div>}
-                <div className="menu-copy"><strong>{item.name}{Number(item.marketing_priority||0)>0&&<span className={`menu-priority-badge p${item.marketing_priority}`}><Star size={10}/>{item.marketing_priority===3?'HERO':item.marketing_priority===2?'VISOK':'PRIORITET'}</span>}</strong><small>{item.category || 'Bez kategorije'}{item.description ? ` · ${item.description}` : ''}</small>{!item.image_url && <span className="no-photo-label">Nema slike · AI može da je napravi</span>}</div>
+                <div className="menu-copy"><strong>{item.name}{Number(item.marketing_priority||0)>0&&<span className={`menu-priority-badge p${item.marketing_priority}`}><Star size={10}/>{item.marketing_priority===3?'HERO':item.marketing_priority===2?'VISOK':'PRIORITET'}</span>}</strong><small>{item.category || 'Bez kategorije'}{item.description ? ` · ${item.description}` : ''}</small><div className="menu-learning-signals">{(()=>{const signal=itemSignals[item.id]||{recentUses:0,samples:0,lastPromoted:null};return <><span className={signal.recentUses===0?'gap':''}>{signal.recentUses}× /30d</span><span className={Number(item.marketing_priority||0)>=2&&signal.samples<2?'gap':''}>{signal.samples} performance</span><span>{signal.lastPromoted?relativeMenuDate(signal.lastPromoted):'nije promovisano'}</span></>})()}</div>{!item.image_url && <span className="no-photo-label">Nema slike · AI može da je napravi</span>}</div>
                 <div className="menu-right">
                   <div className="price">{item.price ? `${item.price} ${item.currency}` : '—'}</div>
                   <div className="row-actions">
@@ -443,4 +476,13 @@ function parseMarketingPriority(value:string){
   if(['prioritet','priority','blagi','1'].includes(clean))return 1
   const n=Math.round(Number(clean))
   return Number.isFinite(n)?Math.max(0,Math.min(3,n)):0
+}
+
+function relativeMenuDate(value:string){
+  const days=Math.floor((Date.now()-new Date(value).getTime())/86400000)
+  if(days<=0)return 'danas'
+  if(days===1)return 'pre 1 dan'
+  if(days<30)return `pre ${days} dana`
+  const months=Math.max(1,Math.floor(days/30))
+  return `pre ${months} mes.`
 }
