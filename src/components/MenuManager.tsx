@@ -16,6 +16,7 @@ export function MenuManager({ restaurant, userId, items, onChanged, setNotice }:
   const [working, setWorking] = useState(false)
   const [workingId, setWorkingId] = useState('')
   const [aiWorkingId, setAiWorkingId] = useState('')
+  const [bulkAiWorking,setBulkAiWorking]=useState(false)
   const [variantPicker,setVariantPicker]=useState<{item:MenuItem;assets:{id:string;image_url:string}[]}|null>(null)
   const [aiStatus,setAiStatus]=useState<{ready:boolean;enabled:boolean;used:number;limit:number|null}|null>(null)
   const [query,setQuery]=useState('')
@@ -115,6 +116,31 @@ export function MenuManager({ restaurant, userId, items, onChanged, setNotice }:
       await loadAiStatus()
     }
     setAiWorkingId('')
+  }
+
+  async function fillMissingAiImages(){
+    if(aiBlocked){setNotice('AI slike trenutno nisu dostupne ili je kvota potrošena.');return}
+    const missing=[...items].filter(item=>item.is_active&&!item.image_url).sort((a,b)=>Number(b.marketing_priority||0)-Number(a.marketing_priority||0))
+    if(!missing.length){setNotice('Sva aktivna jela već imaju fotografiju.');return}
+    const remaining=aiStatus?.limit===null?3:Math.max(0,(aiStatus?.limit||0)-(aiStatus?.used||0))
+    const batch=missing.slice(0,Math.min(3,remaining||3))
+    if(!batch.length){setNotice('Nema preostale AI kvote za slike.');return}
+
+    setBulkAiWorking(true)
+    let done=0
+    const failed:string[]=[]
+    for(const item of batch){
+      setAiWorkingId(item.id)
+      setNotice(`AI fotografije: ${done+1}/${batch.length} · ${item.name}`)
+      const{data,error}=await supabase.functions.invoke('creative-image',{body:{action:'generate',restaurantId:restaurant.id,menuItemId:item.id,style:'photoreal'}})
+      if(error||data?.error)failed.push(item.name)
+      else done+=1
+    }
+    setAiWorkingId('')
+    await onChanged()
+    await loadAiStatus()
+    setBulkAiWorking(false)
+    setNotice(failed.length?`AI slike: napravljeno ${done}/${batch.length}. Nije uspelo: ${failed.join(', ')}.`:`AI je napravio ${done} fotografije za najprioritetnija jela bez slike.`)
   }
 
   async function generateAiVariants(item: MenuItem, style = 'photoreal') {
@@ -299,7 +325,7 @@ export function MenuManager({ restaurant, userId, items, onChanged, setNotice }:
 
       <div className="menu-import-bar">
         <div className="menu-import-copy"><FileSpreadsheet size={20} /><div><strong>Imaš veći meni?</strong><span>Uvezi do 500 jela odjednom iz CSV-a. Kolone: naziv/opis/kategorija/cena/valuta/prioritet (0–3, gde je 3 HERO).</span></div></div>
-        <div className="menu-import-actions"><button type="button" className="secondary" onClick={downloadTemplate}><Download size={16} /> CSV šablon</button><label className="primary csv-upload"><Upload size={16} /> Uvezi CSV<input type="file" accept=".csv,text/csv" onChange={importCsv} /></label></div>
+        <div className="menu-import-actions"><button type="button" className="secondary" onClick={()=>void fillMissingAiImages()} disabled={bulkAiWorking||aiBlocked||!items.some(item=>item.is_active&&!item.image_url)}><WandSparkles size={16}/>{bulkAiWorking?'AI pravi slike…':'AI popuni slike'}</button><button type="button" className="secondary" onClick={downloadTemplate}><Download size={16} /> CSV šablon</button><label className="primary csv-upload"><Upload size={16} /> Uvezi CSV<input type="file" accept=".csv,text/csv" onChange={importCsv} /></label></div>
       </div>
 
       <div className={`menu-ai-tip ${aiBlocked?'ai-disabled':''}`}><Sparkles size={18}/><div><strong>AI Food Photo {aiStatus&&<small>{aiStatus.limit===null?`${aiStatus.used} korišćeno`:`${aiStatus.used}/${aiStatus.limit} ovog meseca`}</small>}</strong><span>{!aiStatus?'Proveravam AI generator…':!aiStatus.enabled?'AI slike su trenutno pauzirane od OWNER-a.':!aiStatus.ready?'AI generator još nije aktiviran. OWNER ga uključuje u Superadmin panelu.':aiStatus.limit!==null&&aiStatus.used>=aiStatus.limit?'Mesečni limit AI fotografija je potrošen.':'Za svako jelo možeš napraviti realističnu AI fotografiju ili 3 varijante i izabrati najbolju.'}</span></div></div>
