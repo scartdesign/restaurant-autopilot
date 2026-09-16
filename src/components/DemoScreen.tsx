@@ -102,12 +102,22 @@ function DemoContent({ approved, setApproved, notify }: { approved: string[]; se
 
     <section className="wow-week panel wow-demo-week"><div className="wow-panel-head"><div><p className="eyebrow">NEDELJNI PLAN</p><h2>Sadržaj koji već čeka</h2></div><button className="small-ghost" onClick={() => notify('Kompletan raspored je u Publish Centeru.')}>Pogledaj raspored →</button></div><div className="wow-week-strip">{demoPosts.map((post) => <div className="wow-day" key={post.title}><div className="wow-day-image has-photo" style={{ backgroundImage: `url(${post.image})` }}><span>{post.type}</span>{approved.includes(post.title) && <i><CheckCircle2 size={14} /></i>}</div><strong>{post.day}</strong><span className="demo-time-pill"><Clock3 size={11} /> {post.time}</span><p>{post.title}</p></div>)}</div></section>
 
+    <section className="autopilot-preflight panel ready">
+      <div className="preflight-head"><div className="preflight-icon"><CheckCircle2 size={20}/></div><div><p className="eyebrow">AUTO WEEK PREFLIGHT</p><h2>Spreman za generisanje</h2><span>Ciljna nedelja: 14.09.2026. · paket, meni, radno vreme i kvota su provereni.</span></div><button className="secondary preflight-refresh" onClick={()=>notify('Demo preflight: svi blocker uslovi su prošli.')}><CheckCircle2 size={13}/> Proveri sada</button></div>
+      <div className="preflight-checks"><span className="ok"><CheckCircle2 size={11}/> Aktivan paket</span><span className="ok"><CheckCircle2 size={11}/> Aktivna jela</span><span className="ok"><CheckCircle2 size={11}/> HERO jelo</span><span className="ok"><CheckCircle2 size={11}/> 75% fotografija</span><span className="ok"><CheckCircle2 size={11}/> Radno vreme</span><span className="ok"><CheckCircle2 size={11}/> Generation quota</span></div>
+    </section>
+
     <section className="autopilot-health panel">
       <div className="autopilot-health-score"><span>100<small>%</small></span><div><p className="eyebrow">AUTOPILOT HEALTH</p><h2>Spreman za automatizaciju</h2><p>Svi ključni uslovi za automatsku nedelju su spremni.</p></div></div>
       <div className="autopilot-health-checks"><span className="ok"><CheckCircle2 size={12}/> Auto week</span><span className="ok"><CheckCircle2 size={12}/> Quota OK</span><span className="ok"><CheckCircle2 size={12}/> 3+ jela</span><span className="ok"><CheckCircle2 size={12}/> HERO</span><span className="ok"><CheckCircle2 size={12}/> 70% fotografija</span><span className="ok"><CheckCircle2 size={12}/> Radno vreme</span></div>
     </section>
 
     {approved.length<demoPosts.length&&<section className="review-queue-bar panel"><div><span><CheckCircle2 size={16}/> REVIEW QUEUE</span><strong>{demoPosts.length-approved.length} drafta čekaju proveru</strong><small>Quality gate proverava copy, CTA, discovery, fotografiju i platform verzije.</small></div><button className="primary" onClick={()=>{setApproved(demoPosts.map(post=>post.title));notify('Demo review: svi draftovi su prošli quality gate i odobreni su.')}}><CheckCircle2 size={15}/> Proveri + odobri sve</button></section>}
+
+    <section className="autopilot-activity panel">
+      <div className="activity-head"><div><p className="eyebrow">AUTOPILOT ACTIVITY</p><h2>Šta je sistem uradio</h2></div><Clock3 size={19}/></div>
+      <div className="activity-list"><article><span className="activity-dot"/><div><strong>AUTO WEEK je napravio plan</strong><p>4 objave · HERO fokus · learned time aktivan.</p><small>pre 8 min</small></div></article><article><span className="activity-dot"/><div><strong>Nedeljni review je završen</strong><p>2 odobreno · 2 ostavljeno za proveru.</p><small>pre 5 min</small></div></article><article><span className="activity-dot"/><div><strong>AI slike su generisane</strong><p>3/3 fotografije uspešno napravljene.</p><small>pre 2 dana</small></div></article><article><span className="activity-dot"/><div><strong>Performance rezultati su uvezeni</strong><p>4 reda su osvežila learning signal.</p><small>pre 3 dana</small></div></article></div>
+    </section>
 
     <section className="week-quality-panel panel demo-week-quality">
       <div className="week-quality-score"><span className="week-quality-ring" style={{ '--quality': 94 } as CSSProperties}><strong>94</strong><small>/100</small></span><div><p className="eyebrow">WEEK QUALITY</p><h2>Odličan plan</h2><span>4 različita jela, HERO prisutan bez preteranog ponavljanja i svaki post ima termin.</span></div></div>
