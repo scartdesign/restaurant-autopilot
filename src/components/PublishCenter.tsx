@@ -23,6 +23,7 @@ export function PublishCenter({ restaurant, posts, onChanged, setNotice }: {
   const published = posts.filter((post) => post.status === 'published')
   const drafts = posts.filter((post) => post.status === 'draft' || post.status === 'rejected')
   const overdue = approved.filter((post) => post.scheduled_for && new Date(post.scheduled_for).getTime() < Date.now())
+  const missingSchedule = posts.filter((post) => post.status !== 'published' && !post.scheduled_for).length
   const readyPercent = posts.length ? Math.round(((approved.length + published.length) / posts.length) * 100) : 0
   const nextPost = ordered.find((post) => post.scheduled_for && new Date(post.scheduled_for).getTime() > Date.now() && post.status !== 'published') || ordered.find((post) => post.scheduled_for && post.status !== 'published')
   const calendarDays=useMemo(()=>buildCalendarDays(restaurant,14),[restaurant.id,restaurant.timezone,restaurant.opening_hours])
@@ -35,6 +36,16 @@ export function PublishCenter({ restaurant, posts, onChanged, setNotice }: {
     if(!post.scheduled_for||post.status==='published')return false
     return ordered.some((other,j)=>j!==index&&other.scheduled_for&&other.status!=='published'&&Math.abs(new Date(other.scheduled_for).getTime()-new Date(post.scheduled_for!).getTime())<45*60*1000)
   }).length,[ordered])
+  const publishGate=useMemo(()=>{
+    const reasons:string[]=[]
+    if(drafts.length)reasons.push(`${drafts.length} čeka quality/odobrenje`)
+    if(missingSchedule)reasons.push(`${missingSchedule} bez termina`)
+    if(overdue.length)reasons.push(`${overdue.length} termin u prošlosti`)
+    if(conflicts)reasons.push(`${conflicts} konflikt termina`)
+    const allDone=posts.length>0&&published.length===posts.length
+    const ready=posts.length>0&&!reasons.length
+    return{ready,allDone,reasons,label:allDone?'Nedelja završena':ready?'Spremno za publishing':posts.length?'Treba završiti':'Čeka sadržaj'}
+  },[posts.length,published.length,drafts.length,missingSchedule,overdue.length,conflicts])
 
   function exportCsv() {
     if (!posts.length) { setNotice('Nema sadržaja za export.'); return }
@@ -200,6 +211,12 @@ export function PublishCenter({ restaurant, posts, onChanged, setNotice }: {
         <div><p className="eyebrow">PUBLISH CENTER</p><h1>Tačan dan. Tačno vreme. Sve spremno.</h1><p className="muted">Svaka objava ima termin u vremenskoj zoni restorana: <strong>{restaurant.timezone}</strong>.</p></div>
         <div className="publish-actions">{drafts.length>0&&<button className="secondary" onClick={()=>void approveAll()} disabled={workingId==='bulk-approve'}><CheckCircle2 size={16}/>{workingId==='bulk-approve'?'Proveravam…':`Quality + odobri (${drafts.length})`}</button>}<button className="secondary" onClick={()=>void autoScheduleWeek()} disabled={bulkWorking}><Sparkles size={16}/>{bulkWorking?'Raspoređujem…':'Auto rasporedi'}</button><button className="secondary" onClick={exportCalendar}><CalendarClock size={16} /> .ICS kalendar</button><button className="primary" onClick={exportCsv}><Download size={16} /> Export CSV</button></div>
       </header>
+
+      <section className={`publish-gate ${publishGate.allDone?'done':publishGate.ready?'ready':'blocked'}`}>
+        <div className="publish-gate-icon">{publishGate.allDone||publishGate.ready?<CheckCircle2 size={20}/>:<ShieldCheck size={20}/>}</div>
+        <div><span>WEEK GATE</span><strong>{publishGate.label}</strong><small>{publishGate.reasons.length?publishGate.reasons.join(' · '):publishGate.allDone?'Sve planirane objave su označene kao objavljene.':'Nema tehničkih blokera: termini i approval status su spremni.'}</small></div>
+        <b>{published.length}/{posts.length || 0}</b>
+      </section>
 
       {nextPost && <section className="next-publish-card">
         <div className="next-publish-icon"><Clock3 size={22} /></div>
