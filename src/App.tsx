@@ -114,6 +114,7 @@ function App() {
     if (selected) {
       localStorage.setItem(ACTIVE_RESTAURANT_KEY, selected.id)
       await Promise.all([loadMenu(selected.id), loadPosts(selected.id)])
+      await ensureAutopilotWeek(selected)
     } else { setMenuItems([]); setPosts([]) }
     const onboardingWarning = sessionStorage.getItem('restaurant-autopilot-onboarding-warning')
     if (onboardingWarning) {
@@ -127,7 +128,26 @@ function App() {
     if (!next || next.id === restaurant?.id) return
     setRestaurant(next); localStorage.setItem(ACTIVE_RESTAURANT_KEY, next.id); setLoading(true)
     await Promise.all([loadMenu(next.id), loadPosts(next.id)])
+    await ensureAutopilotWeek(next)
     setActiveTab('launch'); setLoading(false)
+  }
+
+  async function ensureAutopilotWeek(target: Restaurant) {
+    if (!target.weekly_autopilot_enabled) return
+    const dateKey = localDateKey(target.timezone || 'Europe/Belgrade')
+    const attemptKey = `restaurant-autopilot-weekly-check:${target.id}:${dateKey}`
+    if (sessionStorage.getItem(attemptKey)) return
+    sessionStorage.setItem(attemptKey, '1')
+
+    const { data, error } = await supabase.functions.invoke('content-engine', {
+      body: { action: 'ensure_week', restaurantId: target.id },
+    })
+    if (error || data?.error) return
+    if (data?.created) {
+      await loadPosts(target.id)
+      await loadAccountState()
+      setNotice(`Autopilot je sam pripremio novu nedelju za ${target.name}.`)
+    }
   }
 
   async function loadMenu(restaurantId: string) {
@@ -260,3 +280,11 @@ function MaintenanceScreen({message,version,onSignOut}:{message:string|null;vers
 }
 
 export default App
+
+function localDateKey(timeZone:string){
+  try{
+    const parts=new Intl.DateTimeFormat('en-CA',{timeZone,year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date())
+    const get=(type:string)=>parts.find(part=>part.type===type)?.value||''
+    return `${get('year')}-${get('month')}-${get('day')}`
+  }catch{return new Date().toISOString().slice(0,10)}
+}
