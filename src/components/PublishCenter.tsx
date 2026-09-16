@@ -121,6 +121,7 @@ export function PublishCenter({ restaurant, posts, onChanged, setNotice }: {
       if(error){setNotice(error.message);setWorkingId('');return}
     }
     await onChanged()
+    await supabase.functions.invoke('content-engine',{body:{action:'log_activity',restaurantId:restaurant.id,eventType:'weekly_review_completed',metadata:{approved:passed.length,flagged:failed.length,total:drafts.length}}})
     setNotice(failed.length
       ? `Odobreno ${passed.length}. Preskočeno ${failed.length} jer nisu prošle quality check.`
       : `Sve objave su prošle quality check i odobrene su (${passed.length}).`)
