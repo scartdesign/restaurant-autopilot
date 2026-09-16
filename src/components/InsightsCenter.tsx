@@ -55,6 +55,7 @@ export function InsightsCenter({restaurant,posts,menuItems,setNotice,onChanged,o
   const[form,setForm]=useState<FormState>(emptyForm)
   const[saving,setSaving]=useState(false)
   const[importing,setImporting]=useState(false)
+  const[metaSyncing,setMetaSyncing]=useState(false)
   const[period,setPeriod]=useState<'30'|'90'|'all'>('90')
   const[testingItemId,setTestingItemId]=useState('')
   const importRef=useRef<HTMLInputElement|null>(null)
@@ -90,6 +91,21 @@ export function InsightsCenter({restaurant,posts,menuItems,setNotice,onChanged,o
     const{data,error}=await supabase.from('post_performance').select('*').eq('restaurant_id',restaurant.id).order('measured_at',{ascending:false})
     if(error)setNotice(error.message);else setRows((data||[]) as Performance[])
     setLoading(false)
+  }
+
+  async function syncMetaInsights(){
+    setMetaSyncing(true)
+    const{data,error}=await supabase.functions.invoke('meta-publisher',{body:{action:'sync_insights',restaurantId:restaurant.id}})
+    if(error||data?.error)setNotice(data?.error||error?.message||'Meta Insights sync nije uspeo.')
+    else{
+      const synced=Number(data?.synced||0)
+      const failed=Number(data?.failed||0)
+      const processed=Number(data?.processed||0)
+      const suffix=failed?' · '+failed+' nije uspelo':''
+      setNotice(processed?'Meta Insights: osveženo '+synced+'/'+processed+suffix+'.':'Nema Meta objava za sinhronizaciju u poslednjih 90 dana.')
+      await load()
+    }
+    setMetaSyncing(false)
   }
 
   const menuMap=useMemo(()=>new Map(menuItems.map(item=>[item.id,item])),[menuItems])
@@ -293,7 +309,7 @@ export function InsightsCenter({restaurant,posts,menuItems,setNotice,onChanged,o
   const dishCoverage=activeDishCount?Math.round((learnedDishCount/activeDishCount)*100):0
 
   return <div className="insights-center">
-    <header className="page-header insights-header"><div><p className="eyebrow">PERFORMANCE LOOP</p><h1>Rezultati</h1><p className="muted">Upiši stvarne rezultate objava i Autopilot dobija povratnu informaciju šta kod tvog restorana radi najbolje.</p></div><div className="insights-head-actions"><label className="insights-period"><span>Period</span><select value={period} onChange={e=>setPeriod(e.target.value as '30'|'90'|'all')}><option value="30">30 dana</option><option value="90">90 dana</option><option value="all">Sve</option></select></label><input ref={importRef} className="performance-file-input" type="file" accept=".csv,text/csv" onChange={e=>{const file=e.target.files?.[0];if(file)void importPerformanceCsv(file)}}/><button className="secondary" onClick={downloadImportTemplate}><FileDown size={15}/> CSV šablon</button><button className="secondary" onClick={()=>importRef.current?.click()} disabled={importing}><Upload size={15}/>{importing?'Uvozim…':'Uvezi rezultate'}</button><button className="secondary" onClick={()=>void load()} disabled={loading}><RefreshCw size={15}/>{loading?'Osvežavam…':'Osveži'}</button><button className="primary" onClick={exportCsv} disabled={!ranking.length}><Download size={15}/> Izvezi CSV</button></div></header>
+    <header className="page-header insights-header"><div><p className="eyebrow">PERFORMANCE LOOP</p><h1>Rezultati</h1><p className="muted">Upiši stvarne rezultate objava i Autopilot dobija povratnu informaciju šta kod tvog restorana radi najbolje.</p></div><div className="insights-head-actions"><label className="insights-period"><span>Period</span><select value={period} onChange={e=>setPeriod(e.target.value as '30'|'90'|'all')}><option value="30">30 dana</option><option value="90">90 dana</option><option value="all">Sve</option></select></label><input ref={importRef} className="performance-file-input" type="file" accept=".csv,text/csv" onChange={e=>{const file=e.target.files?.[0];if(file)void importPerformanceCsv(file)}}/><button className="secondary" onClick={downloadImportTemplate}><FileDown size={15}/> CSV šablon</button><button className="secondary" onClick={()=>importRef.current?.click()} disabled={importing}><Upload size={15}/>{importing?'Uvozim…':'Uvezi rezultate'}</button><button className="secondary" onClick={()=>void syncMetaInsights()} disabled={metaSyncing}><RefreshCw size={15}/>{metaSyncing?'Meta sync…':'Meta sync'}</button><button className="secondary" onClick={()=>void load()} disabled={loading}><RefreshCw size={15}/>{loading?'Osvežavam…':'Osveži'}</button><button className="primary" onClick={exportCsv} disabled={!ranking.length}><Download size={15}/> Izvezi CSV</button></div></header>
 
     <section className="insights-kpis">
       <article><span><Target size={16}/> Doseg</span><strong>{fmt(totals.reach)}</strong><small>{totals.views?`${fmt(totals.views)} pregleda · `:''}{tracked.length} praćenih objava</small></article>
