@@ -104,6 +104,25 @@ export function InsightsCenter({restaurant,posts,menuItems,setNotice}:{restauran
     return{post,m,interactions,engagement,score:engagement*10+m.saves*1.4+m.shares*1.8+m.clicks*.8+m.conversions*4}
   }).sort((a,b)=>b.score-a.score),[tracked,metricsByPost])
 
+  const generationStats=useMemo(()=>{
+    const groups={
+      auto:{label:'AUTO WEEK',count:0,reach:0,interactions:0,conversions:0,clicks:0},
+      manual:{label:'MANUAL',count:0,reach:0,interactions:0,conversions:0,clicks:0},
+    }
+    for(const item of ranking){
+      const source=String(item.post.generation_meta?.generation_source||'')
+      const key=source==='weekly_autopilot'?'auto':source==='manual_week'?'manual':null
+      if(!key)continue
+      const group=groups[key]
+      group.count+=1;group.reach+=item.m.reach;group.interactions+=item.interactions;group.conversions+=item.m.conversions;group.clicks+=item.m.clicks
+    }
+    return Object.entries(groups).map(([key,value])=>({
+      key:key as 'auto'|'manual',...value,
+      engagement:value.reach?value.interactions/value.reach*100:0,
+      ctr:value.reach?value.clicks/value.reach*100:0,
+    }))
+  },[ranking])
+
   const pillarStats=useMemo(()=>{
     const map=new Map<string,{reach:number;interactions:number;count:number}>()
     for(const item of ranking){const pillar=String(item.post.generation_meta?.pillar||'other');const prev=map.get(pillar)||{reach:0,interactions:0,count:0};prev.reach+=item.m.reach;prev.interactions+=item.interactions;prev.count+=1;map.set(pillar,prev)}
@@ -262,6 +281,12 @@ export function InsightsCenter({restaurant,posts,menuItems,setNotice}:{restauran
       <article><span><TrendingUp size={16}/> Engagement</span><strong>{totals.engagement.toFixed(1)}%</strong><small>{fmt(totals.interactions)} interakcija</small></article>
       <article><span><MousePointerClick size={16}/> Klikovi</span><strong>{fmt(totals.clicks)}</strong><small>CTR {totals.ctr.toFixed(1)}%</small></article>
       <article><span><CheckCircle2 size={16}/> Konverzije</span><strong>{fmt(totals.conversions)}</strong><small>{totals.spend>0?`ROAS ${totals.roas.toFixed(2)}x`:'bez unetog ad spend-a'}</small></article>
+    </section>
+
+    <section className="generation-performance panel">
+      <div className="panel-heading"><div><p className="eyebrow">GENERATION PERFORMANCE</p><h2>AUTO WEEK vs MANUAL</h2></div><Sparkles size={20}/></div>
+      <div className="generation-performance-grid">{generationStats.map(stat=><article key={stat.key} className={stat.key}><div><span>{stat.label}</span><strong>{stat.count}</strong><small>izmerenih objava</small></div><div><span>Engagement</span><strong>{stat.count?stat.engagement.toFixed(1)+'%':'—'}</strong><small>{stat.count?fmt(stat.reach)+' reach':'nema uzorka'}</small></div><div><span>CTR</span><strong>{stat.count?stat.ctr.toFixed(1)+'%':'—'}</strong><small>{stat.clicks} klikova</small></div><div><span>Konverzije</span><strong>{stat.count?fmt(stat.conversions):'—'}</strong><small>{stat.count>=3?'stabilniji uzorak':stat.count?'mali uzorak':'čeka podatke'}</small></div></article>)}</div>
+      <p className="generation-performance-note">Poređenje koristi samo objave sa unetim performance podacima u izabranom periodu. Za smisleniji signal koristi bar 3 izmerene objave po grupi.</p>
     </section>
 
     <section className="learning-status panel">
