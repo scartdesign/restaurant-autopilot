@@ -148,9 +148,27 @@ function App() {
     }
     sessionStorage.setItem(attemptKey, 'done')
     if (data?.created) {
+      const generated=(data?.posts||[]) as Post[]
+      let aiEnhanced=0
+      try{
+        const{data:aiStatus}=await supabase.functions.invoke('creative-advisor',{body:{action:'status',restaurantId:target.id}})
+        if(aiStatus?.ai_text_ready&&generated.length){
+          for(let index=0;index<generated.length;index+=1){
+            const post=generated[index]
+            setNotice(`AUTO WEEK · AI tekst ${index+1}/${generated.length} · ${post.title||'objava'}…`)
+            const{data:aiData,error:aiError}=await supabase.functions.invoke('creative-advisor',{body:{action:'post_copy',restaurantId:target.id,postId:post.id}})
+            if(!aiError&&!aiData?.error)aiEnhanced+=1
+          }
+        }
+      }catch{
+        // Deterministička AUTO WEEK nedelja ostaje validna ako AI provider trenutno nije dostupan.
+      }
       await loadPosts(target.id)
       await loadAccountState()
-      setNotice(data?.next_week ? `Autopilot je sam pripremio sledeću nedelju za ${target.name}.` : `Autopilot je sam pripremio ovu nedelju za ${target.name}.`)
+      const weekLabel=data?.next_week?'sledeću nedelju':'ovu nedelju'
+      setNotice(aiEnhanced
+        ? `Autopilot je sam pripremio ${weekLabel} za ${target.name} · AI je doradio ${aiEnhanced}/${generated.length} tekstova.`
+        : `Autopilot je sam pripremio ${weekLabel} za ${target.name}.`)
     }
   }
 
