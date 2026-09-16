@@ -26,6 +26,7 @@ export function Dashboard({ restaurant, menuItems, posts, entitlement, onChanged
   const [activityRows,setActivityRows]=useState<any[]>([])
   const [trendOpportunities,setTrendOpportunities]=useState<TrendOpportunity[]>([])
   const [trendWorking,setTrendWorking]=useState('')
+  const [highlightTrendId,setHighlightTrendId]=useState(()=>sessionStorage.getItem('autopilot-trend-opportunity')||'')
   const activeItems = useMemo(() => menuItems.filter((item) => item.is_active).sort((a, b) => (b.marketing_priority || 0) - (a.marketing_priority || 0)), [menuItems])
   const approvedCount = useMemo(() => posts.filter((post) => post.status === 'approved' || post.status === 'published').length, [posts])
   const averageDiscovery = useMemo(() => posts.length ? Math.round(posts.reduce((sum, post) => sum + (post.discovery_score || 0), 0) / posts.length) : 0, [posts])
@@ -158,6 +159,7 @@ export function Dashboard({ restaurant, menuItems, posts, entitlement, onChanged
 
   useEffect(()=>{void loadPreflight(false);void loadActivity()},[restaurant.id,menuItems.length,posts.length,entitlement?.generated_this_month])
   useEffect(()=>{void loadTrendOpportunities()},[restaurant.id,menuItems.length])
+  useEffect(()=>{if(!highlightTrendId||!trendOpportunities.some(x=>x.id===highlightTrendId))return;const id=highlightTrendId;window.setTimeout(()=>document.getElementById('trend-opportunity-'+id)?.scrollIntoView({behavior:'smooth',block:'center'}),120);sessionStorage.removeItem('autopilot-trend-opportunity');window.setTimeout(()=>setHighlightTrendId(''),3600)},[trendOpportunities,highlightTrendId])
   async function reviewWholeWeek() {
     if (!reviewQueue.length) { setNotice('Nema draft objava za proveru.'); return }
     setBulkReviewing(true)
@@ -390,7 +392,7 @@ export function Dashboard({ restaurant, menuItems, posts, entitlement, onChanged
           <div><p className="eyebrow">TREND RADAR</p><h2>Content opportunities</h2><span>{trendOpportunities.length?trendOpportunities.length+' aktuelnih prilika iz odobrenih trendova.':'Nema aktivnih prilika. Pojaviće se kada OWNER odobri relevantan rising trend.'}</span></div>
           <button className="secondary" onClick={()=>void loadTrendOpportunities()}><RefreshCw size={13}/> Osveži</button>
         </div>
-        {trendOpportunities.length?<div className="trend-opportunities-grid">{trendOpportunities.slice(0,4).map(item=>{const menuItem=menuItems.find(x=>x.id===item.menu_item_id);const campaignAllowed=entitlement?.is_superadmin===true||entitlement?.features?.campaigns===true;return <article className="trend-opportunity-card" key={item.id}>
+        {trendOpportunities.length?<div className="trend-opportunities-grid">{trendOpportunities.slice(0,4).map(item=>{const menuItem=menuItems.find(x=>x.id===item.menu_item_id);const campaignAllowed=entitlement?.is_superadmin===true||entitlement?.features?.campaigns===true;return <article id={'trend-opportunity-'+item.id} className={'trend-opportunity-card '+(highlightTrendId===item.id?'highlight':'')} key={item.id}>
           <div className="trend-opportunity-top"><span className={item.trend_type==='rising'?'rising':'top'}><TrendingUp size={12}/>{item.trend_type==='rising'?'RISING':'TOP'}</span><strong>{item.opportunity_score}<small>/100</small></strong></div>
           <h3>{item.trend_query}</h3>
           <p>{item.reason}</p>
