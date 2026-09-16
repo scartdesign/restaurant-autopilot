@@ -99,6 +99,18 @@ export function InsightsCenter({restaurant,posts,menuItems,setNotice}:{restauran
     return [...map.values()].map(v=>({...v,engagement:v.reach?v.interactions/v.reach*100:0})).sort((a,b)=>b.engagement-a.engagement)
   },[ranking,menuMap])
 
+  const timeStats=useMemo(()=>{
+    const map=new Map<number,{score:number;count:number;engagement:number}>()
+    for(const item of ranking){
+      if(!item.post.scheduled_for)continue
+      const hour=hourInTimeZone(item.post.scheduled_for,restaurant.timezone)
+      if(hour===null)continue
+      const prev=map.get(hour)||{score:0,count:0,engagement:0}
+      prev.score+=item.score;prev.count+=1;prev.engagement+=item.engagement;map.set(hour,prev)
+    }
+    return [...map.entries()].map(([hour,v])=>({hour,count:v.count,avgScore:v.score/v.count,avgEngagement:v.engagement/v.count})).sort((a,b)=>b.avgScore-a.avgScore||b.count-a.count)
+  },[ranking,restaurant.timezone])
+
   function openEditor(post:Post){
     const existing=rows.find(row=>row.post_id===post.id&&row.platform==='combined')||rows.find(row=>row.post_id===post.id)
     setEditing(post)
@@ -136,6 +148,7 @@ export function InsightsCenter({restaurant,posts,menuItems,setNotice}:{restauran
   const best=ranking[0]
   const bestPillar=pillarStats[0]
   const bestDish=dishStats[0]
+  const bestTime=timeStats[0]
   const currency=ranking.find(x=>x.m.currency)?.m.currency||menuItems[0]?.currency||'RSD'
   const learningLevel=tracked.length>=8?'strong':tracked.length>=3?'learning':'starting'
   const learningLabel=learningLevel==='strong'?'Jako učenje':learningLevel==='learning'?'Učenje aktivno':'Tek počinje'
@@ -161,14 +174,14 @@ export function InsightsCenter({restaurant,posts,menuItems,setNotice}:{restauran
         <div><span>Najbolje jelo</span><strong>{bestDish?.name||'čeka podatke'}</strong></div>
         <div><span>Najjači pillar</span><strong>{bestPillar?pillarLabel(bestPillar.pillar):'čeka podatke'}</strong></div>
         <div><span>Top engagement</span><strong>{best?best.engagement.toFixed(1)+'%':'—'}</strong></div>
-        <div><span>Praćeno</span><strong>{tracked.length}/{postsForTracking.length}</strong></div>
+        <div><span>Najbolji termin</span><strong>{bestTime?`${String(bestTime.hour).padStart(2,'0')}:30`:'čeka podatke'}</strong></div><div><span>Praćeno</span><strong>{tracked.length}/{postsForTracking.length}</strong></div>
       </div>
       <p>{learningLevel==='strong'?'Autopilot sada ima dovoljno lokalnih signala da prioritet, izbor jela i format više oslanja na rezultate ovog restorana, a manje na početne pretpostavke.':learningLevel==='learning'?'Model već koristi tvoje stvarne rezultate. Dodaj još nekoliko objava da preporuke budu stabilnije.':'Unesi rezultate za prve 3 objave. Do tada sistem koristi prioritet jela, recency i sigurni početni miks sadržaja.'}</p>
     </section>
 
     <section className="insights-smart panel">
       <div className="insights-smart-icon"><Sparkles size={21}/></div>
-      <div><p className="eyebrow">SMART INSIGHT</p>{tracked.length<3?<><h2>Treba nam još stvarnih podataka.</h2><p>Unesi rezultate za bar 3 objave. Posle toga ovde dobijaš preporuku zasnovanu na stvarnom reach-u, engagementu i konverzijama tvog restorana.</p></>:<><h2>{bestPillar?pillarLabel(bestPillar.pillar)+' trenutno daje najbolji engagement.':'Rezultati se već razlikuju po sadržaju.'}</h2><p>{bestDish?<><b>{bestDish.name}</b> ima {bestDish.engagement.toFixed(1)}% engagement na praćenim objavama. </>:null}{best?<><b>{best.post.title||'Najbolja objava'}</b> je trenutno vodeća sa {best.engagement.toFixed(1)}% engagementa.</>:null} Ovo nije procena tržišta, već zaključak samo iz rezultata koje si uneo.</p></>}</div>
+      <div><p className="eyebrow">SMART INSIGHT</p>{tracked.length<3?<><h2>Treba nam još stvarnih podataka.</h2><p>Unesi rezultate za bar 3 objave. Posle toga ovde dobijaš preporuku zasnovanu na stvarnom reach-u, engagementu i konverzijama tvog restorana.</p></>:<><h2>{bestPillar?pillarLabel(bestPillar.pillar)+' trenutno daje najbolji engagement.':'Rezultati se već razlikuju po sadržaju.'}</h2><p>{bestDish?<><b>{bestDish.name}</b> ima {bestDish.engagement.toFixed(1)}% engagement na praćenim objavama. </>:null}{best?<><b>{best.post.title||'Najbolja objava'}</b> je trenutno vodeća sa {best.engagement.toFixed(1)}% engagementa. </>:null}{bestTime?<><b>{String(bestTime.hour).padStart(2,'0')}:30</b> je trenutno najjači termin u unetom uzorku.</>:null} Ovo nije procena tržišta, već zaključak samo iz rezultata koje si uneo.</p></>}</div>
     </section>
 
     <div className="insights-grid">
@@ -222,3 +235,10 @@ function moneyFmt(v:number,currency:string){return new Intl.NumberFormat('sr-RS'
 function csvCell(v:unknown){const s=String(v??'');return /[;"\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s}
 function slug(v:string){return v.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')||'restaurant'}
 function pillarLabel(v:string){return({hero_dish:'Hero jelo',engagement:'Engagement',local_discovery:'Local discovery',kitchen_story:'Iza scene',social_prompt:'Social prompt',promotion:'Promocija',other:'Ostalo'} as Record<string,string>)[v]||v.replace(/_/g,' ')}
+
+function hourInTimeZone(value:string,timeZone:string){
+  try{
+    const hour=new Intl.DateTimeFormat('en-US',{timeZone,hour:'2-digit',hourCycle:'h23'}).format(new Date(value))
+    const n=Number(hour);return Number.isFinite(n)?n:null
+  }catch{return null}
+}
