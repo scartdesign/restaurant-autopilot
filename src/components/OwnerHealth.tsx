@@ -14,6 +14,7 @@ type State={
   card:boolean
   paypal:boolean
   stripe:boolean
+  stripeMode:'test'|'live'|'unknown'
   stripePending:number
   stripePaid:number
   stripeFailed:number
@@ -28,7 +29,7 @@ type State={
   version:string
 }
 
-const initial:State={ai:false,email:false,emailFrom:false,bank:false,legal:false,salesOpen:true,maintenance:false,aiImages:true,card:false,paypal:false,stripe:false,stripePending:0,stripePaid:0,stripeFailed:0,meta:false,metaConnections:0,publishQueued:0,publishFailed:0,activeCustomers:0,pendingOrders:0,openSupport:0,failedEmails:0,version:'1.0'}
+const initial:State={ai:false,email:false,emailFrom:false,bank:false,legal:false,salesOpen:true,maintenance:false,aiImages:true,card:false,paypal:false,stripe:false,stripeMode:'unknown',stripePending:0,stripePaid:0,stripeFailed:0,meta:false,metaConnections:0,publishQueued:0,publishFailed:0,activeCustomers:0,pendingOrders:0,openSupport:0,failedEmails:0,version:'1.0'}
 
 export function OwnerHealth({setNotice}:{setNotice:(v:string)=>void}){
   const[state,setState]=useState<State>(initial)
@@ -37,11 +38,12 @@ export function OwnerHealth({setNotice}:{setNotice:(v:string)=>void}){
 
   async function load(){
     setWorking(true)
-    const [ai,email,meta,stripe,settings,controls,subs,orders,support,failed,metaConnections,publishQueued,publishFailed]=await Promise.all([
+    const [ai,email,meta,stripe,stripeRuntime,settings,controls,subs,orders,support,failed,metaConnections,publishQueued,publishFailed]=await Promise.all([
       supabase.rpc('admin_ai_provider_status'),
       supabase.rpc('admin_email_provider_status'),
       supabase.rpc('admin_meta_provider_status'),
       supabase.rpc('admin_stripe_provider_status'),
+      supabase.functions.invoke('checkout-order',{body:{action:'status'}}),
       supabase.from('sales_settings').select('legal_name,tax_id,bank_account,email_from,allow_card,allow_paypal,terms_url,privacy_url').eq('id',1).maybeSingle(),
       supabase.from('app_controls').select('app_version,maintenance_mode,sales_open,ai_images_enabled').eq('id',1).maybeSingle(),
       supabase.from('customer_subscriptions').select('id',{count:'exact',head:true}).in('status',['active','trialing']),
@@ -52,7 +54,7 @@ export function OwnerHealth({setNotice}:{setNotice:(v:string)=>void}){
       supabase.from('social_publish_jobs').select('id',{count:'exact',head:true}).eq('status','queued'),
       supabase.from('social_publish_jobs').select('id',{count:'exact',head:true}).eq('status','failed'),
     ])
-    const err=ai.error||email.error||meta.error||stripe.error||settings.error||controls.error||subs.error||orders.error||support.error||failed.error||metaConnections.error||publishQueued.error||publishFailed.error
+    const err=ai.error||email.error||meta.error||stripe.error||stripeRuntime.error||settings.error||controls.error||subs.error||orders.error||support.error||failed.error||metaConnections.error||publishQueued.error||publishFailed.error
     if(err)setNotice(err.message)
     const a=(ai.data||{}) as any, e=(email.data||{}) as any, m=(meta.data||{}) as any, st=(stripe.data||{}) as any, s=settings.data as any, c=controls.data as any
     setState({
@@ -67,6 +69,7 @@ export function OwnerHealth({setNotice}:{setNotice:(v:string)=>void}){
       card:Boolean(s?.allow_card),
       paypal:Boolean(s?.allow_paypal),
       stripe:Boolean(st.configured),
+      stripeMode:((stripeRuntime.data as any)?.mode||'unknown') as 'test'|'live'|'unknown',
       stripePending:Number(st.pending_checkouts||0),
       stripePaid:Number(st.paid_orders||0),
       stripeFailed:Number(st.failed_webhooks||0),
@@ -98,7 +101,7 @@ export function OwnerHealth({setNotice}:{setNotice:(v:string)=>void}){
     <section className="email-metrics"><div><span>Aktivni kupci</span><strong>{state.activeCustomers}</strong></div><div><span>Uplate čekaju</span><strong>{state.pendingOrders}</strong></div><div><span>Support otvoren</span><strong>{state.openSupport}</strong></div><div><span>Email greške</span><strong>{state.failedEmails}</strong></div></section>
     <div className="health-grid">{checks.map(({label,ok,detail,icon:Icon})=><article className={`health-card ${ok?'ok':'warn'}`} key={label}><div>{ok?<CheckCircle2 size={20}/>:<AlertTriangle size={20}/>}</div><section><span>{label}</span><strong>{ok?'SPREMNO':'AKCIJA POTREBNA'}</strong><p>{detail}</p></section><Icon size={21}/></article>)}</div>
     <section className="admin-panel health-external"><div className="admin-panel-head"><div><p className="eyebrow">SPOLJNE INTEGRACIJE</p><h2>Šta još zavisi od naloga provajdera</h2></div><Activity size={22}/></div>
-      <div className="health-external-grid"><div className={state.meta?'external-ready':''}><Send size={18}/><strong>Meta auto-publish</strong><span>{state.meta?`Provider spreman · ${state.metaConnections} connected · ${state.publishQueued} queued · ${state.publishFailed} failed`:'Meta App nije konfigurisan. OAuth i publishing queue su spremni čim se unesu kredencijali.'}</span></div><div className={state.stripe&&state.card&&state.stripeFailed===0?'external-ready':''}><CreditCard size={18}/><strong>Stripe kartice</strong><span>{state.stripe?(state.card?`Stripe Checkout uključen · ${state.stripePending} pending · ${state.stripePaid} paid · ${state.stripeFailed} webhook grešaka`:`Provider spreman · ${state.stripePaid} paid · kartice još nisu uključene kupcima.`):'Stripe Secret Key + Webhook Secret nisu podešeni.'}</span></div><div><BadgeEuro size={18}/><strong>PayPal</strong><span>{state.paypal?'PayPal metoda je uključena.':'PayPal trenutno nije uključen.'}</span></div><div><ShieldCheck size={18}/><strong>Maintenance</strong><span>{state.maintenance?'Aplikacija je u maintenance modu.':'Aplikacija je dostupna kupcima.'}</span></div></div>
+      <div className="health-external-grid"><div className={state.meta?'external-ready':''}><Send size={18}/><strong>Meta auto-publish</strong><span>{state.meta?`Provider spreman · ${state.metaConnections} connected · ${state.publishQueued} queued · ${state.publishFailed} failed`:'Meta App nije konfigurisan. OAuth i publishing queue su spremni čim se unesu kredencijali.'}</span></div><div className={state.stripe&&state.stripeMode==='live'&&state.card&&state.stripeFailed===0?'external-ready':''}><CreditCard size={18}/><strong>Stripe kartice</strong><span>{state.stripe?(state.stripeMode==='test'?`TEST MODE · ${state.stripePending} pending · ${state.stripePaid} test paid · ne puštati kupcima`:state.card?`LIVE Checkout · ${state.stripePending} pending · ${state.stripePaid} paid · ${state.stripeFailed} webhook grešaka`:`LIVE provider spreman · ${state.stripePaid} paid · kartice još nisu uključene kupcima.`):'Stripe Secret Key + Webhook Secret nisu podešeni.'}</span></div><div><BadgeEuro size={18}/><strong>PayPal</strong><span>{state.paypal?'PayPal metoda je uključena.':'PayPal trenutno nije uključen.'}</span></div><div><ShieldCheck size={18}/><strong>Maintenance</strong><span>{state.maintenance?'Aplikacija je u maintenance modu.':'Aplikacija je dostupna kupcima.'}</span></div></div>
     </section>
     <button className="secondary health-refresh" onClick={()=>void load()} disabled={working}><RefreshCw size={15}/>{working?'Proveravam…':'Ponovo proveri sistem'}</button>
   </div>
