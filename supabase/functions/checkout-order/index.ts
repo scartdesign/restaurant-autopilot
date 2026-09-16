@@ -51,7 +51,9 @@ Deno.serve(async(req:Request)=>{
 
     const{data:stripeConfig,error:stripeConfigError}=await service.rpc("service_stripe_config");
     if(action==="status"){
-      return json({ok:true,provider:"stripe",configured:Boolean(!stripeConfigError&&stripeConfig?.configured)});
+      const key=String(stripeConfig?.secret_key||"");
+      const mode=key.startsWith("sk_live_")?"live":key.startsWith("sk_test_")?"test":"unknown";
+      return json({ok:true,provider:"stripe",configured:Boolean(!stripeConfigError&&stripeConfig?.configured),mode});
     }
 
     if(action==="confirm_stripe"){
