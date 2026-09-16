@@ -100,6 +100,8 @@ export type GenerationMeta = Record<string, unknown> & {
     performance_samples_item?: number
     performance_confidence?: number
     marketing_priority?: number
+  needs_ai_polish?: boolean
+  background_polished_at?: string | null
     recent_uses_30d?: number
     coverage_bonus?: number
     exploration_bonus?: number
