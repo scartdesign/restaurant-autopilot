@@ -275,6 +275,18 @@ Deno.serve(async(req)=>{
         metadata:{opportunity_id:opp.id,post_id:post.id,menu_item_id:item.id,opportunity_score:opp.opportunity_score},
       });
 
+      const{data:profile}=await service.from("customer_profiles").select("email").eq("user_id",ownerId).maybeSingle();
+      await service.from("notification_outbox").insert({
+        user_id:ownerId,
+        recipient_email:profile?.email||null,
+        kind:"trend_draft_ready",
+        subject:"Trend Autopilot je pripremio novi draft",
+        body:"Jak rising signal „"+opp.trend_query+"“ je iskorišćen za "+item.name+". Draft čeka tvoju proveru i odobrenje.",
+        payload:{restaurant_id:restaurantId,opportunity_id:opp.id,post_id:post.id,menu_item_id:item.id,trend_query:opp.trend_query,opportunity_score:opp.opportunity_score},
+        delivery_status:"in_app",
+        visible_in_app:true,
+      });
+
       created+=1;
       monthCountByOwner.set(ownerId,used+1);
       recentAutoRestaurants.add(restaurantId);
