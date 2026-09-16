@@ -247,6 +247,8 @@ Deno.serve(async(req)=>{
           trend_query:opp.trend_query,
           trend_seed:opp.seed_query,
           trend_score:opp.opportunity_score,
+          trend_performance_boost:Number(opp.performance_boost||0),
+          trend_performance_samples:Number(opp.performance_samples||0),
           trend_type:opp.trend_type,
           pillar:opp.recommended_pillar||"local_discovery",
           variation:0,
@@ -272,7 +274,7 @@ Deno.serve(async(req)=>{
         event_type:"trend_auto_draft_created",
         title:"Trend Autopilot je pripremio draft",
         summary:item.name+" · "+opp.trend_query+" · čeka tvoje odobrenje.",
-        metadata:{opportunity_id:opp.id,post_id:post.id,menu_item_id:item.id,opportunity_score:opp.opportunity_score},
+        metadata:{opportunity_id:opp.id,post_id:post.id,menu_item_id:item.id,opportunity_score:opp.opportunity_score,performance_boost:Number(opp.performance_boost||0),performance_samples:Number(opp.performance_samples||0)},
       });
 
       const{data:profile}=await service.from("customer_profiles").select("email").eq("user_id",ownerId).maybeSingle();
