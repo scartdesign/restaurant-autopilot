@@ -46,7 +46,7 @@ const emptyForm:FormState={
   platform:'combined',impressions:'',reach:'',likes:'',comments:'',saves:'',shares:'',clicks:'',conversions:'',spend:'',revenue:'',currency:'RSD',notes:'',measured_at:new Date().toISOString().slice(0,10),
 }
 
-export function InsightsCenter({restaurant,posts,menuItems,setNotice}:{restaurant:Restaurant;posts:Post[];menuItems:MenuItem[];setNotice:(value:string)=>void}){
+export function InsightsCenter({restaurant,posts,menuItems,setNotice,onChanged,onNavigate}:{restaurant:Restaurant;posts:Post[];menuItems:MenuItem[];setNotice:(value:string)=>void;onChanged:()=>Promise<void>;onNavigate?:(tab:'menu'|'publish'|'dashboard')=>void}){
   const[rows,setRows]=useState<Performance[]>([])
   const[loading,setLoading]=useState(true)
   const[editing,setEditing]=useState<Post|null>(null)
@@ -54,6 +54,7 @@ export function InsightsCenter({restaurant,posts,menuItems,setNotice}:{restauran
   const[saving,setSaving]=useState(false)
   const[importing,setImporting]=useState(false)
   const[period,setPeriod]=useState<'30'|'90'|'all'>('90')
+  const[testingItemId,setTestingItemId]=useState('')
   const importRef=useRef<HTMLInputElement|null>(null)
 
   useEffect(()=>{void load()},[restaurant.id])
@@ -66,6 +67,21 @@ export function InsightsCenter({restaurant,posts,menuItems,setNotice}:{restauran
     sessionStorage.removeItem('autopilot-performance-post')
     openEditor(post)
   },[loading,restaurant.id,posts])
+
+  async function createOpportunityTest(item:MenuItem,kind:'gap'|'test'|'photo'){
+    if(kind==='photo'){onNavigate?.('menu');setNotice('Prvo dodaj ili generiši fotografiju za ovo jelo, pa zatim pokreni test.');return}
+    setTestingItemId(item.id)
+    const{data,error}=await supabase.functions.invoke('content-engine',{body:{action:'test_item',restaurantId:restaurant.id,menuItemId:item.id,reason:kind}})
+    if(error||data?.error){
+      setNotice(data?.error||error?.message||'Opportunity test nije napravljen.')
+      setTestingItemId('')
+      return
+    }
+    await onChanged()
+    const when=data?.scheduled_for?new Intl.DateTimeFormat('sr-RS',{dateStyle:'medium',timeStyle:'short',timeZone:restaurant.timezone}).format(new Date(data.scheduled_for)):'bez termina'
+    setNotice(`Test draft za „${item.name}“ je spreman · ${when}. Proveri ga u Sadržaju ili Publish Centeru.`)
+    setTestingItemId('')
+  }
 
   async function load(){
     setLoading(true)
@@ -308,7 +324,7 @@ export function InsightsCenter({restaurant,posts,menuItems,setNotice}:{restauran
 
     <section className="opportunity-radar panel">
       <div className="panel-heading"><div><p className="eyebrow">OPPORTUNITY RADAR</p><h2>Šta sledeće vredi testirati</h2></div><Target size={20}/></div>
-      {opportunities.length?<div className="opportunity-list">{opportunities.map(({item,kind,reason})=><article key={item.id}><div className={`opportunity-kind ${kind}`}>{kind==='gap'?'CONTENT GAP':kind==='test'?'TEST SIGNAL':'PHOTO GAP'}</div><strong>{item.name}</strong><span>{reason}</span><small>{item.marketing_priority===3?'HERO':item.marketing_priority===2?'VISOK PRIORITET':item.marketing_priority===1?'PRIORITET':'STANDARDNO'}</small></article>)}</div>:<div className="opportunity-clear"><CheckCircle2 size={19}/><div><strong>Nema očiglednih rupa.</strong><span>Aktivna jela imaju svež sadržaj, fotografije i bar osnovne performance signale.</span></div></div>}
+      {opportunities.length?<div className="opportunity-list">{opportunities.map(({item,kind,reason})=><article key={item.id}><div className={`opportunity-kind ${kind}`}>{kind==='gap'?'CONTENT GAP':kind==='test'?'TEST SIGNAL':'PHOTO GAP'}</div><strong>{item.name}</strong><span>{reason}</span><small>{item.marketing_priority===3?'HERO':item.marketing_priority===2?'VISOK PRIORITET':item.marketing_priority===1?'PRIORITET':'STANDARDNO'}</small><button className="opportunity-action" disabled={testingItemId===item.id} onClick={()=>void createOpportunityTest(item,kind)}>{testingItemId===item.id?'Pravim test…':kind==='photo'?'Dodaj fotografiju':'Testiraj sledeće'}</button></article>)}</div>:<div className="opportunity-clear"><CheckCircle2 size={19}/><div><strong>Nema očiglednih rupa.</strong><span>Aktivna jela imaju svež sadržaj, fotografije i bar osnovne performance signale.</span></div></div>}
     </section>
 
     <section className="insights-smart panel">
