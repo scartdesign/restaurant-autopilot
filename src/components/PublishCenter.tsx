@@ -11,6 +11,7 @@ type MetaConnection={
   token_expires_at:string|null;scopes:string[];connection_meta?:{page_candidates?:MetaCandidate[]};connected_at:string|null;last_verified_at:string|null
 }
 type MetaState={provider_configured:boolean;connection:MetaConnection|null;callback_url?:string}
+type MetaJob={id:string;post_id:string;platform:'facebook'|'instagram';status:'queued'|'processing'|'published'|'failed'|'cancelled';publish_at:string;attempt_count:number;provider_media_id:string|null;error_message:string|null;published_at:string|null}
 
 export function PublishCenter({ restaurant, posts, onChanged, setNotice }: {
   restaurant: Restaurant
@@ -27,6 +28,7 @@ export function PublishCenter({ restaurant, posts, onChanged, setNotice }: {
   const [metaState,setMetaState]=useState<MetaState|null>(null)
   const [metaWorking,setMetaWorking]=useState(false)
   const [metaPageId,setMetaPageId]=useState('')
+  const [metaJobs,setMetaJobs]=useState<MetaJob[]>([])
 
   const ordered = useMemo(() => [...posts].sort((a, b) => new Date(a.scheduled_for || 0).getTime() - new Date(b.scheduled_for || 0).getTime()), [posts])
   const approved = posts.filter((post) => post.status === 'approved')
@@ -57,6 +59,11 @@ export function PublishCenter({ restaurant, posts, onChanged, setNotice }: {
     return{ready,allDone,reasons,label:allDone?'Nedelja završena':ready?'Spremno za publishing':posts.length?'Treba završiti':'Čeka sadržaj'}
   },[posts.length,published.length,drafts.length,missingSchedule,overdue.length,conflicts])
 
+  async function loadMetaJobs(){
+    const{data}=await supabase.from('social_publish_jobs').select('id,post_id,platform,status,publish_at,attempt_count,provider_media_id,error_message,published_at').eq('restaurant_id',restaurant.id).order('created_at',{ascending:false}).limit(150)
+    setMetaJobs((data||[]) as MetaJob[])
+  }
+
   async function loadMetaStatus(){
     const{data,error}=await supabase.functions.invoke('meta-publisher',{body:{action:'status',restaurantId:restaurant.id}})
     if(!error&&!data?.error){
@@ -68,6 +75,7 @@ export function PublishCenter({ restaurant, posts, onChanged, setNotice }: {
 
   useEffect(()=>{
     void loadMetaStatus()
+    void loadMetaJobs()
     const handler=(event:MessageEvent)=>{
       if(event.data?.type!=='restaurant-autopilot-meta')return
       void loadMetaStatus()
@@ -105,6 +113,8 @@ export function PublishCenter({ restaurant, posts, onChanged, setNotice }: {
     setMetaWorking(false)
   }
 
+  function metaJobsFor(postId:string){return metaJobs.filter(job=>job.post_id===postId&&job.status!=='cancelled')}
+
   function metaPlatforms(post:Post){
     const out:('facebook'|'instagram')[]=[]
     if(metaState?.connection?.status!=='connected')return out
@@ -125,6 +135,16 @@ export function PublishCenter({ restaurant, posts, onChanged, setNotice }: {
       if(failed.length)setNotice(`Meta: ${platforms.length-failed.length}/${platforms.length} platforme objavljeno. ${failed.map((x:any)=>x.error).join(' · ')}`)
       else{setNotice(`Objavljeno direktno na ${platforms.map(p=>p==='instagram'?'Instagram':'Facebook').join(' + ')}.`);await supabase.from('posts').update({status:'published'}).eq('id',post.id).eq('restaurant_id',restaurant.id);await onChanged()}
     }else setNotice(`Meta queue: ${platforms.length} platforme zakazane za ${post.scheduled_for?formatDateLong(post.scheduled_for,restaurant.timezone)+' u '+formatTime(post.scheduled_for,restaurant.timezone):'prvi mogući termin'}.`)
+    await loadMetaJobs()
+    setWorkingId('')
+  }
+
+  async function retryMetaJob(job:MetaJob){
+    setWorkingId('job-'+job.id)
+    const{data,error}=await supabase.functions.invoke('meta-publisher',{body:{action:'retry_job',restaurantId:restaurant.id,jobId:job.id}})
+    if(error||data?.error)setNotice(data?.error||error?.message||'Meta retry nije uspeo.')
+    else{setNotice(`${job.platform==='instagram'?'Instagram':'Facebook'} publishing je ponovo pokrenut.`);await onChanged()}
+    await loadMetaJobs()
     setWorkingId('')
   }
 
@@ -312,7 +332,7 @@ export function PublishCenter({ restaurant, posts, onChanged, setNotice }: {
 
       <section className={`meta-connect-panel ${metaState?.connection?.status==='connected'?'connected':metaState?.connection?.status==='expired'?'expired':''}`}>
         <div className="meta-connect-brand"><div><Facebook size={20}/><Instagram size={20}/></div><span><small>META PUBLISHING</small><strong>{metaState?.connection?.status==='connected'?'Facebook + Instagram povezani':metaState?.connection?.status==='pending_page_selection'?'Izaberi Facebook stranicu':metaState?.provider_configured?'Poveži poslovni nalog':'Meta App čeka OWNER konfiguraciju'}</strong><p>{metaState?.connection?.status==='connected'
-          ? `${metaState.connection.page_name||'Facebook Page'}${metaState.connection.instagram_username?` · @${metaState.connection.instagram_username}`:' · Instagram nije povezan'}`
+          ? `${metaState.connection.page_name||'Facebook Page'}${metaState.connection.instagram_username?` · @${metaState.connection.instagram_username}`:' · Instagram nije povezan'} · ${metaJobs.filter(j=>j.status==='queued').length} queued · ${metaJobs.filter(j=>j.status==='failed').length} failed`
           : metaState?.connection?.status==='expired'
           ? 'Meta token je istekao. Poveži nalog ponovo.'
           : metaState?.provider_configured
@@ -357,7 +377,7 @@ export function PublishCenter({ restaurant, posts, onChanged, setNotice }: {
             <div className="queue-copy">
               <div className="queue-title"><span className="queue-format">{post.post_type}</span><strong>{post.title || 'Objava'}</strong>{post.scheduled_for && <span className="schedule-chip">{formatWeekday(post.scheduled_for, restaurant.timezone)} · {formatTime(post.scheduled_for, restaurant.timezone)}</span>}{post.generation_meta?.learning_signal?.schedule_hour !== null && post.generation_meta?.learning_signal?.schedule_hour !== undefined && <span className="learned-time-chip"><Sparkles size={11}/> LEARNED TIME</span>}{post.generation_meta?.generation_source&&<span className={`generation-source-chip ${String(post.generation_meta.generation_source).startsWith('weekly_autopilot')?'auto':'manual'}`}>{String(post.generation_meta.generation_source).startsWith('weekly_autopilot')?'AUTO WEEK':post.generation_meta.generation_source==='opportunity_test'?'TEST':'MANUAL'}</span>}</div>
               <p>{post.caption}</p>
-              <div className="queue-platforms"><span><Instagram size={13} /> {(post.platform_content?.instagram?.hashtags || post.hashtags || []).length} IG tags</span><span><Facebook size={13} /> {(post.platform_content?.facebook?.hashtags || []).length} FB tags</span><span>{post.discovery_score || 0}/100 discovery</span>{qualityScores[post.id] !== undefined && <span className="quality-inline"><ShieldCheck size={13} /> {qualityScores[post.id]}/100 quality</span>}</div>
+              <div className="queue-platforms"><span><Instagram size={13} /> {(post.platform_content?.instagram?.hashtags || post.hashtags || []).length} IG tags</span><span><Facebook size={13} /> {(post.platform_content?.facebook?.hashtags || []).length} FB tags</span><span>{post.discovery_score || 0}/100 discovery</span>{qualityScores[post.id] !== undefined && <span className="quality-inline"><ShieldCheck size={13} /> {qualityScores[post.id]}/100 quality</span>}</div>{metaJobsFor(post.id).length>0&&<div className="meta-job-strip">{metaJobsFor(post.id).map(job=><span key={job.id} className={`meta-job-chip ${job.status}`}><b>{job.platform==='instagram'?'IG':'FB'}</b> {job.status}{job.status==='queued'?<small>{formatTime(job.publish_at,restaurant.timezone)}</small>:null}{job.status==='failed'&&<button disabled={workingId==='job-'+job.id} onClick={()=>void retryMetaJob(job)}>Retry</button>}</span>)}</div>}
 
               {editingId === post.id && <div className="schedule-editor">
                 <div className="schedule-fields"><label>Datum <small>{restaurant.timezone}</small><input type="date" value={scheduleDraft.date} onChange={(e) => setScheduleDraft({ ...scheduleDraft, date: e.target.value })} /></label><label>Vreme<input type="time" step="300" value={scheduleDraft.time} onChange={(e) => setScheduleDraft({ ...scheduleDraft, time: e.target.value })} /></label></div>
