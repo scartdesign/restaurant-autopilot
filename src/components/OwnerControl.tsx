@@ -1,5 +1,5 @@
 import { type ReactNode, useEffect, useMemo, useState } from 'react'
-import { Activity, BadgeEuro, Ban, Bell, BookOpenCheck, CheckCircle2, CircleDollarSign, Copy, Download, Eye, EyeOff, Facebook, Image as ImageIcon, KeyRound, Mail, Megaphone, Power, RefreshCw, Save, Search, Settings2, ShieldCheck, Sparkles, Store, TicketCheck, UsersRound, WalletCards, WandSparkles } from 'lucide-react'
+import { Activity, BadgeEuro, Ban, Bell, BookOpenCheck, CheckCircle2, CircleDollarSign, Copy, CreditCard, Download, Eye, EyeOff, Facebook, Image as ImageIcon, KeyRound, Mail, Megaphone, Power, RefreshCw, Save, Search, Settings2, ShieldCheck, Sparkles, Store, TicketCheck, UsersRound, WalletCards, WandSparkles } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import type { AdminAuditLog, CustomerProfile, CustomerSubscription, LicenseCodeRow, NotificationOutbox, SalesOrder, SalesPlan, SalesSettings } from '../types'
 
