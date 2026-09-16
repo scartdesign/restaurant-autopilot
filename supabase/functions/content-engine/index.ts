@@ -85,7 +85,26 @@ function weeklyPriorityCap(item: any, frequency: number, menuCount: number) {
   return 1;
 }
 
-function selectWeekItems(items: any[], pillars: Pillar[], recentUse: Map<string,number>, learnedScore: Map<string,number>) {
+function trendBoostForItem(item:any,restaurant:any,rows:any[]){
+  const hay=`${item?.name||""} ${item?.category||""} ${restaurant?.cuisine_type||""}`.toLowerCase();
+  let best=0;
+  for(const row of rows||[]){
+    const seed=String(row?.seed_query||"").toLowerCase();
+    let base=0;
+    if(seed==="pizza"&&hay.includes("pizza"))base=28;
+    else if(seed==="burger"&&(hay.includes("burger")||hay.includes("fast")))base=26;
+    else if(seed==="domaća hrana"&&(hay.includes("doma")||hay.includes("trad")||hay.includes("balkan")||hay.includes("srp")))base=22;
+    else if(seed==="street food"&&(hay.includes("street")||hay.includes("fast")||hay.includes("burger")))base=20;
+    else if(seed==="restoran"||seed==="restaurant")base=5;
+    if(!base)continue;
+    const relevance=Math.max(0,Math.min(100,Number(row?.relevance_score||50)))/100;
+    const momentum=Math.min(10,Math.log10(Math.max(0,Number(row?.extracted_value||0))+1)*2.5);
+    best=Math.max(best,base*relevance+momentum);
+  }
+  return Math.round(best*10)/10;
+}
+
+function selectWeekItems(items: any[], pillars: Pillar[], recentUse: Map<string,number>, learnedScore: Map<string,number>, trendScore: Map<string,number> = new Map()) {
   if (!items.length) return [];
   if (items.length === 1) return pillars.map(() => items[0]);
 
@@ -105,10 +124,12 @@ function selectWeekItems(items: any[], pillars: Pillar[], recentUse: Map<string,
       const used = usage.get(id) || 0;
       const recentCount = recentUse.get(id) || 0;
       const learned = learnedScore.get(id) || 0;
+      const trend = trendScore.get(id) || 0;
       const coverageBonus = recentCount === 0 ? 22 : recentCount === 1 ? 8 : 0;
       const explorationBonus = priority >= 2 && learned <= 0 ? 12 : 0;
       let score = (rankBonus.get(id) || 0)
         + Math.min(90, learned)
+        + Math.min(45, trend)
         + priority * 28
         + coverageBonus
         + explorationBonus
@@ -732,9 +753,10 @@ Deno.serve(async (req: Request) => {
       }
 
       const recentSince = new Date(Date.now() - 30 * 86400000).toISOString();
-      const [{ data: recentPosts }, { data: performanceRows }] = await Promise.all([
+      const [{ data: recentPosts }, { data: performanceRows }, { data: approvedTrendRows }] = await Promise.all([
         service.from("posts").select("id,menu_item_id,created_at").eq("restaurant_id", restaurantId).gte("created_at", recentSince),
         service.from("post_performance").select("post_id,reach,likes,comments,saves,shares,clicks,conversions").eq("restaurant_id", restaurantId).eq("platform","combined").order("measured_at",{ascending:false}).limit(60),
+        service.rpc("service_approved_discovery_boosts",{p_country:restaurant.country||null}),
       ]);
       const recentUse = new Map<string,number>();
       for (const post of recentPosts || []) if (post.menu_item_id) recentUse.set(String(post.menu_item_id),(recentUse.get(String(post.menu_item_id))||0)+1);
@@ -763,12 +785,14 @@ Deno.serve(async (req: Request) => {
         const average=(learnedSum.get(id)||0)/samples;
         learnedScore.set(id,average*learningConfidence(samples));
       }
+      const trendScore=new Map<string,number>();
+      for(const item of menuItems)trendScore.set(String(item.id),trendBoostForItem(item,restaurant,approvedTrendRows||[]));
       const rankedMenu=[...menuItems].sort((a:any,b:any)=>{
         const aId=String(a.id), bId=String(b.id);
         const aManual=Number(a.marketing_priority||0)*35;
         const bManual=Number(b.marketing_priority||0)*35;
-        const aLearn=(learnedScore.get(aId)||0) + aManual - (recentUse.get(aId)||0)*12;
-        const bLearn=(learnedScore.get(bId)||0) + bManual - (recentUse.get(bId)||0)*12;
+        const aLearn=(learnedScore.get(aId)||0) + (trendScore.get(aId)||0) + aManual - (recentUse.get(aId)||0)*12;
+        const bLearn=(learnedScore.get(bId)||0) + (trendScore.get(bId)||0) + bManual - (recentUse.get(bId)||0)*12;
         return bLearn-aLearn || Number(Boolean(b.image_url))-Number(Boolean(a.image_url)) || (recentUse.get(aId)||0)-(recentUse.get(bId)||0);
       });
       const hourBuckets = new Map<string,{score:number;count:number}>();
@@ -830,7 +854,7 @@ Deno.serve(async (req: Request) => {
       await supabase.from("posts").delete().eq("content_plan_id", plan.id).in("status", ["draft", "rejected"]);
       const pillars = pillarSequence(frequency);
       const scheduleDays = scheduleOffsets(frequency, restaurant.opening_hours, learnedScheduleDays, weekTarget.minDayOffset);
-      const selectedMenu = selectWeekItems(rankedMenu, pillars, recentUse, learnedScore);
+      const selectedMenu = selectWeekItems(rankedMenu, pillars, recentUse, learnedScore, trendScore);
       const payload = Array.from({ length: frequency }).map((_, index) => {
         const item = selectedMenu[index] || rankedMenu[index % rankedMenu.length];
         const otherItem = selectedMenu[(index + 1) % selectedMenu.length] || rankedMenu[(index + 1) % rankedMenu.length];
@@ -864,6 +888,7 @@ Deno.serve(async (req: Request) => {
             learning_signal: {
               performance_samples: (performanceRows || []).length,
               item_score: Math.round((learnedScore.get(String(item.id)) || 0) * 10) / 10,
+              approved_trend_boost: trendScore.get(String(item.id)) || 0,
               performance_samples_item: learnedSamples.get(String(item.id)) || 0,
               performance_confidence: Math.round(learningConfidence(learnedSamples.get(String(item.id)) || 0) * 100),
               marketing_priority: Number(item.marketing_priority || 0),
@@ -894,6 +919,7 @@ Deno.serve(async (req: Request) => {
           frequency,
           hero_menu_item_id: rankedMenu.find((item:any)=>Number(item.marketing_priority||0)>=3)?.id || null,
           performance_samples: (performanceRows || []).length,
+          approved_trend_signals: (approvedTrendRows || []).length,
           learned_schedule_days: learnedScheduleDays,
           learned_schedule_hours: learnedScheduleHours,
         },
@@ -916,7 +942,7 @@ Deno.serve(async (req: Request) => {
         });
         if (noticeError) console.error("weekly_plan_ready notice failed", noticeError.message);
       }
-      return json({ ok: true, existing: false, created: action === "ensure_week", plan, posts, engine: "restaurant-autopilot-v27", pillars, timezone: timeZone, schedule_days: scheduleDays, week_start: weekStart, next_week: weekTarget.nextWeek, learning:{performance_samples:(performanceRows||[]).length,schedule_hours:learnedScheduleHours,schedule_days:learnedScheduleDays,ranked_menu:rankedMenu.map((item:any)=>({id:item.id,name:item.name,score:Math.round(((learnedScore.get(String(item.id))||0)+Number(item.marketing_priority||0)*35)*10)/10,performance_samples_item:learnedSamples.get(String(item.id))||0,performance_confidence:Math.round(learningConfidence(learnedSamples.get(String(item.id))||0)*100),marketing_priority:Number(item.marketing_priority||0),recent_uses_30d:recentUse.get(String(item.id))||0,coverage_bonus:(recentUse.get(String(item.id))||0)===0?22:(recentUse.get(String(item.id))||0)===1?8:0,exploration_bonus:Number(item.marketing_priority||0)>=2&&!(learnedScore.get(String(item.id))||0)?12:0}))} });
+      return json({ ok: true, existing: false, created: action === "ensure_week", plan, posts, engine: "restaurant-autopilot-v27", pillars, timezone: timeZone, schedule_days: scheduleDays, week_start: weekStart, next_week: weekTarget.nextWeek, learning:{performance_samples:(performanceRows||[]).length,schedule_hours:learnedScheduleHours,schedule_days:learnedScheduleDays,ranked_menu:rankedMenu.map((item:any)=>({id:item.id,name:item.name,score:Math.round(((learnedScore.get(String(item.id))||0)+(trendScore.get(String(item.id))||0)+Number(item.marketing_priority||0)*35)*10)/10,trend_boost:trendScore.get(String(item.id))||0,performance_samples_item:learnedSamples.get(String(item.id))||0,performance_confidence:Math.round(learningConfidence(learnedSamples.get(String(item.id))||0)*100),marketing_priority:Number(item.marketing_priority||0),recent_uses_30d:recentUse.get(String(item.id))||0,coverage_bonus:(recentUse.get(String(item.id))||0)===0?22:(recentUse.get(String(item.id))||0)===1?8:0,exploration_bonus:Number(item.marketing_priority||0)>=2&&!(learnedScore.get(String(item.id))||0)?12:0}))} });
     }
 
     if (action === "promotion") {
