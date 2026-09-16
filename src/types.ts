@@ -34,6 +34,7 @@ export type Restaurant = {
   default_logo_size?: LogoSize
   default_logo_badge?: LogoBadge
   default_overlay_strength?: number
+  weekly_autopilot_enabled?: boolean
 }
 
 export type MenuItem = {
