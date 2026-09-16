@@ -57,6 +57,7 @@ function App() {
   const [pwaInstalled,setPwaInstalled]=useState(()=>isStandaloneApp())
   const [showIosInstall,setShowIosInstall]=useState(false)
   const [pwaUpdateReady,setPwaUpdateReady]=useState(false)
+  const [stripeReturnHandled,setStripeReturnHandled]=useState(false)
   const params = new URLSearchParams(window.location.search)
   const adminSetupRequested = params.get('superadmin') === 'setup'
   const legalParam = params.get('legal') as 'terms'|'privacy'|'ai'|'refund'|null
@@ -76,6 +77,49 @@ function App() {
     if (!session) { setLoading(false); return }
     void boot(session)
   }, [session?.user.id])
+
+  useEffect(()=>{
+    if(!session||stripeReturnHandled)return
+    const query=new URLSearchParams(window.location.search)
+    const payment=query.get('payment')
+    if(payment!=='stripe-success'&&payment!=='stripe-cancel')return
+    setStripeReturnHandled(true)
+    void handleGlobalStripeReturn(payment,query)
+  },[session?.user.id,stripeReturnHandled])
+
+  async function handleGlobalStripeReturn(payment:string,query:URLSearchParams){
+    const clean=()=>{
+      query.delete('payment');query.delete('session_id');query.delete('order')
+      const qs=query.toString()
+      window.history.replaceState({},'',window.location.pathname+(qs?'?'+qs:'')+window.location.hash)
+    }
+    if(payment==='stripe-cancel'){
+      clean()
+      setNotice('Kartično plaćanje je otkazano. Narudžbina nije naplaćena.')
+      return
+    }
+    const sessionId=query.get('session_id')||''
+    if(!sessionId){
+      clean()
+      setNotice('Stripe povratak nema session ID. Proveri status narudžbine u Paketu / licenci.')
+      return
+    }
+    setNotice('Proveravam Stripe uplatu…')
+    const{data,error}=await supabase.functions.invoke('checkout-order',{body:{action:'confirm_stripe',sessionId}})
+    clean()
+    if(error||data?.error){
+      setNotice(data?.error||error?.message||'Stripe uplata još nije potvrđena.')
+      return
+    }
+    if(data?.paid){
+      setNotice('Kartična uplata je potvrđena. Paket je aktiviran / produžen.')
+      await loadAccountState()
+      await loadUnreadNotifications()
+      if(session)await loadRestaurants(session.user.id,restaurant?.id)
+      return
+    }
+    setNotice('Stripe još obrađuje uplatu. Status će se osvežiti kada potvrda stigne.')
+  }
 
   useEffect(()=>{
     const installHandler=(event:Event)=>{
