@@ -43,11 +43,12 @@ export function Dashboard({ restaurant, menuItems, posts, onChanged, setNotice, 
 
   const weekQuality = useMemo(() => {
     const planned = orderedPosts.filter((post) => post.status !== 'rejected')
-    if (!planned.length) return { score: 0, label: 'Čeka plan', issues: ['Generiši nedelju da Autopilot proveri kvalitet plana.'], uniqueDishes: 0, heroPosts: 0, scheduled: 0, formats: 0, duplicateCopy: 0 }
+    if (!planned.length) return { score: 0, label: 'Čeka plan', issues: ['Generiši nedelju da Autopilot proveri kvalitet plana.'], uniqueDishes: 0, heroPosts: 0, scheduled: 0, formats: 0, duplicateCopy: 0, pastScheduled: 0 }
     const ids = planned.map((post) => post.menu_item_id).filter(Boolean) as string[]
     const uniqueDishes = new Set(ids).size
     const heroPosts = heroItem ? planned.filter((post) => post.menu_item_id === heroItem.id || Number(post.generation_meta?.learning_signal?.marketing_priority || post.generation_meta?.marketing_priority || 0) >= 3).length : 0
     const scheduled = planned.filter((post) => Boolean(post.scheduled_for)).length
+    const pastScheduled = planned.filter((post) => post.status !== 'published' && post.scheduled_for && new Date(post.scheduled_for).getTime() < Date.now() - 15 * 60 * 1000).length
     const formats = new Set(planned.map((post) => post.post_type)).size
     let adjacentRepeats = 0
     for (let i = 1; i < planned.length; i += 1) {
@@ -66,16 +67,17 @@ export function Dashboard({ restaurant, menuItems, posts, onChanged, setNotice, 
     if (heroItem && heroPosts === 0) { score -= 18; issues.push('HERO jelo nije zastupljeno u planu.') }
     if (heroItem && heroPosts > Math.max(2, Math.ceil(planned.length * 0.4))) { score -= 12; issues.push('HERO jelo se ponavlja previše često.') }
     if (scheduled < planned.length) { score -= Math.min(18, (planned.length - scheduled) * 6); issues.push(`${planned.length - scheduled} objava nema termin.`) }
+    if (pastScheduled > 0) { score -= Math.min(24, pastScheduled * 8); issues.push(`${pastScheduled} neobjavljena ${pastScheduled===1?'objava ima':'objave imaju'} termin u prošlosti.`) }
     if (planned.length >= 3 && formats < 2) { score -= 10; issues.push('Nedelja nema dovoljno različitih formata.') }
     score = Math.max(0, Math.min(100, score))
     const label = score >= 90 ? 'Odličan plan' : score >= 75 ? 'Dobar plan' : score >= 55 ? 'Treba doradu' : 'Slab plan'
-    return { score, label, issues, uniqueDishes, heroPosts, scheduled, formats, duplicateCopy }
+    return { score, label, issues, uniqueDishes, heroPosts, scheduled, formats, duplicateCopy, pastScheduled }
   }, [orderedPosts, heroItem, activeItems.length, restaurant.posting_frequency])
 
   const weekQualityAction = useMemo(() => {
     if (!orderedPosts.length || weekQuality.score >= 90) return null
     if (!heroItem || (activeItems.length > 1 && weekQuality.uniqueDishes < Math.min(3, activeItems.length))) return { label: 'Sredi meni', kind: 'menu' as const }
-    if (weekQuality.scheduled < orderedPosts.length) return { label: 'Sredi termine', kind: 'publish' as const }
+    if (weekQuality.scheduled < orderedPosts.length || weekQuality.pastScheduled > 0) return { label: 'Sredi termine', kind: 'publish' as const }
     return { label: 'Auto popravi plan', kind: 'regenerate' as const }
   }, [orderedPosts.length, weekQuality.score, weekQuality.uniqueDishes, weekQuality.scheduled, heroItem, activeItems.length])
 
