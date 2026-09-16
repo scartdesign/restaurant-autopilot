@@ -1,13 +1,27 @@
 import { useEffect, useState } from 'react'
-import { BarChart3, CheckCircle2, Circle, Clock3, Image as ImageIcon, Instagram, LayoutDashboard, Megaphone, Palette, Send, Settings, Sparkles, UtensilsCrossed } from 'lucide-react'
+import { AlertTriangle, BarChart3, CheckCircle2, Circle, Clock3, Image as ImageIcon, Instagram, LayoutDashboard, Megaphone, Palette, RefreshCw, Send, Settings, ShieldCheck, Sparkles, UtensilsCrossed } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import type { MenuItem, Post, Restaurant } from '../types'
 
-type LaunchTab = 'dashboard'|'creative'|'studio'|'brand'|'publish'|'insights'|'menu'|'promotions'|'settings'
+type LaunchTab = 'dashboard'|'creative'|'studio'|'brand'|'publish'|'insights'|'menu'|'promotions'|'settings'|'billing'
 
 export function LaunchCenter({restaurant,menuItems,posts,onNavigate}:{restaurant:Restaurant;menuItems:MenuItem[];posts:Post[];onNavigate:(tab:LaunchTab)=>void}){
   const[performanceCount,setPerformanceCount]=useState(0)
-  useEffect(()=>{void supabase.from('post_performance').select('id',{count:'exact',head:true}).eq('restaurant_id',restaurant.id).then(({count})=>setPerformanceCount(count||0))},[restaurant.id,posts.length])
+  const[preflight,setPreflight]=useState<any>(null)
+  const[preflightLoading,setPreflightLoading]=useState(false)
+  useEffect(()=>{void supabase.from('post_performance').select('id',{count:'exact',head:true}).eq('restaurant_id',restaurant.id).then(({count})=>setPerformanceCount(count||0));void runPreflight(false)},[restaurant.id,posts.length,menuItems.length])
+  async function runPreflight(recordActivity=false){
+    setPreflightLoading(true)
+    const{data,error}=await supabase.functions.invoke('content-engine',{body:{action:'preflight',restaurantId:restaurant.id,recordActivity}})
+    if(!error&&!data?.error)setPreflight(data)
+    setPreflightLoading(false)
+  }
+  function preflightTarget(){
+    const key=preflight?.blockers?.[0]?.key||preflight?.warnings?.[0]?.key
+    if(key==='package'||key==='quota')return 'billing' as LaunchTab
+    if(key==='menu'||key==='diversity'||key==='hero'||key==='photos')return 'menu' as LaunchTab
+    return 'settings' as LaunchTab
+  }
   const activeItems=menuItems.filter(i=>i.is_active)
   const photos=activeItems.filter(i=>i.image_url).length
   const photoCoverage=activeItems.length?Math.round((photos/activeItems.length)*100):0
@@ -36,6 +50,12 @@ export function LaunchCenter({restaurant,menuItems,posts,onNavigate}:{restaurant
       <div><span className="creative-kicker"><Sparkles size={16}/> LAUNCH CENTER</span><h1>{score===100?'Restoran je spreman za Autopilot.':'Dovedi restoran do 100% spremnosti.'}</h1><p>Jedan ekran pokazuje šta još nedostaje da klijent može samostalno da koristi sistem bez tvoje pomoći.</p>
       <div className="launch-actions">{next?<button className="primary" onClick={()=>onNavigate(next.tab)}>Nastavi: {next.title}</button>:<button className="primary" onClick={()=>onNavigate('creative')}><Megaphone size={16}/> Napravi novu kampanju</button>}<button className="secondary" onClick={()=>onNavigate('dashboard')}><LayoutDashboard size={16}/> Otvori sadržaj</button></div></div>
       <div className="launch-score"><strong>{score}<small>%</small></strong><span>{completed}/{tasks.length} koraka završeno</span><div className="launch-ring"><i style={{'--score':score} as React.CSSProperties}/></div></div>
+    </section>
+
+    <section className={'launch-preflight '+(preflight?.status||'loading')}>
+      <div className="launch-preflight-icon">{preflight?.ready||preflight?.existing?<ShieldCheck size={22}/>:<AlertTriangle size={22}/>}</div>
+      <div><span>AUTO WEEK PREFLIGHT</span><strong>{preflightLoading&&!preflight?'Proveravam spremnost…':preflight?.existing?'Plan za ciljnu nedelju već postoji':preflight?.ready?'Server potvrđuje da je Autopilot spreman':'Autopilot trenutno ima blocker'}</strong><small>{preflight?.week_start?('Nedelja '+preflight.week_start+(preflight.next_week?' · sledeća':'')): 'Paket, meni, radno vreme, quota i postojeći plan se proveravaju na serveru.'}</small></div>
+      <div className="launch-preflight-actions"><button className="secondary" onClick={()=>void runPreflight(true)} disabled={preflightLoading}><RefreshCw size={14}/>{preflightLoading?'Proveravam':'Ponovo proveri'}</button>{preflight&&!preflight.ready&&!preflight.existing&&<button className="primary" onClick={()=>onNavigate(preflightTarget())}>Sredi blocker</button>}</div>
     </section>
 
     <section className="launch-grid">
