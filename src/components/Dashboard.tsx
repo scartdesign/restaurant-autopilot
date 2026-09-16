@@ -40,6 +40,34 @@ export function Dashboard({ restaurant, menuItems, posts, onChanged, setNotice }
     return itemPhoto || postPhoto || null
   }, [activeItems, posts, menuItems])
 
+  const weekQuality = useMemo(() => {
+    const planned = orderedPosts.filter((post) => post.status !== 'rejected')
+    if (!planned.length) return { score: 0, label: 'Čeka plan', issues: ['Generiši nedelju da Autopilot proveri kvalitet plana.'], uniqueDishes: 0, heroPosts: 0, scheduled: 0, formats: 0 }
+    const ids = planned.map((post) => post.menu_item_id).filter(Boolean) as string[]
+    const uniqueDishes = new Set(ids).size
+    const heroPosts = heroItem ? planned.filter((post) => post.menu_item_id === heroItem.id || Number(post.generation_meta?.learning_signal?.marketing_priority || post.generation_meta?.marketing_priority || 0) >= 3).length : 0
+    const scheduled = planned.filter((post) => Boolean(post.scheduled_for)).length
+    const formats = new Set(planned.map((post) => post.post_type)).size
+    let adjacentRepeats = 0
+    for (let i = 1; i < planned.length; i += 1) {
+      if (planned[i].menu_item_id && planned[i].menu_item_id === planned[i - 1].menu_item_id) adjacentRepeats += 1
+    }
+
+    let score = 100
+    const issues: string[] = []
+    const expected = Math.max(1, restaurant.posting_frequency || planned.length)
+    if (planned.length < expected) { score -= Math.min(24, (expected - planned.length) * 8); issues.push(`Plan ima ${planned.length}/${expected} ciljnih objava.`) }
+    if (activeItems.length > 1 && uniqueDishes < Math.min(3, activeItems.length)) { score -= 16; issues.push('Premalo različitih jela u nedeljnom planu.') }
+    if (adjacentRepeats > 0) { score -= Math.min(24, adjacentRepeats * 12); issues.push(`${adjacentRepeats} uzastopno ponavljanje istog jela.`) }
+    if (heroItem && heroPosts === 0) { score -= 18; issues.push('HERO jelo nije zastupljeno u planu.') }
+    if (heroItem && heroPosts > Math.max(2, Math.ceil(planned.length * 0.4))) { score -= 12; issues.push('HERO jelo se ponavlja previše često.') }
+    if (scheduled < planned.length) { score -= Math.min(18, (planned.length - scheduled) * 6); issues.push(`${planned.length - scheduled} objava nema termin.`) }
+    if (planned.length >= 3 && formats < 2) { score -= 10; issues.push('Nedelja nema dovoljno različitih formata.') }
+    score = Math.max(0, Math.min(100, score))
+    const label = score >= 90 ? 'Odličan plan' : score >= 75 ? 'Dobar plan' : score >= 55 ? 'Treba doradu' : 'Slab plan'
+    return { score, label, issues, uniqueDishes, heroPosts, scheduled, formats }
+  }, [orderedPosts, heroItem, activeItems.length, restaurant.posting_frequency])
+
   async function generateWeek() {
     if (!activeItems.length) {
       setNotice('Prvo dodaj bar jedno aktivno jelo u meni.')
@@ -236,6 +264,20 @@ export function Dashboard({ restaurant, menuItems, posts, onChanged, setNotice }
             </div>
           )) : <div className="marketing-focus-empty"><Sparkles size={18} /><span>Još nema marketinški prioritetnih jela.</span></div>}
         </div>
+      </section>
+
+      <section className="week-quality-panel panel">
+        <div className="week-quality-score">
+          <span className="week-quality-ring" style={{ '--quality': weekQuality.score } as React.CSSProperties}><strong>{weekQuality.score}</strong><small>/100</small></span>
+          <div><p className="eyebrow">WEEK QUALITY</p><h2>{weekQuality.label}</h2><span>{weekQuality.issues[0] || 'Plan je izbalansiran i spreman za dalju obradu.'}</span></div>
+        </div>
+        <div className="week-quality-metrics">
+          <div><strong>{weekQuality.uniqueDishes}</strong><span>različita jela</span></div>
+          <div><strong>{weekQuality.heroPosts}</strong><span>HERO objave</span></div>
+          <div><strong>{weekQuality.scheduled}/{orderedPosts.length}</strong><span>sa terminom</span></div>
+          <div><strong>{weekQuality.formats}</strong><span>formata</span></div>
+        </div>
+        {weekQuality.issues.length > 1 && <div className="week-quality-issues">{weekQuality.issues.slice(1, 4).map((issue) => <span key={issue}><Zap size={12}/>{issue}</span>)}</div>}
       </section>
 
       <section className="wow-dashboard-grid">
