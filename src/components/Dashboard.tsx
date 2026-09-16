@@ -3,12 +3,13 @@ import { ArrowUpRight, CalendarDays, CheckCircle2, ChefHat, Clock3, Copy, CopyPl
 import { supabase } from '../lib/supabase'
 import type { MenuItem, Post, Restaurant } from '../types'
 
-export function Dashboard({ restaurant, menuItems, posts, onChanged, setNotice }: {
+export function Dashboard({ restaurant, menuItems, posts, onChanged, setNotice, onNavigate }: {
   restaurant: Restaurant
   menuItems: MenuItem[]
   posts: Post[]
   onChanged: () => Promise<void>
   setNotice: (value: string) => void
+  onNavigate?: (tab: 'menu' | 'publish') => void
 }) {
   const [generating, setGenerating] = useState(false)
   const [workingId, setWorkingId] = useState('')
@@ -67,6 +68,14 @@ export function Dashboard({ restaurant, menuItems, posts, onChanged, setNotice }
     const label = score >= 90 ? 'Odličan plan' : score >= 75 ? 'Dobar plan' : score >= 55 ? 'Treba doradu' : 'Slab plan'
     return { score, label, issues, uniqueDishes, heroPosts, scheduled, formats }
   }, [orderedPosts, heroItem, activeItems.length, restaurant.posting_frequency])
+
+  const weekQualityAction = useMemo(() => {
+    if (!orderedPosts.length || weekQuality.score >= 90) return null
+    if (!heroItem || (activeItems.length > 1 && weekQuality.uniqueDishes < Math.min(3, activeItems.length))) return { label: 'Sredi meni', kind: 'menu' as const }
+    if (weekQuality.scheduled < orderedPosts.length) return { label: 'Sredi termine', kind: 'publish' as const }
+    return { label: 'Auto popravi plan', kind: 'regenerate' as const }
+  }, [orderedPosts.length, weekQuality.score, weekQuality.uniqueDishes, weekQuality.scheduled, heroItem, activeItems.length])
+
 
   async function generateWeek() {
     if (!activeItems.length) {
@@ -269,7 +278,7 @@ export function Dashboard({ restaurant, menuItems, posts, onChanged, setNotice }
       <section className="week-quality-panel panel">
         <div className="week-quality-score">
           <span className="week-quality-ring" style={{ '--quality': weekQuality.score } as CSSProperties}><strong>{weekQuality.score}</strong><small>/100</small></span>
-          <div><p className="eyebrow">WEEK QUALITY</p><h2>{weekQuality.label}</h2><span>{weekQuality.issues[0] || 'Plan je izbalansiran i spreman za dalju obradu.'}</span>{orderedPosts.length > 0 && weekQuality.score < 90 && <button className="week-quality-fix" onClick={generateWeek} disabled={generating}><Sparkles size={13}/>{generating?'Popravljam plan…':'Auto popravi plan'}</button>}</div>
+          <div><p className="eyebrow">WEEK QUALITY</p><h2>{weekQuality.label}</h2><span>{weekQuality.issues[0] || 'Plan je izbalansiran i spreman za dalju obradu.'}</span>{weekQualityAction && <button className="week-quality-fix" onClick={() => weekQualityAction.kind === 'regenerate' ? void generateWeek() : onNavigate?.(weekQualityAction.kind)} disabled={generating}><Sparkles size={13}/>{generating&&weekQualityAction.kind==='regenerate'?'Popravljam plan…':weekQualityAction.label}</button>}</div>
         </div>
         <div className="week-quality-metrics">
           <div><strong>{weekQuality.uniqueDishes}</strong><span>različita jela</span></div>
