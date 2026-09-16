@@ -96,8 +96,8 @@ export function InsightsCenter({restaurant,posts,menuItems,setNotice}:{restauran
   },[ranking])
 
   const dishStats=useMemo(()=>{
-    const map=new Map<string,{name:string;reach:number;interactions:number;conversions:number}>()
-    for(const item of ranking){const id=item.post.menu_item_id;if(!id)continue;const name=menuMap.get(id)?.name||'Jelo';const prev=map.get(id)||{name,reach:0,interactions:0,conversions:0};prev.reach+=item.m.reach;prev.interactions+=item.interactions;prev.conversions+=item.m.conversions;map.set(id,prev)}
+    const map=new Map<string,{id:string;name:string;reach:number;interactions:number;conversions:number;samples:number}>()
+    for(const item of ranking){const id=item.post.menu_item_id;if(!id)continue;const name=menuMap.get(id)?.name||'Jelo';const prev=map.get(id)||{id,name,reach:0,interactions:0,conversions:0,samples:0};prev.reach+=item.m.reach;prev.interactions+=item.interactions;prev.conversions+=item.m.conversions;prev.samples+=1;map.set(id,prev)}
     return [...map.values()].map(v=>({...v,engagement:v.reach?v.interactions/v.reach*100:0})).sort((a,b)=>b.engagement-a.engagement)
   },[ranking,menuMap])
 
@@ -128,15 +128,15 @@ export function InsightsCenter({restaurant,posts,menuItems,setNotice}:{restauran
   const opportunities=useMemo(()=>{
     const cutoff=Date.now()-30*86400000
     const recentIds=new Set(posts.filter(post=>post.menu_item_id&&post.scheduled_for&&new Date(post.scheduled_for).getTime()>=cutoff).map(post=>post.menu_item_id as string))
-    const measuredIds=new Set(ranking.map(item=>item.post.menu_item_id).filter(Boolean) as string[])
+    const sampleCount=new Map(dishStats.map(dish=>[dish.id,dish.samples]))
     return menuItems.filter(item=>item.is_active).map(item=>{
       const priority=Number(item.marketing_priority||0)
       if(!recentIds.has(item.id))return{item,kind:'gap' as const,score:100+priority*20,reason:priority>=2?'Visok prioritet, ali nije bio u sadržaju poslednjih 30 dana.':'Nije bio u sadržaju poslednjih 30 dana.'}
-      if(priority>=2&&!measuredIds.has(item.id))return{item,kind:'test' as const,score:70+priority*15,reason:'Prioritetno jelo nema performance podatke — treba ga testirati i izmeriti.'}
+      if(priority>=2&&(sampleCount.get(item.id)||0)<2)return{item,kind:'test' as const,score:70+priority*15,reason:`Prioritetno jelo ima ${sampleCount.get(item.id)||0}/2 potrebna performance uzorka — treba ga još testirati.`}
       if(!item.image_url)return{item,kind:'photo' as const,score:40+priority*10,reason:'Aktivno jelo nema fotografiju, pa ne može da dobije najjači vizual.'}
       return null
     }).filter(Boolean).sort((a,b)=>(b?.score||0)-(a?.score||0)).slice(0,3) as {item:MenuItem;kind:'gap'|'test'|'photo';score:number;reason:string}[]
-  },[posts,menuItems,ranking])
+  },[posts,menuItems,dishStats])
 
 
   function openEditor(post:Post){
@@ -235,6 +235,9 @@ export function InsightsCenter({restaurant,posts,menuItems,setNotice}:{restauran
   const learningLevel=tracked.length>=8?'strong':tracked.length>=3?'learning':'starting'
   const learningLabel=learningLevel==='strong'?'Jako učenje':learningLevel==='learning'?'Učenje aktivno':'Tek počinje'
   const learningProgress=Math.min(100,Math.round((tracked.length/8)*100))
+  const activeDishCount=menuItems.filter(item=>item.is_active).length
+  const learnedDishCount=dishStats.filter(dish=>dish.samples>=2).length
+  const dishCoverage=activeDishCount?Math.round((learnedDishCount/activeDishCount)*100):0
 
   return <div className="insights-center">
     <header className="page-header insights-header"><div><p className="eyebrow">PERFORMANCE LOOP</p><h1>Rezultati</h1><p className="muted">Upiši stvarne rezultate objava i Autopilot dobija povratnu informaciju šta kod tvog restorana radi najbolje.</p></div><div className="insights-head-actions"><input ref={importRef} className="performance-file-input" type="file" accept=".csv,text/csv" onChange={e=>{const file=e.target.files?.[0];if(file)void importPerformanceCsv(file)}}/><button className="secondary" onClick={downloadImportTemplate}><FileDown size={15}/> CSV šablon</button><button className="secondary" onClick={()=>importRef.current?.click()} disabled={importing}><Upload size={15}/>{importing?'Uvozim…':'Uvezi rezultate'}</button><button className="secondary" onClick={()=>void load()} disabled={loading}><RefreshCw size={15}/>{loading?'Osvežavam…':'Osveži'}</button><button className="primary" onClick={exportCsv} disabled={!ranking.length}><Download size={15}/> Izvezi CSV</button></div></header>
@@ -252,6 +255,7 @@ export function InsightsCenter({restaurant,posts,menuItems,setNotice}:{restauran
         <strong>{learningProgress}%</strong>
       </div>
       <div className="learning-progress"><i style={{width:`${learningProgress}%`}}/></div>
+      <div className="learning-coverage-row"><span>Performance coverage menija <b>{learnedDishCount}/{activeDishCount}</b></span><div><i style={{width:`${dishCoverage}%`}}/></div></div>
       <div className="learning-signals">
         <div><span>Najbolje jelo</span><strong>{bestDish?.name||'čeka podatke'}</strong></div>
         <div><span>Najjači pillar</span><strong>{bestPillar?pillarLabel(bestPillar.pillar):'čeka podatke'}</strong></div>
