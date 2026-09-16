@@ -47,7 +47,7 @@ function App() {
   const [notice, setNotice] = useState('')
   const [unreadNotifications,setUnreadNotifications]=useState(0)
   const [activeTab, setActiveTab] = useState<Tab>('launch')
-  const [demo, setDemo] = useState(() => new URLSearchParams(window.location.search).get('demo') === '1' || ['htmlpreview.github.io','html-preview.github.io'].includes(window.location.hostname))
+  const [demo, setDemo] = useState(() => new URLSearchParams(window.location.search).get('demo') === '1' || ['htmlpreview.github.io','html-preview.github.io','raw.githack.com','rawcdn.githack.com'].includes(window.location.hostname))
   const [showAuth,setShowAuth]=useState(false)
   const [mobileMenuOpen,setMobileMenuOpen]=useState(false)
   const [addingRestaurant, setAddingRestaurant] = useState(false)
