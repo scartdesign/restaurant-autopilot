@@ -1,50 +1,10 @@
-name: Deploy Restaurant Autopilot Preview
+name: GitHub Pages (manual)
 
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
 
-permissions:
-  contents: read
-  pages: write
-  id-token: write
-
-concurrency:
-  group: pages
-  cancel-in-progress: false
-
 jobs:
-  deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+  info:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v7
-
-      - name: Enable and configure GitHub Pages
-        uses: actions/configure-pages@v5
-        with:
-          enablement: true
-
-      - name: Upload preview app
-        uses: actions/upload-pages-artifact@v4
-        with:
-          path: preview-app
-
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
-
-      - name: Smoke test deployed app
-        shell: bash
-        run: |
-          set -euo pipefail
-          URL="${{ steps.deployment.outputs.page_url }}?demo=1"
-          curl -fsSL -D /tmp/headers.txt "$URL" -o /tmp/app.html
-          tr -d '\r' < /tmp/headers.txt > /tmp/headers.clean
-          cat /tmp/headers.clean
-          grep -Eiq '^content-type: *text/html' /tmp/headers.clean
-          grep -Fq '<div id="root"></div>' /tmp/app.html
+      - run: echo "GitHub Pages auto-enable is unavailable to the connected GitHub App."
