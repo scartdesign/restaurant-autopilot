@@ -111,6 +111,20 @@ export function InsightsCenter({restaurant,posts,menuItems,setNotice}:{restauran
     return [...map.entries()].map(([hour,v])=>({hour,count:v.count,avgScore:v.score/v.count,avgEngagement:v.engagement/v.count})).sort((a,b)=>b.avgScore-a.avgScore||b.count-a.count)
   },[ranking,restaurant.timezone])
 
+  const opportunities=useMemo(()=>{
+    const cutoff=Date.now()-30*86400000
+    const recentIds=new Set(posts.filter(post=>post.menu_item_id&&post.scheduled_for&&new Date(post.scheduled_for).getTime()>=cutoff).map(post=>post.menu_item_id as string))
+    const measuredIds=new Set(ranking.map(item=>item.post.menu_item_id).filter(Boolean) as string[])
+    return menuItems.filter(item=>item.is_active).map(item=>{
+      const priority=Number(item.marketing_priority||0)
+      if(!recentIds.has(item.id))return{item,kind:'gap' as const,score:100+priority*20,reason:priority>=2?'Visok prioritet, ali nije bio u sadržaju poslednjih 30 dana.':'Nije bio u sadržaju poslednjih 30 dana.'}
+      if(priority>=2&&!measuredIds.has(item.id))return{item,kind:'test' as const,score:70+priority*15,reason:'Prioritetno jelo nema performance podatke — treba ga testirati i izmeriti.'}
+      if(!item.image_url)return{item,kind:'photo' as const,score:40+priority*10,reason:'Aktivno jelo nema fotografiju, pa ne može da dobije najjači vizual.'}
+      return null
+    }).filter(Boolean).sort((a,b)=>(b?.score||0)-(a?.score||0)).slice(0,3) as {item:MenuItem;kind:'gap'|'test'|'photo';score:number;reason:string}[]
+  },[posts,menuItems,ranking])
+
+
   function openEditor(post:Post){
     const existing=rows.find(row=>row.post_id===post.id&&row.platform==='combined')||rows.find(row=>row.post_id===post.id)
     setEditing(post)
@@ -177,6 +191,11 @@ export function InsightsCenter({restaurant,posts,menuItems,setNotice}:{restauran
         <div><span>Najbolji termin</span><strong>{bestTime?`${String(bestTime.hour).padStart(2,'0')}:30`:'čeka podatke'}</strong></div><div><span>Praćeno</span><strong>{tracked.length}/{postsForTracking.length}</strong></div>
       </div>
       <p>{learningLevel==='strong'?'Autopilot sada ima dovoljno lokalnih signala da prioritet, izbor jela i format više oslanja na rezultate ovog restorana, a manje na početne pretpostavke.':learningLevel==='learning'?'Model već koristi tvoje stvarne rezultate. Dodaj još nekoliko objava da preporuke budu stabilnije.':'Unesi rezultate za prve 3 objave. Do tada sistem koristi prioritet jela, recency i sigurni početni miks sadržaja.'}</p>
+    </section>
+
+    <section className="opportunity-radar panel">
+      <div className="panel-heading"><div><p className="eyebrow">OPPORTUNITY RADAR</p><h2>Šta sledeće vredi testirati</h2></div><Target size={20}/></div>
+      {opportunities.length?<div className="opportunity-list">{opportunities.map(({item,kind,reason})=><article key={item.id}><div className={`opportunity-kind ${kind}`}>{kind==='gap'?'CONTENT GAP':kind==='test'?'TEST SIGNAL':'PHOTO GAP'}</div><strong>{item.name}</strong><span>{reason}</span><small>{item.marketing_priority===3?'HERO':item.marketing_priority===2?'VISOK PRIORITET':item.marketing_priority===1?'PRIORITET':'STANDARDNO'}</small></article>)}</div>:<div className="opportunity-clear"><CheckCircle2 size={19}/><div><strong>Nema očiglednih rupa.</strong><span>Aktivna jela imaju svež sadržaj, fotografije i bar osnovne performance signale.</span></div></div>}
     </section>
 
     <section className="insights-smart panel">
