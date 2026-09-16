@@ -24,7 +24,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          URL="https://restaurant-autopilot-54szvlv45-office-5450s-projects.vercel.app/?demo=1"
+          URL="https://restaurant-autopilot-office-5450s-projects.vercel.app/?demo=1"
           curl --retry 12 --retry-delay 5 --retry-all-errors -fsSL -D /tmp/headers.txt "$URL" -o /tmp/app.html
           tr -d '\r' < /tmp/headers.txt > /tmp/headers.clean
           cat /tmp/headers.clean
@@ -33,7 +33,7 @@ jobs:
           JS_PATH=$(grep -oE 'src="./assets/[^"]+\.js"' /tmp/app.html | head -1 | cut -d'"' -f2)
           test -n "$JS_PATH"
           JS_PATH="${JS_PATH#./}"
-          curl -fsSL -D /tmp/js-headers.txt "https://restaurant-autopilot-54szvlv45-office-5450s-projects.vercel.app/$JS_PATH" -o /tmp/app.js
+          curl -fsSL -D /tmp/js-headers.txt "https://restaurant-autopilot-office-5450s-projects.vercel.app/$JS_PATH" -o /tmp/app.js
           tr -d '\r' < /tmp/js-headers.txt > /tmp/js-headers.clean
           grep -Eiq '^content-type: *(application|text)/(javascript|x-javascript)' /tmp/js-headers.clean
           test -s /tmp/app.js
