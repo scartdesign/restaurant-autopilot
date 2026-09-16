@@ -1,9 +1,9 @@
-import { BarChart3, Bell, CheckCheck, CheckCircle2, Clock3, CreditCard, LifeBuoy, Mail, RefreshCw } from 'lucide-react'
+import { BarChart3, Bell, CalendarDays, CheckCheck, CheckCircle2, Clock3, CreditCard, LifeBuoy, Mail, RefreshCw } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import type { NotificationOutbox } from '../types'
 
-export function NotificationsCenter({setNotice,onUnreadChanged,onNavigate}:{setNotice:(v:string)=>void;onUnreadChanged?:(count:number)=>void;onNavigate?:(target:'insights'|'billing'|'support')=>void}){
+export function NotificationsCenter({setNotice,onUnreadChanged,onNavigate}:{setNotice:(v:string)=>void;onUnreadChanged?:(count:number)=>void;onNavigate?:(target:'insights'|'billing'|'support'|'dashboard')=>void}){
   const[items,setItems]=useState<NotificationOutbox[]>([])
   const[working,setWorking]=useState(false)
   useEffect(()=>{void load()},[])
@@ -17,9 +17,10 @@ export function NotificationsCenter({setNotice,onUnreadChanged,onNavigate}:{setN
     <section className="notification-list">{items.length?items.map(item=>{const action=notificationAction(item.kind);return <article key={item.id} className={'notification-card '+(!item.read_at?'unread':'')} onClick={()=>!item.read_at&&void markRead(item.id)}><div className="notification-icon">{item.read_at?<CheckCircle2 size={18}/>:<Bell size={18}/>}</div><div><span>{kind(item.kind)}</span><strong>{item.subject}</strong><p>{item.body}</p><small><Clock3 size={12}/> {new Date(item.created_at).toLocaleString('sr-RS')}{item.delivery_status==='sent'?' · email poslat':''}</small></div>{action&&<button className="notification-cta" onClick={e=>{e.stopPropagation();if(!item.read_at)void markRead(item.id);if(item.kind==='performance_reminder'&&typeof item.payload?.post_id==='string')sessionStorage.setItem('autopilot-performance-post',item.payload.post_id);onNavigate?.(action.target)}}>{action.icon}{action.label}</button>}{!item.read_at&&<i/>}</article>}):<div className="admin-empty">Nema obaveštenja.</div>}</section>
   </div>
 }
-function kind(v:string){const map:Record<string,string>={order_created:'Narudžbina',order_paid:'Uplata',trial_started:'Trial',license_activated:'Licenca',subscription_expiring:'Pretplata ističe',subscription_expired:'Pretplata',admin_note:'Poruka podrške',support_created:'Podrška',performance_reminder:'Rezultati'};return map[v]||'Sistem'}
+function kind(v:string){const map:Record<string,string>={order_created:'Narudžbina',order_paid:'Uplata',trial_started:'Trial',license_activated:'Licenca',subscription_expiring:'Pretplata ističe',subscription_expired:'Pretplata',admin_note:'Poruka podrške',support_created:'Podrška',performance_reminder:'Rezultati',weekly_plan_ready:'Autopilot'};return map[v]||'Sistem'}
 function notificationAction(v:string){
   if(v==='performance_reminder')return{target:'insights' as const,label:'Unesi rezultate',icon:<BarChart3 size={14}/>}
+  if(v==='weekly_plan_ready')return{target:'dashboard' as const,label:'Otvori nedelju',icon:<CalendarDays size={14}/>}
   if(v==='subscription_expiring'||v==='subscription_expired'||v==='order_created')return{target:'billing' as const,label:'Paket / naplata',icon:<CreditCard size={14}/>}
   if(v==='support_created'||v==='admin_note')return{target:'support' as const,label:'Otvori podršku',icon:<LifeBuoy size={14}/>}
   return null
