@@ -35,6 +35,50 @@ async function formPost(url:string,body:Record<string,string>){
   return fetchJson(url,{method:"POST",headers:{"Content-Type":"application/x-www-form-urlencoded"},body:new URLSearchParams(body)});
 }
 
+async function publishJobWithService(service:any,job:any,actorUserId?:string|null){
+  const{data:conn}=await service.from("social_connections").select("*").eq("id",job.connection_id).maybeSingle();
+  const{data:post}=await service.from("posts").select("*").eq("id",job.post_id).maybeSingle();
+  if(!conn||conn.status!=="connected")throw new Error("Meta connection is not active");
+  if(!post)throw new Error("Post not found");
+  const{data:token,error:tokenError}=await service.rpc("service_get_social_token",{p_connection_id:conn.id});
+  if(tokenError||!token)throw new Error("Meta token not found");
+  const imageUrl=String(post.generation_meta?.image_url||"");
+  const platform=String(job.platform);
+  const platformCopy=post.platform_content?.[platform]?.caption;
+  const hashtags=platform==="instagram"&&Array.isArray(post.hashtags)?post.hashtags.join(" "):"";
+  const caption=[String(platformCopy||post.caption||""),hashtags].filter(Boolean).join("\n\n").trim();
+
+  let result:any;
+  if(platform==="facebook"){
+    if(!conn.page_id)throw new Error("Facebook Page nije izabrana");
+    result=imageUrl
+      ? await formPost(`${graph}/${conn.page_id}/photos`,{url:imageUrl,caption,published:"true",access_token:String(token)})
+      : await formPost(`${graph}/${conn.page_id}/feed`,{message:caption,access_token:String(token)});
+  }else if(platform==="instagram"){
+    if(!conn.instagram_business_account_id)throw new Error("Instagram Business/Creator nalog nije povezan sa izabranom stranicom");
+    if(!imageUrl)throw new Error("Instagram objava zahteva javno dostupnu fotografiju");
+    if(post.post_type==="story")throw new Error("Automatski Instagram Story još nije uključen; koristi Feed/Reel workflow.");
+    const container=await formPost(`${graph}/${conn.instagram_business_account_id}/media`,{image_url:imageUrl,caption,access_token:String(token)});
+    if(!container.id)throw new Error("Instagram media container nije kreiran");
+    result=await formPost(`${graph}/${conn.instagram_business_account_id}/media_publish`,{creation_id:String(container.id),access_token:String(token)});
+  }else throw new Error("Unsupported platform");
+
+  await service.from("social_publish_jobs").update({
+    status:"published",provider_media_id:String(result?.id||result?.post_id||""),result,
+    error_message:null,published_at:new Date().toISOString(),updated_at:new Date().toISOString()
+  }).eq("id",job.id);
+
+  const{count:unfinished}=await service.from("social_publish_jobs").select("id",{count:"exact",head:true}).eq("post_id",post.id).neq("status","published").neq("status","cancelled");
+  if((unfinished||0)===0)await service.from("posts").update({status:"published"}).eq("id",post.id);
+
+  await service.from("autopilot_activity").insert({
+    restaurant_id:job.restaurant_id,user_id:actorUserId||conn.user_id,event_type:"publish_success",
+    title:"Objava je poslata na Meta",summary:`${platform==="instagram"?"Instagram":"Facebook"} · ${post.title||"objava"}`,
+    metadata:{job_id:job.id,post_id:post.id,platform,provider_media_id:result?.id||null}
+  });
+  return result;
+}
+
 Deno.serve(async(req)=>{
   if(req.method==="OPTIONS")return new Response("ok",{headers:corsHeaders});
   const supabaseUrl=Deno.env.get("SUPABASE_URL")!;
@@ -118,6 +162,35 @@ Deno.serve(async(req)=>{
     let body:any={};
     if(req.method==="POST")body=await req.json().catch(()=>({}));
     const action=String(body.action||"status");
+
+    if(action==="process_queue"){
+      const supplied=req.headers.get("x-cron-secret")||"";
+      const{data:expected,error:secretError}=await service.rpc("service_publish_cron_secret");
+      if(secretError||!expected||supplied!==String(expected))return json({error:"Unauthorized cron"},401);
+
+      const now=new Date().toISOString();
+      const{data:due,error:dueError}=await service.from("social_publish_jobs").select("*").eq("status","queued").lte("publish_at",now).order("publish_at",{ascending:true}).limit(25);
+      if(dueError)return json({error:dueError.message},400);
+      let published=0,failed=0;
+      const results:any[]=[];
+      for(const job of due||[]){
+        const{data:locked}=await service.from("social_publish_jobs").update({status:"processing",attempt_count:Number(job.attempt_count||0)+1,updated_at:new Date().toISOString()}).eq("id",job.id).eq("status","queued").select("id").maybeSingle();
+        if(!locked)continue;
+        try{
+          const result=await publishJobWithService(service,job,null);
+          published+=1;results.push({job_id:job.id,status:"published",provider_media_id:result?.id||null});
+        }catch(error){
+          const message=error instanceof Error?error.message:String(error);
+          failed+=1;
+          await service.from("social_publish_jobs").update({status:"failed",error_message:message.slice(0,1000),updated_at:new Date().toISOString()}).eq("id",job.id);
+          const{data:conn}=await service.from("social_connections").select("user_id").eq("id",job.connection_id).maybeSingle();
+          await service.from("autopilot_activity").insert({restaurant_id:job.restaurant_id,user_id:conn?.user_id||null,event_type:"publish_failed",title:"Meta publishing nije uspeo",summary:message.slice(0,300),metadata:{job_id:job.id,post_id:job.post_id,platform:job.platform}});
+          results.push({job_id:job.id,status:"failed",error:message});
+        }
+      }
+      return json({ok:true,processed:(due||[]).length,published,failed,results});
+    }
+
     const authHeader=req.headers.get("Authorization")||"";
     if(!authHeader.startsWith("Bearer "))return json({error:"Authentication required"},401);
     const client=createClient(supabaseUrl,anonKey,{global:{headers:{Authorization:authHeader}}});
@@ -178,39 +251,6 @@ Deno.serve(async(req)=>{
       return json({ok:true});
     }
 
-    async function publishJob(job:any){
-      const{data:conn}=await service.from("social_connections").select("*").eq("id",job.connection_id).maybeSingle();
-      const{data:post}=await service.from("posts").select("*").eq("id",job.post_id).maybeSingle();
-      if(!conn||conn.status!=="connected")throw new Error("Meta connection is not active");
-      if(!post)throw new Error("Post not found");
-      const{data:token,error:tokenError}=await service.rpc("service_get_social_token",{p_connection_id:conn.id});
-      if(tokenError||!token)throw new Error("Meta token not found");
-      const imageUrl=String(post.generation_meta?.image_url||"");
-      const platform=String(job.platform);
-      const platformCopy=post.platform_content?.[platform]?.caption;
-      const hashtags=platform==="instagram"&&Array.isArray(post.hashtags)?post.hashtags.join(" "):"";
-      const caption=[String(platformCopy||post.caption||""),hashtags].filter(Boolean).join("\n\n").trim();
-
-      let result:any;
-      if(platform==="facebook"){
-        if(!conn.page_id)throw new Error("Facebook Page nije izabrana");
-        result=imageUrl
-          ? await formPost(`${graph}/${conn.page_id}/photos`,{url:imageUrl,caption,published:"true",access_token:String(token)})
-          : await formPost(`${graph}/${conn.page_id}/feed`,{message:caption,access_token:String(token)});
-      }else if(platform==="instagram"){
-        if(!conn.instagram_business_account_id)throw new Error("Instagram Business/Creator nalog nije povezan sa izabranom stranicom");
-        if(!imageUrl)throw new Error("Instagram objava zahteva javno dostupnu fotografiju");
-        if(post.post_type==="story")throw new Error("Automatski Instagram Story još nije uključen; koristi Feed/Reel workflow.");
-        const container=await formPost(`${graph}/${conn.instagram_business_account_id}/media`,{image_url:imageUrl,caption,access_token:String(token)});
-        if(!container.id)throw new Error("Instagram media container nije kreiran");
-        result=await formPost(`${graph}/${conn.instagram_business_account_id}/media_publish`,{creation_id:String(container.id),access_token:String(token)});
-      }else throw new Error("Unsupported platform");
-
-      await service.from("social_publish_jobs").update({status:"published",provider_media_id:String(result?.id||result?.post_id||""),result,published_at:new Date().toISOString(),updated_at:new Date().toISOString()}).eq("id",job.id);
-      await service.from("autopilot_activity").insert({restaurant_id:job.restaurant_id,user_id:user.id,event_type:"publish_success",title:"Objava je poslata na Meta",summary:`${platform==="instagram"?"Instagram":"Facebook"} · ${post.title||"objava"}`,metadata:{job_id:job.id,post_id:post.id,platform,provider_media_id:result?.id||null}});
-      return result;
-    }
-
     if(action==="queue"){
       if(!connection||connection.status!=="connected")return json({error:"Prvo poveži Meta nalog."},409);
       const postId=String(body.postId||"");
@@ -234,7 +274,7 @@ Deno.serve(async(req)=>{
         for(const job of jobs){
           if(job.status==="published"){results.push({job_id:job.id,already_published:true});continue}
           await service.from("social_publish_jobs").update({status:"processing",attempt_count:Number(job.attempt_count||0)+1,updated_at:new Date().toISOString()}).eq("id",job.id);
-          try{results.push({job_id:job.id,result:await publishJob(job)});}
+          try{results.push({job_id:job.id,result:await publishJobWithService(service,job,user.id)});}
           catch(error){
             const message=error instanceof Error?error.message:String(error);
             await service.from("social_publish_jobs").update({status:"failed",error_message:message,updated_at:new Date().toISOString()}).eq("id",job.id);
@@ -251,7 +291,7 @@ Deno.serve(async(req)=>{
       const{data:job}=await service.from("social_publish_jobs").select("*").eq("id",jobId).eq("restaurant_id",restaurantId).maybeSingle();
       if(!job)return json({error:"Publish job not found"},404);
       await service.from("social_publish_jobs").update({status:"processing",attempt_count:Number(job.attempt_count||0)+1,error_message:null,updated_at:new Date().toISOString()}).eq("id",job.id);
-      try{return json({ok:true,result:await publishJob(job)});}
+      try{return json({ok:true,result:await publishJobWithService(service,job,user.id)});}
       catch(error){
         const message=error instanceof Error?error.message:String(error);
         await service.from("social_publish_jobs").update({status:"failed",error_message:message,updated_at:new Date().toISOString()}).eq("id",job.id);
