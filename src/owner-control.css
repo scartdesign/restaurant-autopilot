@@ -16,3 +16,5 @@
 .owner-email-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
 .owner-email-actions .primary,.owner-email-actions .secondary{flex:1 1 180px;justify-content:center}
 @media(max-width:700px){.owner-email-actions{display:grid;grid-template-columns:1fr}.owner-email-actions .primary,.owner-email-actions .secondary{width:100%}}
+
+.meta-owner-note{display:flex;align-items:flex-start;gap:8px;margin-top:12px;padding:10px 11px;border:1px solid #dce6d4;background:#f5faef;border-radius:11px;color:#5f7450}.meta-owner-note span{font-size:9px;line-height:1.45}.meta-owner-note svg{flex:0 0 auto;margin-top:1px}
