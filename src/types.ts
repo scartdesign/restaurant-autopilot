@@ -97,6 +97,8 @@ export type GenerationMeta = Record<string, unknown> & {
   learning_signal?: {
     performance_samples?: number
     item_score?: number
+    performance_samples_item?: number
+    performance_confidence?: number
     marketing_priority?: number
     recent_uses_30d?: number
     coverage_bonus?: number
