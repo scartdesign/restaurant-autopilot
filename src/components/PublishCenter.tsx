@@ -85,6 +85,19 @@ export function PublishCenter({ restaurant, posts, onChanged, setNotice }: {
     return()=>window.removeEventListener('message',handler)
   },[restaurant.id])
 
+  async function verifyMetaConnection(){
+    setMetaWorking(true)
+    const{data,error}=await supabase.functions.invoke('meta-publisher',{body:{action:'verify_connection',restaurantId:restaurant.id}})
+    if(error||data?.error){
+      setNotice(data?.error||error?.message||'Meta konekcija nije validna.')
+    }else{
+      setNotice(`Meta konekcija je potvrđena: ${data?.page_name||'Facebook Page'}${data?.instagram_username?` · @${data.instagram_username}`:''}.`)
+    }
+    await loadMetaStatus()
+    await loadMetaJobs()
+    setMetaWorking(false)
+  }
+
   async function connectMeta(){
     setMetaWorking(true)
     const{data,error}=await supabase.functions.invoke('meta-publisher',{body:{action:'start',restaurantId:restaurant.id}})
@@ -346,7 +359,7 @@ export function PublishCenter({ restaurant, posts, onChanged, setNotice }: {
 
       <section className={`meta-connect-panel ${metaState?.connection?.status==='connected'?'connected':metaState?.connection?.status==='expired'?'expired':''}`}>
         <div className="meta-connect-brand"><div><Facebook size={20}/><Instagram size={20}/></div><span><small>META PUBLISHING</small><strong>{metaState?.connection?.status==='connected'?'Facebook + Instagram povezani':metaState?.connection?.status==='pending_page_selection'?'Izaberi Facebook stranicu':metaState?.provider_configured?'Poveži poslovni nalog':'Meta App čeka OWNER konfiguraciju'}</strong><p>{metaState?.connection?.status==='connected'
-          ? `${metaState.connection.page_name||'Facebook Page'}${metaState.connection.instagram_username?` · @${metaState.connection.instagram_username}`:' · Instagram nije povezan'} · ${metaJobs.filter(j=>j.status==='queued').length} queued · ${metaJobs.filter(j=>j.status==='failed').length} failed`
+          ? `${metaState.connection.page_name||'Facebook Page'}${metaState.connection.instagram_username?` · @${metaState.connection.instagram_username}`:' · Instagram nije povezan'} · ${metaJobs.filter(j=>j.status==='queued').length} queued · ${metaJobs.filter(j=>j.status==='failed').length} failed${metaState.connection.last_verified_at?` · provereno ${new Date(metaState.connection.last_verified_at).toLocaleString('sr-RS')}`:''}`
           : metaState?.connection?.status==='expired'
           ? 'Meta token je istekao. Poveži nalog ponovo.'
           : metaState?.provider_configured
@@ -354,7 +367,7 @@ export function PublishCenter({ restaurant, posts, onChanged, setNotice }: {
           : 'OWNER prvo treba da unese Meta App ID i App Secret. Posle toga restoran sam povezuje svoju Facebook stranicu.'}</p></span></div>
         <div className="meta-connect-actions">
           {metaState?.connection?.status==='pending_page_selection'?<><select value={metaPageId} onChange={e=>setMetaPageId(e.target.value)}>{((metaState.connection.connection_meta?.page_candidates||[]) as MetaCandidate[]).map(page=><option value={page.id} key={page.id}>{page.name}{page.instagram_business_account?.username?` · @${page.instagram_business_account.username}`:''}</option>)}</select><button className="primary" onClick={()=>void selectMetaPage()} disabled={metaWorking||!metaPageId}><CheckCircle2 size={15}/> Poveži stranicu</button></>
-          :metaState?.connection?.status==='connected'?<><span className="meta-connected-chip"><CheckCircle2 size={14}/> CONNECTED</span><button className="secondary" onClick={()=>void loadMetaStatus()} disabled={metaWorking}><RotateCcw size={14}/> Proveri</button><button className="meta-disconnect" onClick={()=>void disconnectMeta()} disabled={metaWorking}>Odvoji</button></>
+          :metaState?.connection?.status==='connected'?<><span className="meta-connected-chip"><CheckCircle2 size={14}/> CONNECTED</span><button className="secondary" onClick={()=>void verifyMetaConnection()} disabled={metaWorking}><RotateCcw size={14}/>{metaWorking?'Proveravam…':'Proveri konekciju'}</button><button className="meta-disconnect" onClick={()=>void disconnectMeta()} disabled={metaWorking}>Odvoji</button></>
           :<button className="primary meta-connect-button" onClick={()=>void connectMeta()} disabled={metaWorking||!metaState?.provider_configured}><Facebook size={15}/>{metaWorking?'Otvaram…':'Poveži Facebook + Instagram'}</button>}
         </div>
       </section>
