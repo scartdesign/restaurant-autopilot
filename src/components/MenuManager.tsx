@@ -177,6 +177,7 @@ export function MenuManager({ restaurant, userId, items, onChanged, setNotice }:
     setAiWorkingId('')
     await onChanged()
     await loadAiStatus()
+    await supabase.functions.invoke('content-engine',{body:{action:'log_activity',restaurantId:restaurant.id,eventType:'ai_images_generated',metadata:{generated:done,attempted:batch.length,failed:failed.length}}})
     setBulkAiWorking(false)
     setNotice(failed.length?`AI slike: napravljeno ${done}/${batch.length}. Nije uspelo: ${failed.join(', ')}.`:`AI je napravio ${done} fotografije za najprioritetnija jela bez slike.`)
   }
@@ -267,6 +268,7 @@ export function MenuManager({ restaurant, userId, items, onChanged, setNotice }:
         heroMessage = ` · HERO: ${newHero.name}${previousHero ? ` (prethodni ${previousHero.name} je spušten na VISOK)` : ''}`
       }
       const extraHeroMessage = extraHeroes ? ` · još ${extraHeroes} HERO oznaka je spušteno na VISOK jer restoran može imati samo jedan HERO` : ''
+      await supabase.functions.invoke('content-engine',{body:{action:'log_activity',restaurantId:restaurant.id,eventType:'menu_imported',metadata:{imported:payload.length,hero:heroIndex>=0,extra_heroes:extraHeroes}}})
       setNotice(`Uvezeno je ${payload.length} stavki${heroMessage}${extraHeroMessage}. Za jela bez fotografije možeš koristiti AI sliku direktno iz menija.`)
       await onChanged()
     } catch (error) {
