@@ -146,7 +146,7 @@ function App() {
     if (data?.created) {
       await loadPosts(target.id)
       await loadAccountState()
-      setNotice(`Autopilot je sam pripremio novu nedelju za ${target.name}.`)
+      setNotice(data?.next_week ? `Autopilot je sam pripremio sledeću nedelju za ${target.name}.` : `Autopilot je sam pripremio ovu nedelju za ${target.name}.`)
     }
   }
 
