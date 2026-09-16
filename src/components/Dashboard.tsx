@@ -489,7 +489,7 @@ function PostCard({ post, restaurant, menuItems, working, onEdit, onAiCopy, onOp
   const selectionSignals = [
     Number(learning?.marketing_priority || 0) >= 3 ? 'HERO' : Number(learning?.marketing_priority || 0) >= 2 ? 'PRIORITET' : '',
     Number(learning?.item_score || 0) > 0 ? 'PERFORMANCE' : '',
-    Number(learning?.approved_trend_boost || 0) > 0 ? `TREND +${Math.round(Number(learning.approved_trend_boost))}` : '',
+    Number(learning?.approved_trend_boost || 0) > 0 ? `TREND +${Math.round(Number(learning?.approved_trend_boost || 0))}` : '',
     Number(learning?.coverage_bonus || 0) > 0 ? 'COVERAGE' : '',
     Number(learning?.exploration_bonus || 0) > 0 ? 'EXPLORATION' : '',
     Number(learning?.performance_samples_item || 0) > 0 ? `CONF ${Number(learning?.performance_confidence || 0)}%` : '',
