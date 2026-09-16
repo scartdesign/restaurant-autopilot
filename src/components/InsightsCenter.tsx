@@ -127,7 +127,7 @@ export function InsightsCenter({restaurant,posts,menuItems,setNotice,onChanged,o
     }
     for(const item of ranking){
       const source=String(item.post.generation_meta?.generation_source||'')
-      const key=source==='weekly_autopilot'?'auto':source==='manual_week'?'manual':null
+      const key=source.startsWith('weekly_autopilot')?'auto':source==='manual_week'?'manual':null
       if(!key)continue
       const group=groups[key]
       group.count+=1;group.reach+=item.m.reach;group.interactions+=item.interactions;group.conversions+=item.m.conversions;group.clicks+=item.m.clicks
