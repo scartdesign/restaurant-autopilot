@@ -6,14 +6,8 @@ import type { Entitlement, MenuItem, Post, Restaurant } from './types'
 import { AuthScreen } from './components/AuthScreen'
 import { PasswordRecovery } from './components/PasswordRecovery'
 import { Onboarding } from './components/Onboarding'
-import { Dashboard } from './components/Dashboard'
-import { MenuManager } from './components/MenuManager'
-import { Promotions } from './components/Promotions'
-import { SettingsPanel } from './components/SettingsPanel'
 import { AdminSetup } from './components/AdminSetup'
 import { LaunchCenter } from './components/LaunchCenter'
-import { SupportCenter } from './components/SupportCenter'
-import { NotificationsCenter } from './components/NotificationsCenter'
 import { LandingScreen } from './components/LandingScreen'
 import { LegalScreen } from './components/LegalScreen'
 import { NetworkStatus } from './components/NetworkStatus'
@@ -26,6 +20,12 @@ const BillingPage = lazy(() => import('./components/BillingPage').then((m) => ({
 const OwnerControlPlus = lazy(() => import('./components/OwnerControlPlus').then((m) => ({ default: m.OwnerControlPlus })))
 const CreativeHub = lazy(() => import('./components/CreativeHub').then((m) => ({ default: m.CreativeHub })))
 const InsightsCenter = lazy(() => import('./components/InsightsCenter').then((m) => ({ default: m.InsightsCenter })))
+const Dashboard = lazy(() => import('./components/Dashboard').then((m) => ({ default: m.Dashboard })))
+const MenuManager = lazy(() => import('./components/MenuManager').then((m) => ({ default: m.MenuManager })))
+const Promotions = lazy(() => import('./components/Promotions').then((m) => ({ default: m.Promotions })))
+const SettingsPanel = lazy(() => import('./components/SettingsPanel').then((m) => ({ default: m.SettingsPanel })))
+const SupportCenter = lazy(() => import('./components/SupportCenter').then((m) => ({ default: m.SupportCenter })))
+const NotificationsCenter = lazy(() => import('./components/NotificationsCenter').then((m) => ({ default: m.NotificationsCenter })))
 
 type Tab = 'launch' | 'dashboard' | 'creative' | 'studio' | 'brand' | 'publish' | 'insights' | 'menu' | 'promotions' | 'settings' | 'support' | 'notifications' | 'billing' | 'admin'
 type AppControlsLite = { maintenance_mode:boolean; maintenance_message:string|null; sales_open:boolean; signup_open:boolean; announcement_enabled:boolean; announcement_text:string|null; announcement_tone:'info'|'success'|'warning'; app_version:string }
