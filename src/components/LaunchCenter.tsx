@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react'
-import { AlertTriangle, BarChart3, CheckCircle2, Circle, Clock3, Image as ImageIcon, Instagram, LayoutDashboard, Megaphone, Palette, RefreshCw, Send, Settings, ShieldCheck, Sparkles, UtensilsCrossed } from 'lucide-react'
+import { AlertTriangle, BarChart3, CheckCircle2, Circle, Clock3, Download, Image as ImageIcon, Instagram, LayoutDashboard, Megaphone, Palette, RefreshCw, Send, Settings, ShieldCheck, Smartphone, Sparkles, UtensilsCrossed } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import type { MenuItem, Post, Restaurant } from '../types'
 
 type LaunchTab = 'dashboard'|'creative'|'studio'|'brand'|'publish'|'insights'|'menu'|'promotions'|'settings'|'billing'
 
-export function LaunchCenter({restaurant,menuItems,posts,onNavigate}:{restaurant:Restaurant;menuItems:MenuItem[];posts:Post[];onNavigate:(tab:LaunchTab)=>void}){
+export function LaunchCenter({restaurant,menuItems,posts,onNavigate,pwaInstalled=false,onInstall}:{restaurant:Restaurant;menuItems:MenuItem[];posts:Post[];onNavigate:(tab:LaunchTab)=>void;pwaInstalled?:boolean;onInstall?:()=>void}){
   const[performanceCount,setPerformanceCount]=useState(0)
   const[preflight,setPreflight]=useState<any>(null)
   const[preflightLoading,setPreflightLoading]=useState(false)
@@ -71,6 +71,7 @@ export function LaunchCenter({restaurant,menuItems,posts,onNavigate}:{restaurant
       <article><span className="eyebrow">MENI</span><strong>{activeItems.length} aktivnih jela</strong><small>{photos} sa fotografijom · {photoCoverage}% coverage</small><button onClick={()=>onNavigate('menu')}><UtensilsCrossed size={15}/> Uredi meni</button></article>
       <article><span className="eyebrow">SOCIAL</span><strong>{restaurant.instagram||restaurant.facebook?'Mreže povezane u profilu':'Dodaj mreže'}</strong><small>{restaurant.instagram?'Instagram ':''}{restaurant.facebook?'Facebook':''}</small><button onClick={()=>onNavigate('settings')}><Instagram size={15}/> Podešavanja</button></article>
       <article><span className="eyebrow">AUTOPILOT</span><strong>{restaurant.weekly_autopilot_enabled?'Auto week uključen':'Ručna nedelja'}</strong><small>{restaurant.weekly_autopilot_enabled?'Novi plan se priprema automatski':'Uključi u Podešavanjima'}</small><button onClick={()=>onNavigate('settings')}><Sparkles size={15}/> Automatizacija</button></article>
+      <article className={pwaInstalled?'pwa-ready-card':''}><span className="eyebrow">MOBILNA APP</span><strong>{pwaInstalled?'Instalirana':'Spremna za instalaciju'}</strong><small>{pwaInstalled?'Otvara se preko svoje ikonice':'Dodaj Restaurant Autopilot na telefon ili desktop'}</small><button onClick={()=>onInstall?.()} disabled={pwaInstalled}>{pwaInstalled?<><CheckCircle2 size={15}/> Instalirano</>:<><Download size={15}/> Instaliraj app</>}</button></article>
       <article><span className="eyebrow">PUBLISH</span><strong>{future} budućih objava</strong><small>{approved} odobreno / objavljeno</small><button onClick={()=>onNavigate('publish')}><Send size={15}/> Publish Center</button></article>
     </section>
   </div>
