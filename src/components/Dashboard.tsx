@@ -129,6 +129,7 @@ export function Dashboard({ restaurant, menuItems, posts, entitlement, onChanged
   }
 
   async function loadTrendOpportunities(){
+    if((restaurant.trend_autopilot_mode||'suggest')==='off'){setTrendOpportunities([]);return}
     const{data,error}=await supabase.functions.invoke('content-engine',{body:{action:'refresh_trend_opportunities',restaurantId:restaurant.id}})
     if(!error&&!data?.error)setTrendOpportunities((data?.opportunities||[]) as TrendOpportunity[])
   }
@@ -389,7 +390,7 @@ export function Dashboard({ restaurant, menuItems, posts, entitlement, onChanged
 
       <section className="trend-opportunities-panel panel">
         <div className="trend-opportunities-head">
-          <div><p className="eyebrow">TREND RADAR</p><h2>Content opportunities</h2><span>{trendOpportunities.length?trendOpportunities.length+' aktuelnih prilika iz odobrenih trendova.':'Nema aktivnih prilika. Pojaviće se kada OWNER odobri relevantan rising trend.'}</span></div>
+          <div><p className="eyebrow">TREND RADAR · {(restaurant.trend_autopilot_mode||'suggest').toUpperCase()}</p><h2>Content opportunities</h2><span>{(restaurant.trend_autopilot_mode||'suggest')==='off'?'Trend Radar je isključen u Podešavanjima.':trendOpportunities.length?trendOpportunities.length+' aktuelnih prilika iz odobrenih trendova.':(restaurant.trend_autopilot_mode||'suggest')==='auto'?'AUTO čeka jak rising signal 85+; novi draft i dalje moraš da odobriš.':'Nema aktivnih prilika. Pojaviće se kada OWNER odobri relevantan rising trend.'}</span></div>
           <button className="secondary" onClick={()=>void loadTrendOpportunities()}><RefreshCw size={13}/> Osveži</button>
         </div>
         {trendOpportunities.length?<div className="trend-opportunities-grid">{trendOpportunities.slice(0,4).map(item=>{const menuItem=menuItems.find(x=>x.id===item.menu_item_id);const campaignAllowed=entitlement?.is_superadmin===true||entitlement?.features?.campaigns===true;return <article id={'trend-opportunity-'+item.id} className={'trend-opportunity-card '+(highlightTrendId===item.id?'highlight':'')} key={item.id}>
