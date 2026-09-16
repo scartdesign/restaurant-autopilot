@@ -107,6 +107,8 @@ function DemoContent({ approved, setApproved, notify }: { approved: string[]; se
       <div className="autopilot-health-checks"><span className="ok"><CheckCircle2 size={12}/> Auto week</span><span className="ok"><CheckCircle2 size={12}/> 3+ jela</span><span className="ok"><CheckCircle2 size={12}/> HERO</span><span className="ok"><CheckCircle2 size={12}/> 70% fotografija</span><span className="ok"><CheckCircle2 size={12}/> Radno vreme</span></div>
     </section>
 
+    {approved.length<demoPosts.length&&<section className="review-queue-bar panel"><div><span><CheckCircle2 size={16}/> REVIEW QUEUE</span><strong>{demoPosts.length-approved.length} drafta čekaju proveru</strong><small>Quality gate proverava copy, CTA, discovery, fotografiju i platform verzije.</small></div><button className="primary" onClick={()=>{setApproved(demoPosts.map(post=>post.title));notify('Demo review: svi draftovi su prošli quality gate i odobreni su.')}}><CheckCircle2 size={15}/> Proveri + odobri sve</button></section>}
+
     <section className="week-quality-panel panel demo-week-quality">
       <div className="week-quality-score"><span className="week-quality-ring" style={{ '--quality': 94 } as CSSProperties}><strong>94</strong><small>/100</small></span><div><p className="eyebrow">WEEK QUALITY</p><h2>Odličan plan</h2><span>4 različita jela, HERO prisutan bez preteranog ponavljanja i svaki post ima termin.</span></div></div>
       <div className="week-quality-metrics"><div><strong>4</strong><span>različita jela</span></div><div><strong>1</strong><span>HERO objava</span></div><div><strong>4/4</strong><span>sa terminom</span></div><div><strong>3</strong><span>formata</span></div></div>
@@ -138,6 +140,7 @@ function DemoPublish({ notify }: { notify: (value: string) => void }) {
 
   return <>
     <header className="page-header wow-simple-header"><div><p className="eyebrow">PUBLISH CENTER</p><h1>Tačan dan. Tačno vreme.</h1><p className="muted">Autopilot predlaže termin, a ti ga menjaš jednim klikom pre objave.</p></div><button className="primary" onClick={() => notify('Demo kalendar je spreman sa datumima i vremenima.')}><CalendarClock size={17} /> Export kalendara</button></header>
+    <section className="publish-gate ready"><div className="publish-gate-icon"><CheckCircle2 size={20}/></div><div><span>WEEK GATE</span><strong>Spremno za publishing</strong><small>Nema tehničkih blokera: termini i approval status su spremni.</small></div><b>0/4</b></section>
     <div className="demo-next-time"><div><Clock3 size={22} /></div><span>SLEDEĆA OBJAVA<strong>Ponedeljak, 14. septembar · {times['Pizza Capricciosa']}</strong><small>FEED · Pizza Capricciosa</small></span></div>
     <div className="panel wow-publish-demo demo-publish-pro">{demoPosts.map((post) => <div className={`wow-publish-row ${editing === post.title ? 'editing' : ''}`} key={post.title}>
       <div className="wow-publish-thumb" style={{ backgroundImage: `url(${post.image})` }} />
@@ -147,7 +150,7 @@ function DemoPublish({ notify }: { notify: (value: string) => void }) {
         <p className="demo-publish-caption">{post.caption}</p>
         {editing === post.title && <div className="demo-time-editor"><label>Vreme objave<input type="time" value={draft} onChange={(event) => setDraft(event.target.value)} /></label><button className="secondary" onClick={() => setDraft(post.type === 'STORY' ? '11:30' : post.type === 'PROMO' ? '17:30' : '18:30')}><Sparkles size={13} /> Autopilot</button><button className="primary" onClick={() => save(post.title)}><Save size={13} /> Sačuvaj</button><button className="icon-button" onClick={() => setEditing('')}><X size={14} /></button></div>}
       </div>
-      <div className="demo-publish-actions"><span className="demo-publish-time"><Clock3 size={13} /> {times[post.title]}</span>{post.title==='Pizza Capricciosa'&&<span className="learned-time-chip"><Sparkles size={11}/> LEARNED TIME</span>}<span className={`status ${post.status}`}>{post.status}</span><button className="mini-schedule" onClick={() => begin(post.title)}><Pencil size={13} /> Promeni</button></div>
+      <div className="demo-publish-actions"><span className="demo-publish-time"><Clock3 size={13} /> {times[post.title]}</span>{post.title==='Pizza Capricciosa'&&<span className="learned-time-chip"><Sparkles size={11}/> LEARNED TIME</span>}<span className="generation-source-chip auto">AUTO WEEK</span><span className={`status ${post.status}`}>{post.status}</span><button className="mini-schedule" onClick={() => begin(post.title)}><Pencil size={13} /> Promeni</button></div>
     </div>)}</div>
   </>
 }
