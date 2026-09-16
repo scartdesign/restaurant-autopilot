@@ -247,7 +247,10 @@ Deno.serve(async(req)=>{
     }
 
     if(action==="disconnect"){
-      if(connection)await service.from("social_connections").update({status:"disconnected",page_id:null,page_name:null,instagram_business_account_id:null,instagram_username:null,token_secret_id:null,updated_at:new Date().toISOString()}).eq("id",connection.id);
+      if(connection){
+        await service.rpc("service_delete_social_token",{p_connection_id:connection.id});
+        await service.from("social_connections").update({status:"disconnected",page_id:null,page_name:null,instagram_business_account_id:null,instagram_username:null,updated_at:new Date().toISOString()}).eq("id",connection.id);
+      }
       return json({ok:true});
     }
 
