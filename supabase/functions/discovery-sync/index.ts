@@ -102,9 +102,33 @@ async function fetchTrendBatch(apiKey:string,geo:string,targets:string[]){
   }));
 }
 
+async function recordSync(service:any,status:"success"|"skipped"|"failed",payload:any){
+  const errorMessage=status==="failed"
+    ? String(payload?.errors?.[0]||payload?.error||"Discovery sync failed")
+    : null;
+  await service.rpc("service_record_discovery_sync",{
+    p_source:"serpapi_google_trends",
+    p_status:status,
+    p_terms_seen:Number(payload?.active_terms||0),
+    p_terms_updated:Number(payload?.updated||0),
+    p_error_message:errorMessage,
+    p_metadata:{
+      provider:"serpapi_google_trends",
+      unique_queries:Number(payload?.unique_queries||0),
+      api_calls:Number(payload?.api_calls||0),
+      failed_batches:Number(payload?.failed_batches||0),
+      verified_at:payload?.verified_at||null,
+      skipped:Boolean(payload?.skipped),
+      reason:payload?.reason||null,
+    }
+  }).catch(()=>null);
+}
+
 async function runSync(service:any,config:any){
   if(!config?.configured||!config?.api_key){
-    return {ok:true,configured:false,skipped:true,reason:"SerpApi provider is not configured"};
+    const result={ok:true,configured:false,skipped:true,reason:"SerpApi provider is not configured",active_terms:0,updated:0,api_calls:0,failed_batches:0};
+    await recordSync(service,"skipped",result);
+    return result;
   }
 
   const{data:rows,error:termsError}=await service
@@ -184,7 +208,7 @@ async function runSync(service:any,config:any){
     }
   }
 
-  return {
+  const result={
     ok:failedBatches===0,
     configured:true,
     provider:"serpapi_google_trends",
@@ -196,6 +220,8 @@ async function runSync(service:any,config:any){
     verified_at:verifiedAt,
     errors:errors.slice(0,8),
   };
+  await recordSync(service,result.ok?"success":"failed",result);
+  return result;
 }
 
 Deno.serve(async(req)=>{
