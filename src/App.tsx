@@ -300,7 +300,7 @@ function App() {
       {activeTab==='studio'&&<VisualStudio restaurant={restaurant} menuItems={menuItems} posts={posts} setNotice={setNotice} onChanged={()=>loadPosts(restaurant.id)}/>} 
       {activeTab==='brand'&&<BrandKit restaurant={restaurant} menuItems={menuItems} onSaved={refreshRestaurant} setNotice={setNotice}/>} 
       {activeTab==='publish'&&<PublishCenter restaurant={restaurant} posts={posts} onChanged={()=>loadPosts(restaurant.id)} setNotice={setNotice}/>} 
-      {activeTab==='insights'&&<InsightsCenter restaurant={restaurant} posts={posts} menuItems={menuItems} setNotice={setNotice}/>} 
+      {activeTab==='insights'&&<InsightsCenter restaurant={restaurant} posts={posts} menuItems={menuItems} setNotice={setNotice} onChanged={refreshContent} onNavigate={(tab)=>void openTab(tab)}/>} 
       {activeTab==='menu'&&<MenuManager restaurant={restaurant} userId={session.user.id} items={menuItems} onChanged={()=>loadMenu(restaurant.id)} setNotice={setNotice}/>} 
       {activeTab==='promotions'&&canUseCampaigns&&<Promotions restaurant={restaurant} menuItems={menuItems} onChanged={refreshContent} setNotice={setNotice}/>} 
       {activeTab==='billing'&&<BillingPage email={session.user.email||''} onAccessChanged={accessChanged} onSignOut={signOut}/>} 
