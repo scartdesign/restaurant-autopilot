@@ -842,6 +842,8 @@ Deno.serve(async (req: Request) => {
         trend_query:opportunity.trend_query,
         trend_seed:opportunity.seed_query,
         trend_score:opportunity.opportunity_score,
+        trend_performance_boost:Number(opportunity.performance_boost||0),
+        trend_performance_samples:Number(opportunity.performance_samples||0),
         trend_type:opportunity.trend_type,
         pillar,
         image_url:item.image_url||null,
@@ -933,6 +935,8 @@ Deno.serve(async (req: Request) => {
           menu_item_id:item.id,
           trend_query:opportunity.trend_query,
           opportunity_score:opportunity.opportunity_score,
+          performance_boost:Number(opportunity.performance_boost||0),
+          performance_samples:Number(opportunity.performance_samples||0),
           posts:created.map((p:any)=>p.id),
         },
       });
