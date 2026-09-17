@@ -8,8 +8,19 @@ import { OwnerHealth } from './OwnerHealth'
 import { TrendIntelligenceOwner } from './TrendIntelligenceOwner'
 import { SerpApiSetupCard } from './SerpApiSetupCard'
 
+type OwnerSection='control'|'trend'|'promos'|'email'|'support'|'health'
+
+function initialOwnerSection():OwnerSection{
+  const requested=sessionStorage.getItem('restaurant-autopilot-owner-section')
+  if(requested==='trend'){
+    sessionStorage.removeItem('restaurant-autopilot-owner-section')
+    return 'trend'
+  }
+  return 'control'
+}
+
 export function OwnerControlPlus({onCloseApp,setNotice}:{onCloseApp?:()=>void;setNotice:(v:string)=>void}){
-  const[section,setSection]=useState<'control'|'trend'|'promos'|'email'|'support'|'health'>('control')
+  const[section,setSection]=useState<OwnerSection>(initialOwnerSection)
   const[trendVersion,setTrendVersion]=useState(0)
   return <div className="owner-plus-shell">
     <div className="owner-plus-switch">
