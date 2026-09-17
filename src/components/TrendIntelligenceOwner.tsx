@@ -13,7 +13,7 @@ type Readiness={
   status:string;provider_configured:boolean;provider_enabled:boolean;manual_seeds:number;auto_profile_seeds_enabled:boolean
   per_sync_call_limit:number;candidate_seed_limit:number;estimated_candidate_call_budget:number;estimated_term_call_budget:number
   daily_call_limit:number;daily_calls_used:number;estimated_monthly_call_ceiling:number
-  candidates:{pending:number;approved:number;rejected:number}
+  candidates:{pending:number;approved:number;rejected:number;pre_approve:number;pre_review:number;pre_skip:number}
   opportunities:{pending:number;eligible_auto:number}
   modes:Record<string,number>;generated_at:string
 }
@@ -33,7 +33,7 @@ const emptyReadiness:Readiness={
   status:'loading',provider_configured:false,provider_enabled:false,manual_seeds:0,auto_profile_seeds_enabled:false,
   per_sync_call_limit:0,candidate_seed_limit:0,estimated_candidate_call_budget:0,estimated_term_call_budget:0,
   daily_call_limit:0,daily_calls_used:0,estimated_monthly_call_ceiling:0,
-  candidates:{pending:0,approved:0,rejected:0},opportunities:{pending:0,eligible_auto:0},modes:{},generated_at:''
+  candidates:{pending:0,approved:0,rejected:0,pre_approve:0,pre_review:0,pre_skip:0},opportunities:{pending:0,eligible_auto:0},modes:{},generated_at:''
 }
 
 const labels:Record<string,string>={
@@ -102,7 +102,7 @@ export function TrendIntelligenceOwner({setNotice}:{setNotice:(value:string)=>vo
       <article className="trend-intel-card"><span><Sparkles size={18}/> Learning memorija</span><strong>{health.effectiveness.learned_seeds}</strong><p>naučenih seedova iz {health.effectiveness.restaurants} restorana</p><div><b>{health.effectiveness.high_confidence}</b> visoko poverenje · <b>{health.effectiveness.strong_positive}</b> jaki pozitivni · <b>{health.effectiveness.strong_negative}</b> jaki negativni</div></article>
       <article className="trend-intel-card"><span><Zap size={18}/> AUTO spremno</span><strong>{health.opportunities.eligible_auto}</strong><p>rising prilika trenutno prolazi sve guardove</p><div><b>{health.opportunities.pending}</b> pending · <b>{health.opportunities.below_auto_threshold}</b> ispod praga · <b>{health.opportunities.snoozed}</b> odloženo</div></article>
       <article className="trend-intel-card"><span><Activity size={18}/> Zaštite</span><strong>{health.opportunities.repeat_cooldown+health.opportunities.low_effectiveness_guard+health.opportunities.local_performance_guard}</strong><p>prilika trenutno zadržano zaštitnim pravilima</p><div><b>{health.opportunities.repeat_cooldown}</b> repeat · <b>{health.opportunities.low_effectiveness_guard}</b> effectiveness · <b>{health.opportunities.local_performance_guard}</b> performance</div></article>
-      <article className="trend-intel-card"><span><Gauge size={18}/> Trend pipeline</span><strong>{readiness.candidates.approved}</strong><p>odobrenih kandidata</p><div><b>{readiness.candidates.pending}</b> čeka odluku · <b>{readiness.opportunities.pending}</b> prilika · <b>{readiness.manual_seeds}</b> ručnih seedova</div></article>
+      <article className="trend-intel-card"><span><Gauge size={18}/> Trend pipeline</span><strong>{readiness.candidates.approved}</strong><p>odobrenih kandidata · {readiness.candidates.pending} pending</p><div><b>{readiness.candidates.pre_approve}</b> preporuka odobri · <b>{readiness.candidates.pre_review}</b> proveri · <b>{readiness.candidates.pre_skip}</b> preskoči</div></article>
     </section>
 
     <section className="admin-panel trend-dry-panel">
