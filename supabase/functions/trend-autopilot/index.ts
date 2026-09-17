@@ -102,14 +102,10 @@ Deno.serve(async(req)=>{
       {data:subscriptions,error:subscriptionsError},
       {data:admins,error:adminsError},
     ]=await Promise.all([
-      service.from("trend_content_opportunities")
-        .select("*")
-        .in("restaurant_id",restaurantIds)
-        .eq("status","pending")
-        .eq("trend_type","rising")
-        .gte("opportunity_score",85)
-        .gt("expires_at",nowIso)
-        .order("opportunity_score",{ascending:false}),
+      service.rpc("service_trend_auto_candidates",{
+        p_restaurant_ids:restaurantIds,
+        p_limit_per_restaurant:3,
+      }),
       service.from("posts")
         .select("id,restaurant_id,generation_meta,created_at")
         .in("restaurant_id",restaurantIds)
@@ -168,16 +164,14 @@ Deno.serve(async(req)=>{
     }
 
     const topOpportunityByRestaurant=new Map<string,any>();
-    const weakOpportunityByRestaurant=new Map<string,any>();
+    const guardOpportunityByRestaurant=new Map<string,any>();
     for(const opp of opportunityRows||[]){
       const id=String(opp.restaurant_id);
-      const samples=Number(opp.performance_samples||0);
-      const boost=Number(opp.performance_boost||0);
-      if(samples>=3&&boost<=-4){
-        if(!weakOpportunityByRestaurant.has(id))weakOpportunityByRestaurant.set(id,opp);
-        continue;
+      if(String(opp.auto_guard||"")==="eligible"){
+        if(!topOpportunityByRestaurant.has(id))topOpportunityByRestaurant.set(id,opp);
+      }else if(!guardOpportunityByRestaurant.has(id)){
+        guardOpportunityByRestaurant.set(id,opp);
       }
-      if(!topOpportunityByRestaurant.has(id))topOpportunityByRestaurant.set(id,opp);
     }
 
     let created=0,skipped=0;
@@ -188,14 +182,18 @@ Deno.serve(async(req)=>{
       const ownerId=String(restaurant.owner_id);
       const opp=topOpportunityByRestaurant.get(restaurantId);
       if(!opp){
-        const weak=weakOpportunityByRestaurant.get(restaurantId);
+        const guarded=guardOpportunityByRestaurant.get(restaurantId);
         skipped+=1;
-        results.push(weak?{
+        results.push(guarded?{
           restaurant_id:restaurantId,
-          status:"local_performance_guard",
-          opportunity_id:weak.id,
-          performance_boost:Number(weak.performance_boost||0),
-          performance_samples:Number(weak.performance_samples||0),
+          status:String(guarded.auto_guard||"guarded"),
+          opportunity_id:guarded.id,
+          opportunity_score:Number(guarded.opportunity_score||0),
+          performance_boost:Number(guarded.performance_boost||0),
+          performance_samples:Number(guarded.performance_samples||0),
+          effectiveness_score:Number(guarded.effectiveness_score||50),
+          effectiveness_samples:Number(guarded.effectiveness_samples||0),
+          repeat_penalty:Number(guarded.repeat_penalty||0),
         }:{restaurant_id:restaurantId,status:"no_opportunity"});
         continue
       }
@@ -288,6 +286,10 @@ Deno.serve(async(req)=>{
           trend_score:opp.opportunity_score,
           trend_performance_boost:Number(opp.performance_boost||0),
           trend_performance_samples:Number(opp.performance_samples||0),
+          trend_effectiveness_score:Number(opp.effectiveness_score||50),
+          trend_effectiveness_samples:Number(opp.effectiveness_samples||0),
+          trend_repeat_penalty:Number(opp.repeat_penalty||0),
+          trend_auto_guard:String(opp.auto_guard||"eligible"),
           trend_type:opp.trend_type,
           pillar:opp.recommended_pillar||"local_discovery",
           variation:0,
@@ -313,7 +315,18 @@ Deno.serve(async(req)=>{
         event_type:"trend_auto_draft_created",
         title:"Trend Autopilot je pripremio draft",
         summary:item.name+" · "+opp.trend_query+" · čeka tvoje odobrenje.",
-        metadata:{opportunity_id:opp.id,post_id:post.id,menu_item_id:item.id,opportunity_score:opp.opportunity_score,performance_boost:Number(opp.performance_boost||0),performance_samples:Number(opp.performance_samples||0)},
+        metadata:{
+          opportunity_id:opp.id,
+          post_id:post.id,
+          menu_item_id:item.id,
+          opportunity_score:opp.opportunity_score,
+          performance_boost:Number(opp.performance_boost||0),
+          performance_samples:Number(opp.performance_samples||0),
+          effectiveness_score:Number(opp.effectiveness_score||50),
+          effectiveness_samples:Number(opp.effectiveness_samples||0),
+          repeat_penalty:Number(opp.repeat_penalty||0),
+          auto_guard:String(opp.auto_guard||"eligible"),
+        },
       });
 
       const{data:profile}=await service.from("customer_profiles").select("email").eq("user_id",ownerId).maybeSingle();
@@ -323,7 +336,17 @@ Deno.serve(async(req)=>{
         kind:"trend_draft_ready",
         subject:"Trend Autopilot je pripremio novi draft",
         body:"Jak rising signal „"+opp.trend_query+"“ je iskorišćen za "+item.name+". Draft čeka tvoju proveru i odobrenje.",
-        payload:{restaurant_id:restaurantId,opportunity_id:opp.id,post_id:post.id,menu_item_id:item.id,trend_query:opp.trend_query,opportunity_score:opp.opportunity_score},
+        payload:{
+          restaurant_id:restaurantId,
+          opportunity_id:opp.id,
+          post_id:post.id,
+          menu_item_id:item.id,
+          trend_query:opp.trend_query,
+          opportunity_score:opp.opportunity_score,
+          effectiveness_score:Number(opp.effectiveness_score||50),
+          effectiveness_samples:Number(opp.effectiveness_samples||0),
+          repeat_penalty:Number(opp.repeat_penalty||0),
+        },
         delivery_status:"in_app",
         visible_in_app:true,
       });
@@ -331,7 +354,16 @@ Deno.serve(async(req)=>{
       created+=1;
       monthCountByOwner.set(ownerId,used+1);
       recentAutoRestaurants.add(restaurantId);
-      results.push({restaurant_id:restaurantId,status:"created",post_id:post.id,opportunity_id:opp.id});
+      results.push({
+        restaurant_id:restaurantId,
+        status:"created",
+        post_id:post.id,
+        opportunity_id:opp.id,
+        opportunity_score:Number(opp.opportunity_score||0),
+        effectiveness_score:Number(opp.effectiveness_score||50),
+        effectiveness_samples:Number(opp.effectiveness_samples||0),
+        repeat_penalty:Number(opp.repeat_penalty||0),
+      });
     }
 
     runCreated=created;runSkipped=skipped;
