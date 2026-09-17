@@ -10,6 +10,7 @@ import { SerpApiSetupCard } from './SerpApiSetupCard'
 
 export function OwnerControlPlus({onCloseApp,setNotice}:{onCloseApp?:()=>void;setNotice:(v:string)=>void}){
   const[section,setSection]=useState<'control'|'trend'|'promos'|'email'|'support'|'health'>('control')
+  const[trendVersion,setTrendVersion]=useState(0)
   return <div className="owner-plus-shell">
     <div className="owner-plus-switch">
       <button className={section==='control'?'active':''} onClick={()=>setSection('control')}><ShieldCheck size={16}/> OWNER Control</button>
@@ -19,6 +20,6 @@ export function OwnerControlPlus({onCloseApp,setNotice}:{onCloseApp?:()=>void;se
       <button className={section==='support'?'active':''} onClick={()=>setSection('support')}><Headphones size={16}/> Support Inbox</button>
       <button className={section==='health'?'active':''} onClick={()=>setSection('health')}><Activity size={16}/> System Health</button>
     </div>
-    {section==='control'?<OwnerControl onCloseApp={onCloseApp} setNotice={setNotice}/>:section==='trend'?<><SerpApiSetupCard setNotice={setNotice}/><TrendIntelligenceOwner setNotice={setNotice}/></>:section==='promos'?<PromoCodesAdmin setNotice={setNotice}/>:section==='email'?<EmailAdmin setNotice={setNotice}/>:section==='support'?<OwnerSupport setNotice={setNotice}/>:<OwnerHealth setNotice={setNotice}/>}
+    {section==='control'?<OwnerControl onCloseApp={onCloseApp} setNotice={setNotice}/>:section==='trend'?<><SerpApiSetupCard setNotice={setNotice} onChanged={()=>setTrendVersion(v=>v+1)}/><TrendIntelligenceOwner key={trendVersion} setNotice={setNotice}/></>:section==='promos'?<PromoCodesAdmin setNotice={setNotice}/>:section==='email'?<EmailAdmin setNotice={setNotice}/>:section==='support'?<OwnerSupport setNotice={setNotice}/>:<OwnerHealth setNotice={setNotice}/>}
   </div>
 }
