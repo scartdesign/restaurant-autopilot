@@ -163,6 +163,10 @@ async function recordSync(service:any,status:"success"|"skipped"|"failed",payloa
         skipped:Boolean(payload?.skipped),
         reason:payload?.reason||null,
         call_budget:Number(payload?.call_budget||0),
+        term_call_budget:Number(payload?.term_call_budget||0),
+        candidate_call_budget:Number(payload?.candidate_call_budget||0),
+        term_budget_exhausted:Boolean(payload?.term_budget_exhausted),
+        candidate_budget_exhausted:Boolean(payload?.candidate_budget_exhausted),
         daily_call_limit:Number(payload?.daily_call_limit||0),
         daily_calls_before:Number(payload?.daily_calls_before||0),
         daily_calls_after:Number(payload?.daily_calls_after||0),
@@ -219,9 +223,34 @@ async function runSync(service:any,config:any,engineConfig:any){
     byGeo.set(item.geo,[...(byGeo.get(item.geo)||[]),item]);
   }
 
+  const ownerSeeds=(Array.isArray(engineConfig?.seeds)?engineConfig.seeds:[])
+    .map((row:any)=>({geo:String(row?.geo||""),query:String(row?.query||"").trim(),source:"owner" as const}))
+    .filter((row:any)=>row.query);
+  const autoSeeds=(Array.isArray(engineConfig?.auto_seeds)?engineConfig.auto_seeds:[])
+    .map((row:any)=>({geo:String(row?.geo||""),query:String(row?.query||"").trim(),source:"profile_auto" as const}))
+    .filter((row:any)=>row.query);
+  const seenSeedKeys=new Set<string>();
+  const candidateSeeds=[...ownerSeeds,...autoSeeds]
+    .filter((row:any)=>{
+      const key=row.geo+"|"+row.query.toLowerCase();
+      if(seenSeedKeys.has(key))return false;
+      seenSeedKeys.add(key);
+      return true;
+    })
+    .slice(0,Math.max(0,Number(engineConfig?.candidate_seed_limit||8)));
+
+  const candidateCallBudget=Math.min(
+    candidateSeeds.length,
+    callBudget,
+    Math.max(1,Math.ceil(callBudget*0.4)),
+  );
+  const termCallBudget=Math.max(0,callBudget-candidateCallBudget);
+
   let apiCalls=0;
   let updated=0;
   let budgetExhausted=false;
+  let termBudgetExhausted=false;
+  let candidateBudgetExhausted=false;
   let failedBatches=0;
   let candidateApiCalls=0;
   let candidatesUpserted=0;
@@ -244,7 +273,7 @@ async function runSync(service:any,config:any,engineConfig:any){
 
     const targets=items.filter(item=>item.query.toLowerCase()!==anchor.toLowerCase());
     for(const batch of chunks(targets,4)){
-      if(apiCalls+candidateApiCalls>=callBudget){budgetExhausted=true;break}
+      if(apiCalls>=termCallBudget){termBudgetExhausted=true;break}
       try{
         apiCalls+=1;
         const results=await fetchTrendBatch(String(config.api_key),geo,batch.map(x=>x.query));
@@ -275,22 +304,8 @@ async function runSync(service:any,config:any,engineConfig:any){
     }
   }
 
-  const ownerSeeds=(Array.isArray(engineConfig?.seeds)?engineConfig.seeds:[])
-    .map((row:any)=>({geo:String(row?.geo||""),query:String(row?.query||"").trim(),source:"owner" as const}))
-    .filter((row:any)=>row.query);
-  const autoSeeds=(Array.isArray(engineConfig?.auto_seeds)?engineConfig.auto_seeds:[])
-    .map((row:any)=>({geo:String(row?.geo||""),query:String(row?.query||"").trim(),source:"profile_auto" as const}))
-    .filter((row:any)=>row.query);
-  const seenSeedKeys=new Set<string>();
-  const candidateSeeds=[...ownerSeeds,...autoSeeds]
-    .filter((row:any)=>{
-      const key=row.geo+"|"+row.query.toLowerCase();
-      if(seenSeedKeys.has(key))return false;
-      seenSeedKeys.add(key);
-      return true;
-    })
-    .slice(0,Math.max(0,Number(engineConfig?.candidate_seed_limit||8)));
   for(const seed of candidateSeeds){
+    if(candidateApiCalls>=candidateCallBudget){candidateBudgetExhausted=true;break}
     if(apiCalls+candidateApiCalls>=callBudget){budgetExhausted=true;break}
     try{
       candidateApiCalls+=1;
@@ -318,6 +333,7 @@ async function runSync(service:any,config:any,engineConfig:any){
     }
   }
 
+  budgetExhausted=budgetExhausted||(apiCalls+candidateApiCalls>=callBudget);
   const result={
     ok:failedBatches===0,
     configured:true,
@@ -331,6 +347,10 @@ async function runSync(service:any,config:any,engineConfig:any){
     candidates_upserted:candidatesUpserted,
     candidate_seeds:candidateSeeds.length,
     call_budget:callBudget,
+    term_call_budget:termCallBudget,
+    candidate_call_budget:candidateCallBudget,
+    term_budget_exhausted:termBudgetExhausted,
+    candidate_budget_exhausted:candidateBudgetExhausted,
     daily_call_limit:dailyCallLimit,
     daily_calls_before:dailyCallsBefore,
     daily_calls_after:dailyCallsBefore+apiCalls+candidateApiCalls,
