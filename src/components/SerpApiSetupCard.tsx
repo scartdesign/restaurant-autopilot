@@ -12,7 +12,7 @@ type ProviderStatus={
 
 const emptyStatus:ProviderStatus={configured:false,provider:'serpapi_google_trends',last_sync_at:null,verified_terms:0}
 
-export function SerpApiSetupCard({setNotice}:{setNotice:(value:string)=>void}){
+export function SerpApiSetupCard({setNotice,onChanged}:{setNotice:(value:string)=>void;onChanged?:()=>void}){
   const[status,setStatus]=useState<ProviderStatus>(emptyStatus)
   const[key,setKey]=useState('')
   const[loading,setLoading]=useState(true)
@@ -39,6 +39,7 @@ export function SerpApiSetupCard({setNotice}:{setNotice:(value:string)=>void}){
       setKey('')
       setNotice(status.configured?'SerpApi ključ je bezbedno rotiran u Supabase Vault-u.':'SerpApi ključ je bezbedno sačuvan u Supabase Vault-u.')
       await loadStatus()
+      onChanged?.()
     }
     setSaving(false)
   }
