@@ -11,6 +11,7 @@ type IntelligenceHealth={
 }
 type Readiness={
   status:string;provider_configured:boolean;provider_enabled:boolean;manual_seeds:number;auto_profile_seeds_enabled:boolean
+  per_sync_call_limit:number;candidate_seed_limit:number;estimated_candidate_call_budget:number;estimated_term_call_budget:number
   daily_call_limit:number;daily_calls_used:number;estimated_monthly_call_ceiling:number
   candidates:{pending:number;approved:number;rejected:number}
   opportunities:{pending:number;eligible_auto:number}
@@ -28,7 +29,12 @@ const emptyHealth:IntelligenceHealth={
   opportunities:{pending:0,eligible_auto:0,repeat_cooldown:0,low_effectiveness_guard:0,local_performance_guard:0,below_auto_threshold:0,snoozed:0},
   sources:{manual_seeds:0,auto_profile_enabled:false,provider_enabled:false,daily_calls_used:0},generated_at:''
 }
-const emptyReadiness:Readiness={status:'loading',provider_configured:false,provider_enabled:false,manual_seeds:0,auto_profile_seeds_enabled:false,daily_call_limit:0,daily_calls_used:0,estimated_monthly_call_ceiling:0,candidates:{pending:0,approved:0,rejected:0},opportunities:{pending:0,eligible_auto:0},modes:{},generated_at:''}
+const emptyReadiness:Readiness={
+  status:'loading',provider_configured:false,provider_enabled:false,manual_seeds:0,auto_profile_seeds_enabled:false,
+  per_sync_call_limit:0,candidate_seed_limit:0,estimated_candidate_call_budget:0,estimated_term_call_budget:0,
+  daily_call_limit:0,daily_calls_used:0,estimated_monthly_call_ceiling:0,
+  candidates:{pending:0,approved:0,rejected:0},opportunities:{pending:0,eligible_auto:0},modes:{},generated_at:''
+}
 
 const labels:Record<string,string>={
   created:'draft napravljen',would_create:'napravio bi draft',eligible:'spremno za AUTO',suggest_only:'SUGGEST režim',off:'AUTO isključen',
@@ -66,6 +72,10 @@ export function TrendIntelligenceOwner({setNotice}:{setNotice:(value:string)=>vo
 
   const ready=readiness.status==='ready'||readiness.status==='ready_suggest_only'
   const remaining=Math.max(0,(readiness.daily_call_limit||0)-(readiness.daily_calls_used||0))
+  const candidateBudget=Math.max(0,readiness.estimated_candidate_call_budget||0)
+  const termBudget=Math.max(0,readiness.estimated_term_call_budget||0)
+  const splitTotal=Math.max(1,candidateBudget+termBudget)
+  const candidatePct=Math.round(candidateBudget/splitTotal*100)
 
   return <div className="trend-intelligence-owner">
     <header className="trend-intel-hero">
@@ -77,6 +87,15 @@ export function TrendIntelligenceOwner({setNotice}:{setNotice:(value:string)=>vo
       <div className="trend-readiness-icon">{ready?<ShieldCheck size={24}/>:<Gauge size={24}/>}</div>
       <div><span>PROVIDER READINESS</span><strong>{label(readiness.status)}</strong><small>{readiness.provider_configured?'SerpApi ključ je postavljen.':'SerpApi ključ nije postavljen.'} Provider je {readiness.provider_enabled?'dozvoljen':'pauziran'}.</small></div>
       <div className="trend-readiness-budget"><b>{remaining}</b><span>API poziva preostalo danas</span><small>limit {readiness.daily_call_limit}/dan · teorijski plafon {readiness.estimated_monthly_call_ceiling}/30 dana</small></div>
+    </section>
+
+    <section className="trend-budget-split">
+      <div className="trend-budget-copy"><span>API BUDŽET PO SYNC-U</span><strong>{readiness.per_sync_call_limit} poziva maksimalno</strong><small>Novi trend kandidati imaju rezervisan deo budžeta, pa ih TIMESERIES scoring više ne može potpuno izgurati.</small></div>
+      <div className="trend-budget-meter" aria-label={`Candidate discovery ${candidateBudget}, trend scoring ${termBudget}`}>
+        <div className="trend-budget-bar"><span style={{width:`${candidatePct}%`}}/></div>
+        <div className="trend-budget-legend"><span><i/>Candidate discovery <b>{candidateBudget}</b></span><span><i/>Trend scoring <b>{termBudget}</b></span></div>
+        <small>candidate seed limit {readiness.candidate_seed_limit} · stvarna potrošnja može biti manja ako nema dovoljno seedova ili termina</small>
+      </div>
     </section>
 
     <section className="trend-intel-grid">
