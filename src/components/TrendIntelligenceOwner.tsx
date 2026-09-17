@@ -38,7 +38,7 @@ const emptyReadiness:Readiness={
 
 const labels:Record<string,string>={
   created:'draft napravljen',would_create:'napravio bi draft',eligible:'spremno za AUTO',suggest_only:'SUGGEST režim',off:'AUTO isključen',
-  no_opportunity:'nema odgovarajuće prilike',daily_guard:'24h zaštita',quota_reached:'mesečna kvota potrošena',no_active_plan:'nema aktivan paket',
+  no_opportunity:'nema odgovarajuće prilike',daily_guard:'24h zaštita',quota_reached:'mesečna kvota potrošena',no_active_plan:'nema aktivan paket',no_menu_item:'nema aktivno jelo za AUTO',
   local_performance_guard:'lokalno slab trend',low_local_effectiveness:'slab istorijski učinak',repeat_cooldown:'trend je skoro korišćen',
   below_auto_threshold:'ispod AUTO praga',snoozed:'prilika je odložena',provider_paused:'Google Trends provider je pauziran',
   provider_key_missing:'nedostaje SerpApi ključ',waiting_for_candidates:'čeka nove trend kandidate',candidates_need_review:'trend kandidati čekaju odobrenje',
