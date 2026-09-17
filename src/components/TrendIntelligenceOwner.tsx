@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Activity, Gauge, RefreshCw, ShieldCheck, Sparkles, TrendingUp, Zap } from 'lucide-react'
+import { Activity, CheckCircle2, Gauge, RefreshCw, ShieldCheck, Sparkles, TrendingUp, XCircle, Zap } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import '../trend-intelligence-owner.css'
 
@@ -22,6 +22,12 @@ type DryRunRow={
   opportunity_id:string|null;trend_query:string|null;seed_query:string|null;opportunity_score:number|null
   effectiveness_score:number|null;effectiveness_samples:number|null;performance_boost:number|null;performance_samples:number|null
   repeat_penalty:number|null;monthly_used:number;monthly_limit:number|null;daily_guard:boolean
+}
+type CandidatePreReview={recommendation?:'approve'|'review'|'skip';confidence?:number;matched_restaurants?:number;reason?:string;evaluated_at?:string}
+type CandidateRow={
+  id:string;provider:string;seed_query:string;query:string;geo:string;trend_type:string;trend_value:string|null
+  extracted_value:number;relevance_score:number;status:string;first_seen_at:string;last_seen_at:string;decided_at:string|null
+  metadata?:{pre_review?:CandidatePreReview;[key:string]:unknown}
 }
 
 const emptyHealth:IntelligenceHealth={
@@ -46,28 +52,52 @@ const labels:Record<string,string>={
   ready_suggest_only:'spremno, ali restorani su na SUGGEST',ready:'Trend AUTO je spreman',loading:'proveravam sistem'
 }
 function label(code:string){return labels[code]||code.replaceAll('_',' ')}
+function recommendationLabel(value:string){return value==='approve'?'PREPORUKA: ODOBRI':value==='skip'?'PREPORUKA: PRESKOČI':'PREPORUKA: PROVERI'}
 
 export function TrendIntelligenceOwner({setNotice}:{setNotice:(value:string)=>void}){
   const[health,setHealth]=useState<IntelligenceHealth>(emptyHealth)
   const[readiness,setReadiness]=useState<Readiness>(emptyReadiness)
   const[dryRun,setDryRun]=useState<DryRunRow[]>([])
+  const[candidates,setCandidates]=useState<CandidateRow[]>([])
+  const[candidateWorking,setCandidateWorking]=useState('')
   const[loading,setLoading]=useState(true)
 
   useEffect(()=>{void load()},[])
 
   async function load(){
     setLoading(true)
-    const[h,r,d]=await Promise.all([
+    const[h,r,d,c]=await Promise.all([
       supabase.rpc('admin_trend_intelligence_health'),
       supabase.rpc('admin_trend_provider_readiness'),
       supabase.rpc('admin_trend_auto_dry_run',{p_limit:50}),
+      supabase.rpc('admin_discovery_candidate_feed',{p_limit:40}),
     ])
-    const error=h.error||r.error||d.error
+    const error=h.error||r.error||d.error||c.error
     if(error)setNotice(error.message)
     if(h.data)setHealth(h.data as IntelligenceHealth)
     if(r.data)setReadiness(r.data as Readiness)
     if(d.data)setDryRun((d.data||[]) as DryRunRow[])
+    if(c.data){
+      const priority:Record<string,number>={approve:0,review:1,skip:2}
+      const pending=((c.data||[]) as CandidateRow[]).filter(row=>row.status==='pending').sort((a,b)=>{
+        const ar=a.metadata?.pre_review?.recommendation||'review',br=b.metadata?.pre_review?.recommendation||'review'
+        return (priority[ar]??1)-(priority[br]??1)||(b.metadata?.pre_review?.confidence||0)-(a.metadata?.pre_review?.confidence||0)||b.relevance_score-a.relevance_score
+      })
+      setCandidates(pending)
+    }
     setLoading(false)
+  }
+
+  async function decideCandidate(row:CandidateRow,status:'approved'|'rejected'){
+    const key=row.id+':'+status
+    setCandidateWorking(key)
+    const{error}=await supabase.rpc('admin_set_discovery_candidate_status',{p_id:row.id,p_status:status})
+    if(error)setNotice(error.message)
+    else{
+      setNotice(status==='approved'?`Trend „${row.query}“ je odobren za pipeline.`:`Trend „${row.query}“ je preskočen.`)
+      await load()
+    }
+    setCandidateWorking('')
   }
 
   const ready=readiness.status==='ready'||readiness.status==='ready_suggest_only'
@@ -103,6 +133,16 @@ export function TrendIntelligenceOwner({setNotice}:{setNotice:(value:string)=>vo
       <article className="trend-intel-card"><span><Zap size={18}/> AUTO spremno</span><strong>{health.opportunities.eligible_auto}</strong><p>rising prilika trenutno prolazi sve guardove</p><div><b>{health.opportunities.pending}</b> pending · <b>{health.opportunities.below_auto_threshold}</b> ispod praga · <b>{health.opportunities.snoozed}</b> odloženo</div></article>
       <article className="trend-intel-card"><span><Activity size={18}/> Zaštite</span><strong>{health.opportunities.repeat_cooldown+health.opportunities.low_effectiveness_guard+health.opportunities.local_performance_guard}</strong><p>prilika trenutno zadržano zaštitnim pravilima</p><div><b>{health.opportunities.repeat_cooldown}</b> repeat · <b>{health.opportunities.low_effectiveness_guard}</b> effectiveness · <b>{health.opportunities.local_performance_guard}</b> performance</div></article>
       <article className="trend-intel-card"><span><Gauge size={18}/> Trend pipeline</span><strong>{readiness.candidates.approved}</strong><p>odobrenih kandidata · {readiness.candidates.pending} pending</p><div><b>{readiness.candidates.pre_approve}</b> preporuka odobri · <b>{readiness.candidates.pre_review}</b> proveri · <b>{readiness.candidates.pre_skip}</b> preskoči</div></article>
+    </section>
+
+    <section className="admin-panel trend-review-panel">
+      <div className="admin-panel-head"><div><p className="eyebrow">AI PRE-REVIEW QUEUE</p><h2>Trend kandidati za odluku</h2></div><span className="admin-counter">{candidates.length} pending</span></div>
+      <p className="trend-dry-note">AI pre-review ne odobrava ništa sam. Rangira signal, proverava poklapanje sa aktivnim restoranima i daje preporuku; OWNER donosi odluku.</p>
+      <div className="trend-review-list">{candidates.length?candidates.slice(0,12).map(row=>{const review=row.metadata?.pre_review||{};const recommendation=review.recommendation||'review';return <article className={'trend-review-row '+recommendation} key={row.id}>
+        <div className="trend-review-main"><span className={'trend-review-badge '+recommendation}>{recommendationLabel(recommendation)}</span><strong>{row.query}</strong><small>{row.trend_type.toUpperCase()} · seed {row.seed_query} · {row.geo||'WORLD'} · {row.provider}</small><p>{review.reason||'Kandidat čeka OWNER proveru.'}</p></div>
+        <div className="trend-review-numbers"><span><small>Confidence</small><b>{review.confidence??'—'}{review.confidence!=null?'%':''}</b></span><span><small>Relevance</small><b>{row.relevance_score}</b></span><span><small>Restorani</small><b>{review.matched_restaurants??0}</b></span><span><small>Signal</small><b>{row.trend_value||row.extracted_value||'—'}</b></span></div>
+        <div className="trend-review-actions"><button className="primary" disabled={Boolean(candidateWorking)} onClick={()=>void decideCandidate(row,'approved')}><CheckCircle2 size={14}/>{candidateWorking===row.id+':approved'?'Čuvam…':'Odobri'}</button><button className="secondary" disabled={Boolean(candidateWorking)} onClick={()=>void decideCandidate(row,'rejected')}><XCircle size={14}/>{candidateWorking===row.id+':rejected'?'Čuvam…':'Preskoči'}</button></div>
+      </article>}):<div className="admin-empty">Nema pending trend kandidata. Novi će se pojaviti nakon sledećeg eksternog discovery sync-a kada SerpApi bude konfigurisan.</div>}</div>
     </section>
 
     <section className="admin-panel trend-dry-panel">
