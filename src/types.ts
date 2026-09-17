@@ -36,6 +36,7 @@ export type Restaurant = {
   default_overlay_strength?: number
   weekly_autopilot_enabled?: boolean
   trend_autopilot_mode?: 'off' | 'suggest' | 'auto'
+  trend_weekly_digest_enabled?: boolean
 }
 
 export type MenuItem = {
