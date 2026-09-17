@@ -25,6 +25,7 @@ type TrendAutoPreview={
   decision:string
   would_create:boolean
   daily_guard:boolean
+  has_active_menu_item?:boolean
   monthly_used:number
   monthly_limit:number|null
   opportunity:TrendOpportunityPreview|null
@@ -40,6 +41,7 @@ const labels:Record<string,string>={
   daily_guard:'24h zaštita — draft je već pravljen',
   no_active_plan:'Nema aktivan paket',
   quota_reached:'Mesečna kvota je potrošena',
+  no_menu_item:'Nema aktivno jelo koje AUTO može da koristi',
   local_performance_guard:'Lokalni učinak ovog trenda je slab',
   low_local_effectiveness:'Istorijski učinak ovog trenda je slab',
   repeat_cooldown:'Ovaj trend je skoro korišćen',
