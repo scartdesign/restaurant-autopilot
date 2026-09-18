@@ -23,7 +23,7 @@ type DryRunRow={
   effectiveness_score:number|null;effectiveness_samples:number|null;performance_boost:number|null;performance_samples:number|null
   repeat_penalty:number|null;monthly_used:number;monthly_limit:number|null;daily_guard:boolean
 }
-type CandidatePreReview={recommendation?:'approve'|'review'|'skip';confidence?:number;matched_restaurants?:number;reason?:string;evaluated_at?:string}
+type CandidatePreReview={recommendation?:'approve'|'review'|'skip';confidence?:number;matched_restaurants?:number;reason?:string;evaluated_at?:string;owner_learning_score?:number;owner_learning_samples?:number;owner_learning_applied?:boolean}
 type CandidateRow={
   id:string;provider:string;seed_query:string;query:string;geo:string;trend_type:string;trend_value:string|null
   extracted_value:number;relevance_score:number;status:string;first_seen_at:string;last_seen_at:string;decided_at:string|null
@@ -54,7 +54,7 @@ const labels:Record<string,string>={
 function label(code:string){return labels[code]||code.replaceAll('_',' ')}
 function recommendationLabel(value:string){return value==='approve'?'PREPORUKA: ODOBRI':value==='skip'?'PREPORUKA: PRESKOČI':'PREPORUKA: PROVERI'}
 
-export function TrendIntelligenceOwner({setNotice}:{setNotice:(value:string)=>void}){
+export function TrendIntelligenceOwner({setNotice,onLearningChanged}:{setNotice:(value:string)=>void;onLearningChanged?:()=>void}){
   const[health,setHealth]=useState<IntelligenceHealth>(emptyHealth)
   const[readiness,setReadiness]=useState<Readiness>(emptyReadiness)
   const[dryRun,setDryRun]=useState<DryRunRow[]>([])
@@ -96,6 +96,7 @@ export function TrendIntelligenceOwner({setNotice}:{setNotice:(value:string)=>vo
     else{
       setNotice(status==='approved'?`Trend „${row.query}“ je odobren za pipeline.`:`Trend „${row.query}“ je preskočen.`)
       await load()
+      onLearningChanged?.()
     }
     setCandidateWorking('')
   }
@@ -140,7 +141,7 @@ export function TrendIntelligenceOwner({setNotice}:{setNotice:(value:string)=>vo
       <p className="trend-dry-note">AI pre-review ne odobrava ništa sam. Rangira signal, proverava poklapanje sa aktivnim restoranima i daje preporuku; OWNER donosi odluku.</p>
       <div className="trend-review-list">{candidates.length?candidates.slice(0,12).map(row=>{const review=row.metadata?.pre_review||{};const recommendation=review.recommendation||'review';return <article className={'trend-review-row '+recommendation} key={row.id}>
         <div className="trend-review-main"><span className={'trend-review-badge '+recommendation}>{recommendationLabel(recommendation)}</span><strong>{row.query}</strong><small>{row.trend_type.toUpperCase()} · seed {row.seed_query} · {row.geo||'WORLD'} · {row.provider}</small><p>{review.reason||'Kandidat čeka OWNER proveru.'}</p></div>
-        <div className="trend-review-numbers"><span><small>Confidence</small><b>{review.confidence??'—'}{review.confidence!=null?'%':''}</b></span><span><small>Relevance</small><b>{row.relevance_score}</b></span><span><small>Restorani</small><b>{review.matched_restaurants??0}</b></span><span><small>Signal</small><b>{row.trend_value||row.extracted_value||'—'}</b></span></div>
+        <div className="trend-review-numbers"><span><small>Confidence</small><b>{review.confidence??'—'}{review.confidence!=null?'%':''}</b></span><span><small>Relevance</small><b>{row.relevance_score}</b></span><span><small>Restorani</small><b>{review.matched_restaurants??0}</b></span><span><small>OWNER learning</small><b>{review.owner_learning_samples?((review.owner_learning_score||0)>0?'+':'')+(review.owner_learning_score||0):'—'}</b><small>{review.owner_learning_samples||0} uz.</small></span><span><small>Signal</small><b>{row.trend_value||row.extracted_value||'—'}</b></span></div>
         <div className="trend-review-actions"><button className="primary" disabled={Boolean(candidateWorking)} onClick={()=>void decideCandidate(row,'approved')}><CheckCircle2 size={14}/>{candidateWorking===row.id+':approved'?'Čuvam…':'Odobri'}</button><button className="secondary" disabled={Boolean(candidateWorking)} onClick={()=>void decideCandidate(row,'rejected')}><XCircle size={14}/>{candidateWorking===row.id+':rejected'?'Čuvam…':'Preskoči'}</button></div>
       </article>}):<div className="admin-empty">Nema pending trend kandidata. Novi će se pojaviti nakon sledećeg eksternog discovery sync-a kada SerpApi bude konfigurisan.</div>}</div>
     </section>
