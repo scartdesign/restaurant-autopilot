@@ -62,4 +62,9 @@ jobs:
           grep -Eiq '^content-type: *text/css' /tmp/css.clean
           test -s /tmp/app.js
           test -s /tmp/app.css
+          grep -Fq 'INCIDENT CENTER DEMO' /tmp/app.js
+          grep -Fq 'Potvrdi proveru' /tmp/app.js
+          grep -Fq 'Vrati u queue' /tmp/app.js
+          grep -Fq 'Obavesti vlasnika' /tmp/app.js
+          echo "OWNER Incident Center preview markers OK"
           echo "Public preview OK: $BASE/index.html"
