@@ -1,10 +1,11 @@
 import { useState, type CSSProperties } from 'react'
-import { ArrowLeft, BarChart3, CalendarClock, CalendarDays, CheckCircle2, ChefHat, Clock3, Facebook, Hash, Image as ImageIcon, Instagram, MapPin, Megaphone, MousePointerClick, Palette, Pencil, Save, Search, Send, Settings, Sparkles, Target, TrendingUp, UtensilsCrossed, X, Zap } from 'lucide-react'
+import { ArrowLeft, BarChart3, CalendarClock, CalendarDays, CheckCircle2, ChefHat, Clock3, Facebook, Hash, Image as ImageIcon, Instagram, MapPin, Megaphone, MousePointerClick, Palette, Pencil, Save, Search, Send, Settings, ShieldCheck, Sparkles, Target, TrendingUp, UtensilsCrossed, X, Zap } from 'lucide-react'
 import { VisualStudio } from './VisualStudio'
 import { BrandKit } from './BrandKit'
+import { DemoOwner } from './DemoOwner'
 import type { MenuItem, Post, Restaurant } from '../types'
 
-type DemoTab = 'content' | 'studio' | 'brand' | 'publish' | 'insights' | 'menu' | 'promotions' | 'settings'
+type DemoTab = 'content' | 'studio' | 'brand' | 'publish' | 'insights' | 'menu' | 'promotions' | 'settings' | 'owner'
 
 const food = {
   pizza: 'https://images.unsplash.com/photo-1574071318508-1cdbab80d002?auto=format&fit=crop&w=1500&q=88',
@@ -46,7 +47,7 @@ const demoVisualPosts: Post[] = [
 ]
 
 export function DemoScreen({ onExit }: { onExit: () => void }) {
-  const [tab, setTab] = useState<DemoTab>(() => { const value = window.location.hash.replace('#','') as DemoTab; return ['content','studio','brand','publish','insights','menu','promotions','settings'].includes(value) ? value : 'content' })
+  const [tab, setTab] = useState<DemoTab>(() => { const value = window.location.hash.replace('#','') as DemoTab; return ['content','studio','brand','publish','insights','menu','promotions','settings','owner'].includes(value) ? value : 'content' })
   const [approved, setApproved] = useState<string[]>(['Pizza Capricciosa', 'Sveža Carbonara'])
   const [toast, setToast] = useState('')
 
@@ -71,6 +72,7 @@ export function DemoScreen({ onExit }: { onExit: () => void }) {
             <button className={tab === 'menu' ? 'nav-active' : ''} onClick={() => setTab('menu')}><UtensilsCrossed size={18} /> Meni</button>
             <button className={tab === 'promotions' ? 'nav-active' : ''} onClick={() => setTab('promotions')}><Megaphone size={18} /> Akcije</button>
             <button className={tab === 'settings' ? 'nav-active' : ''} onClick={() => setTab('settings')}><Settings size={18} /> Podešavanja</button>
+            <button className={tab === 'owner' ? 'nav-active admin-nav' : 'admin-nav'} onClick={() => setTab('owner')}><ShieldCheck size={18} /> OWNER demo <span className="nav-beta">OPS</span></button>
           </nav>
         </div>
         <button className="logout" onClick={onExit}><ArrowLeft size={18} /> Nazad na prijavu</button>
@@ -85,6 +87,7 @@ export function DemoScreen({ onExit }: { onExit: () => void }) {
         {tab === 'menu' && <DemoMenu />}
         {tab === 'promotions' && <DemoPromotions notify={notify} />}
         {tab === 'settings' && <DemoSettings />}
+        {tab === 'owner' && <DemoOwner notify={notify} />}
       </main>
       {toast && <div className="app-toast">{toast}</div>}
     </div>
