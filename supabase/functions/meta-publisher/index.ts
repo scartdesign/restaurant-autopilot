@@ -34,6 +34,39 @@ class MetaApiError extends Error{
     super(message);this.name="MetaApiError";this.code=code;this.subcode=subcode;this.status=status;this.type=type;
   }
 }
+function metaRetryDecision(error:unknown,attemptNumber:number){
+  const maxAttempts=3;
+  const message=error instanceof Error?error.message:String(error);
+  const meta=error instanceof MetaApiError?error:null;
+  if(attemptNumber>=maxAttempts)return{retry:false,delayMinutes:0,reason:"max_attempts",message,maxAttempts};
+  if(!meta)return{retry:false,delayMinutes:0,reason:"unknown_or_local_error",message,maxAttempts};
+  if([10,100,190,200,294].includes(meta.code))return{retry:false,delayMinutes:0,reason:"permanent_meta_error",message,maxAttempts};
+  const transient=[1,2,4,17,32,341,613].includes(meta.code)||meta.status===429||meta.status>=500;
+  if(!transient)return{retry:false,delayMinutes:0,reason:"non_retryable_meta_error",message,maxAttempts};
+  return{retry:true,delayMinutes:attemptNumber<=1?5:20,reason:"transient_meta_error",message,maxAttempts};
+}
+
+async function handlePublishFailure(service:any,job:any,error:unknown,actorUserId?:string|null){
+  const message=error instanceof Error?error.message:String(error);
+  const attemptNumber=Number(job.attempt_count||0)+1;
+  const decision=metaRetryDecision(error,attemptNumber);
+  if(error instanceof MetaApiError&&error.code===190){
+    await service.from("social_connections").update({status:"expired",last_verified_at:new Date().toISOString(),updated_at:new Date().toISOString()}).eq("id",job.connection_id);
+  }
+  const{data:conn}=await service.from("social_connections").select("user_id").eq("id",job.connection_id).maybeSingle();
+  const userId=actorUserId||conn?.user_id||null;
+  if(decision.retry){
+    const retryAt=new Date(Date.now()+decision.delayMinutes*60*1000).toISOString();
+    const nextResult={...(job.result||{}),retry:{scheduled_at:new Date().toISOString(),retry_at:retryAt,attempt:attemptNumber,max_attempts:decision.maxAttempts,reason:decision.reason}};
+    await service.from("social_publish_jobs").update({status:"queued",publish_at:retryAt,error_message:message.slice(0,1000),result:nextResult,updated_at:new Date().toISOString()}).eq("id",job.id);
+    await service.from("autopilot_activity").insert({restaurant_id:job.restaurant_id,user_id:userId,event_type:"publish_retry_scheduled",title:"Meta objava ide na ponovni pokušaj",summary:`${job.platform==="instagram"?"Instagram":"Facebook"} · pokušaj ${attemptNumber+1}/${decision.maxAttempts} za ${decision.delayMinutes} min`,metadata:{job_id:job.id,post_id:job.post_id,platform:job.platform,retry_at:retryAt,attempt:attemptNumber,error:message.slice(0,300)}});
+    return{status:"retry_scheduled",retry_at:retryAt,attempt:attemptNumber,max_attempts:decision.maxAttempts,error:message};
+  }
+  await service.from("social_publish_jobs").update({status:"failed",error_message:message.slice(0,1000),updated_at:new Date().toISOString()}).eq("id",job.id);
+  await service.from("autopilot_activity").insert({restaurant_id:job.restaurant_id,user_id:userId,event_type:"publish_failed",title:"Meta publishing nije uspeo",summary:message.slice(0,300),metadata:{job_id:job.id,post_id:job.post_id,platform:job.platform,attempt:attemptNumber,retry_reason:decision.reason}});
+  return{status:"failed",attempt:attemptNumber,error:message,retry_reason:decision.reason};
+}
+
 async function fetchJson(url:string,init?:RequestInit){
   const res=await fetch(url,init);
   const data=await res.json().catch(()=>({}));
@@ -262,7 +295,7 @@ Deno.serve(async(req)=>{
       const now=new Date().toISOString();
       const{data:due,error:dueError}=await service.from("social_publish_jobs").select("*").eq("status","queued").lte("publish_at",now).order("publish_at",{ascending:true}).limit(25);
       if(dueError)return json({error:dueError.message},400);
-      let published=0,failed=0;
+      let published=0,failed=0,retrying=0;
       const results:any[]=[];
       for(const job of due||[]){
         const{data:locked}=await service.from("social_publish_jobs").update({status:"processing",attempt_count:Number(job.attempt_count||0)+1,updated_at:new Date().toISOString()}).eq("id",job.id).eq("status","queued").select("id").maybeSingle();
@@ -271,15 +304,12 @@ Deno.serve(async(req)=>{
           const result=await publishJobWithService(service,job,null);
           published+=1;results.push({job_id:job.id,status:"published",provider_media_id:result?.id||null});
         }catch(error){
-          const message=error instanceof Error?error.message:String(error);
-          failed+=1;
-          await service.from("social_publish_jobs").update({status:"failed",error_message:message.slice(0,1000),updated_at:new Date().toISOString()}).eq("id",job.id);
-          const{data:conn}=await service.from("social_connections").select("user_id").eq("id",job.connection_id).maybeSingle();
-          await service.from("autopilot_activity").insert({restaurant_id:job.restaurant_id,user_id:conn?.user_id||null,event_type:"publish_failed",title:"Meta publishing nije uspeo",summary:message.slice(0,300),metadata:{job_id:job.id,post_id:job.post_id,platform:job.platform}});
-          results.push({job_id:job.id,status:"failed",error:message});
+          const outcome=await handlePublishFailure(service,job,error,null);
+          if(outcome.status==="retry_scheduled")retrying+=1;else failed+=1;
+          results.push({job_id:job.id,...outcome});
         }
       }
-      return json({ok:true,processed:(due||[]).length,published,failed,results});
+      return json({ok:true,processed:(due||[]).length,published,failed,retrying,results});
     }
 
     if(action==="process_insights"){
@@ -481,13 +511,8 @@ Deno.serve(async(req)=>{
           await service.from("social_publish_jobs").update({status:"processing",attempt_count:Number(job.attempt_count||0)+1,updated_at:new Date().toISOString()}).eq("id",job.id);
           try{results.push({job_id:job.id,result:await publishJobWithService(service,job,user.id)});}
           catch(error){
-            const message=error instanceof Error?error.message:String(error);
-            if(error instanceof MetaApiError&&error.code===190){
-              await service.from("social_connections").update({status:"expired",last_verified_at:new Date().toISOString(),updated_at:new Date().toISOString()}).eq("id",job.connection_id);
-            }
-            await service.from("social_publish_jobs").update({status:"failed",error_message:message,updated_at:new Date().toISOString()}).eq("id",job.id);
-            await service.from("autopilot_activity").insert({restaurant_id:restaurantId,user_id:user.id,event_type:"publish_failed",title:"Meta publishing nije uspeo",summary:message.slice(0,300),metadata:{job_id:job.id,post_id:job.post_id,platform:job.platform}});
-            results.push({job_id:job.id,error:message});
+            const outcome=await handlePublishFailure(service,job,error,user.id);
+            results.push({job_id:job.id,...outcome});
           }
         }
       }
@@ -513,12 +538,8 @@ Deno.serve(async(req)=>{
       await service.from("social_publish_jobs").update({status:"processing",attempt_count:Number(job.attempt_count||0)+1,error_message:null,updated_at:new Date().toISOString()}).eq("id",job.id);
       try{return json({ok:true,result:await publishJobWithService(service,job,user.id)});}
       catch(error){
-        const message=error instanceof Error?error.message:String(error);
-        if(error instanceof MetaApiError&&error.code===190){
-          await service.from("social_connections").update({status:"expired",last_verified_at:new Date().toISOString(),updated_at:new Date().toISOString()}).eq("id",job.connection_id);
-        }
-        await service.from("social_publish_jobs").update({status:"failed",error_message:message,updated_at:new Date().toISOString()}).eq("id",job.id);
-        return json({error:message},400);
+        const outcome=await handlePublishFailure(service,job,error,user.id);
+        return outcome.status==="retry_scheduled"?json({ok:true,...outcome}):json({error:outcome.error,retry_reason:outcome.retry_reason},400);
       }
     }
 
