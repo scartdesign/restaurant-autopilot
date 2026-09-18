@@ -8,6 +8,8 @@ import { OwnerHealth } from './OwnerHealth'
 import { TrendIntelligenceOwner } from './TrendIntelligenceOwner'
 import { SerpApiSetupCard } from './SerpApiSetupCard'
 import { TrendReviewMetricsCard } from './TrendReviewMetricsCard'
+import { OwnerLearningCard } from './OwnerLearningCard'
+import { ProductionOpsCard } from './ProductionOpsCard'
 
 type OwnerSection='control'|'trend'|'promos'|'email'|'support'|'health'
 
@@ -32,6 +34,7 @@ export function OwnerControlPlus({onCloseApp,setNotice}:{onCloseApp?:()=>void;se
       <button className={section==='support'?'active':''} onClick={()=>setSection('support')}><Headphones size={16}/> Support Inbox</button>
       <button className={section==='health'?'active':''} onClick={()=>setSection('health')}><Activity size={16}/> System Health</button>
     </div>
-    {section==='control'?<OwnerControl onCloseApp={onCloseApp} setNotice={setNotice}/>:section==='trend'?<><SerpApiSetupCard setNotice={setNotice} onChanged={()=>setTrendVersion(v=>v+1)}/><TrendReviewMetricsCard setNotice={setNotice} version={trendVersion}/><TrendIntelligenceOwner key={trendVersion} setNotice={setNotice}/></>:section==='promos'?<PromoCodesAdmin setNotice={setNotice}/>:section==='email'?<EmailAdmin setNotice={setNotice}/>:section==='support'?<OwnerSupport setNotice={setNotice}/>:<OwnerHealth setNotice={setNotice}/>}
+    {section==='control'?<OwnerControl onCloseApp={onCloseApp} setNotice={setNotice}/>:section==='trend'?<><SerpApiSetupCard setNotice={setNotice} onChanged={()=>setTrendVersion(v=>v+1)}/><TrendReviewMetricsCard setNotice={setNotice} version={trendVersion}/><OwnerLearningCard setNotice={setNotice} version={trendVersion}/><TrendIntelligenceOwner key={trendVersion} setNotice={setNotice}/></>:section==='promos'?<PromoCodesAdmin setNotice={setNotice}/>:section==='email'?<EmailAdmin setNotice={setNotice}/>:section==='support'?<OwnerSupport setNotice={setNotice}/>
+:section==='health'?<><ProductionOpsCard setNotice={setNotice}/><OwnerHealth setNotice={setNotice}/></>:<OwnerHealth setNotice={setNotice}/>}
   </div>
 }
