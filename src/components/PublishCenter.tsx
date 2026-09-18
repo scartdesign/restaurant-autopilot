@@ -11,7 +11,7 @@ type MetaConnection={
   token_expires_at:string|null;scopes:string[];connection_meta?:{page_candidates?:MetaCandidate[]};connected_at:string|null;last_verified_at:string|null
 }
 type MetaState={provider_configured:boolean;connection:MetaConnection|null;insights_ready?:boolean;missing_insights_scopes?:string[];callback_url?:string}
-type MetaJob={id:string;post_id:string;platform:'facebook'|'instagram';status:'queued'|'processing'|'published'|'failed'|'cancelled';publish_at:string;attempt_count:number;provider_media_id:string|null;error_message:string|null;published_at:string|null}
+type MetaJob={id:string;post_id:string;platform:'facebook'|'instagram';status:'queued'|'processing'|'published'|'failed'|'cancelled';publish_at:string;attempt_count:number;provider_media_id:string|null;error_message:string|null;published_at:string|null;result?:{recovery?:{manual_review_required?:boolean}}|null}
 
 export function PublishCenter({ restaurant, posts, onChanged, setNotice }: {
   restaurant: Restaurant
@@ -60,7 +60,7 @@ export function PublishCenter({ restaurant, posts, onChanged, setNotice }: {
   },[posts.length,published.length,drafts.length,missingSchedule,overdue.length,conflicts])
 
   async function loadMetaJobs(){
-    const{data}=await supabase.from('social_publish_jobs').select('id,post_id,platform,status,publish_at,attempt_count,provider_media_id,error_message,published_at').eq('restaurant_id',restaurant.id).order('created_at',{ascending:false}).limit(150)
+    const{data}=await supabase.from('social_publish_jobs').select('id,post_id,platform,status,publish_at,attempt_count,provider_media_id,error_message,published_at,result').eq('restaurant_id',restaurant.id).order('created_at',{ascending:false}).limit(150)
     setMetaJobs((data||[]) as MetaJob[])
   }
 
@@ -127,6 +127,7 @@ export function PublishCenter({ restaurant, posts, onChanged, setNotice }: {
   }
 
   function metaJobsFor(postId:string){return metaJobs.filter(job=>job.post_id===postId&&job.status!=='cancelled')}
+  function metaJobNeedsOwnerReview(job:MetaJob){return Boolean(job.result?.recovery?.manual_review_required)||Boolean(job.provider_media_id)||Number(job.attempt_count||0)>=3}
 
   function metaPlatforms(post:Post){
     const out:('facebook'|'instagram')[]=[]
@@ -404,7 +405,7 @@ export function PublishCenter({ restaurant, posts, onChanged, setNotice }: {
             <div className="queue-copy">
               <div className="queue-title"><span className="queue-format">{post.post_type}</span><strong>{post.title || 'Objava'}</strong>{post.scheduled_for && <span className="schedule-chip">{formatWeekday(post.scheduled_for, restaurant.timezone)} · {formatTime(post.scheduled_for, restaurant.timezone)}</span>}{post.generation_meta?.learning_signal?.schedule_hour !== null && post.generation_meta?.learning_signal?.schedule_hour !== undefined && <span className="learned-time-chip"><Sparkles size={11}/> LEARNED TIME</span>}{Number(post.generation_meta?.learning_signal?.approved_trend_boost||0)>0&&<span className="learned-time-chip"><Sparkles size={11}/> TREND BOOST</span>}{post.generation_meta?.generation_source&&<span className={`generation-source-chip ${String(post.generation_meta.generation_source).startsWith('weekly_autopilot')?'auto':'manual'}`}>{String(post.generation_meta.generation_source).startsWith('weekly_autopilot')?'AUTO WEEK':post.generation_meta.generation_source==='opportunity_test'?'TEST':'MANUAL'}</span>}</div>
               <p>{post.caption}</p>
-              <div className="queue-platforms"><span><Instagram size={13} /> {(post.platform_content?.instagram?.hashtags || post.hashtags || []).length} IG tags</span><span><Facebook size={13} /> {(post.platform_content?.facebook?.hashtags || []).length} FB tags</span><span>{post.discovery_score || 0}/100 discovery</span>{qualityScores[post.id] !== undefined && <span className="quality-inline"><ShieldCheck size={13} /> {qualityScores[post.id]}/100 quality</span>}</div>{metaJobsFor(post.id).length>0&&<div className="meta-job-strip">{metaJobsFor(post.id).map(job=><span key={job.id} className={`meta-job-chip ${job.status}`}><b>{job.platform==='instagram'?'IG':'FB'}</b> {job.status}{job.status==='queued'?<small>{formatTime(job.publish_at,restaurant.timezone)}</small>:null}{job.status==='failed'&&<button disabled={workingId==='job-'+job.id} onClick={()=>void retryMetaJob(job)}>Retry</button>}{job.status==='queued'&&<button className="cancel" disabled={workingId==='job-'+job.id} onClick={()=>void cancelMetaJob(job)}>Otkaži</button>}</span>)}</div>}
+              <div className="queue-platforms"><span><Instagram size={13} /> {(post.platform_content?.instagram?.hashtags || post.hashtags || []).length} IG tags</span><span><Facebook size={13} /> {(post.platform_content?.facebook?.hashtags || []).length} FB tags</span><span>{post.discovery_score || 0}/100 discovery</span>{qualityScores[post.id] !== undefined && <span className="quality-inline"><ShieldCheck size={13} /> {qualityScores[post.id]}/100 quality</span>}</div>{metaJobsFor(post.id).length>0&&<div className="meta-job-strip">{metaJobsFor(post.id).map(job=><span key={job.id} className={`meta-job-chip ${job.status}`}><b>{job.platform==='instagram'?'IG':'FB'}</b> {job.status}{job.status==='queued'?<small>{formatTime(job.publish_at,restaurant.timezone)}</small>:null}{job.status==='failed'&&(metaJobNeedsOwnerReview(job)?<small>OWNER provera</small>:<button disabled={workingId==='job-'+job.id} onClick={()=>void retryMetaJob(job)}>Retry</button>)}{job.status==='queued'&&<button className="cancel" disabled={workingId==='job-'+job.id} onClick={()=>void cancelMetaJob(job)}>Otkaži</button>}</span>)}</div>}
 
               {editingId === post.id && <div className="schedule-editor">
                 <div className="schedule-fields"><label>Datum <small>{restaurant.timezone}</small><input type="date" value={scheduleDraft.date} onChange={(e) => setScheduleDraft({ ...scheduleDraft, date: e.target.value })} /></label><label>Vreme<input type="time" step="300" value={scheduleDraft.time} onChange={(e) => setScheduleDraft({ ...scheduleDraft, time: e.target.value })} /></label></div>
