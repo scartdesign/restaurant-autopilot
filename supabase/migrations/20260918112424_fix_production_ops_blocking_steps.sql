@@ -1,0 +1,2 @@
+-- Production follow-up migration kept for history alignment.
+-- The preceding repository migration already contains the corrected blocking_steps implementation.
