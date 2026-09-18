@@ -20,3 +20,12 @@ jobs:
           node-version: 24
       - run: npm install
       - run: npm run build
+      - name: Meta publish safety regression guards
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -Fq 'MANUAL_REVIEW_REQUIRED' supabase/functions/meta-publisher/index.ts
+          grep -Fq 'RETRY_LIMIT_REACHED' supabase/functions/meta-publisher/index.ts
+          grep -Fq 'JOB_ALREADY_PROCESSING' supabase/functions/meta-publisher/index.ts
+          grep -Fq 'USE_RETRY_FLOW' supabase/functions/meta-publisher/index.ts
+          grep -Fq 'PUBLISH_STATE_CHANGED' supabase/functions/meta-publisher/index.ts
