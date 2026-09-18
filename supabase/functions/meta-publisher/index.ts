@@ -508,7 +508,41 @@ Deno.serve(async(req)=>{
       if(body.publishNow){
         for(const job of jobs){
           if(job.status==="published"){results.push({job_id:job.id,already_published:true});continue}
-          await service.from("social_publish_jobs").update({status:"processing",attempt_count:Number(job.attempt_count||0)+1,updated_at:new Date().toISOString()}).eq("id",job.id);
+          if(job.status==="processing"){
+            results.push({job_id:job.id,error:"Meta job se već obrađuje. Novo slanje je blokirano zbog rizika od duple objave.",code:"JOB_ALREADY_PROCESSING"});
+            continue;
+          }
+          if(job.status==="failed"){
+            const manualReview=Boolean(job.result?.recovery?.manual_review_required);
+            results.push({
+              job_id:job.id,
+              error:manualReview
+                ?"Meta job zahteva OWNER proveru pre novog slanja."
+                :"Failed Meta job mora da ide kroz kontrolisani Retry tok.",
+              code:manualReview?"MANUAL_REVIEW_REQUIRED":"USE_RETRY_FLOW"
+            });
+            continue;
+          }
+          if(job.status!=="queued"){
+            results.push({job_id:job.id,error:"Meta job nije u stanju koje dozvoljava slanje.",code:"INVALID_PUBLISH_STATE"});
+            continue;
+          }
+
+          const{data:locked,error:lockError}=await service.from("social_publish_jobs")
+            .update({status:"processing",attempt_count:Number(job.attempt_count||0)+1,updated_at:new Date().toISOString()})
+            .eq("id",job.id)
+            .eq("status","queued")
+            .select("id")
+            .maybeSingle();
+          if(lockError){
+            results.push({job_id:job.id,error:lockError.message,code:"PUBLISH_LOCK_ERROR"});
+            continue;
+          }
+          if(!locked){
+            results.push({job_id:job.id,error:"Meta job je u međuvremenu preuzeo drugi worker. Novo slanje je blokirano.",code:"PUBLISH_STATE_CHANGED"});
+            continue;
+          }
+
           try{results.push({job_id:job.id,result:await publishJobWithService(service,job,user.id)});}
           catch(error){
             const outcome=await handlePublishFailure(service,job,error,user.id);
