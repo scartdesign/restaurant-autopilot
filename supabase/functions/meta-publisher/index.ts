@@ -533,9 +533,48 @@ Deno.serve(async(req)=>{
 
     if(action==="retry_job"){
       const jobId=String(body.jobId||"");
-      const{data:job}=await service.from("social_publish_jobs").select("*").eq("id",jobId).eq("restaurant_id",restaurantId).maybeSingle();
-      if(!job)return json({error:"Publish job not found"},404);
-      await service.from("social_publish_jobs").update({status:"processing",attempt_count:Number(job.attempt_count||0)+1,error_message:null,updated_at:new Date().toISOString()}).eq("id",job.id);
+      if(!jobId)return json({error:"jobId is required"},400);
+      const{data:job,error:jobError}=await service.from("social_publish_jobs").select("*").eq("id",jobId).eq("restaurant_id",restaurantId).maybeSingle();
+      if(jobError||!job)return json({error:"Publish job not found"},404);
+      if(job.status!=="failed")return json({error:"Samo failed Meta job može ručno da se ponovi.",code:"INVALID_RETRY_STATE"},409);
+      if(job.provider_media_id)return json({error:"Job već ima provider media ID i ne sme da se ponavlja bez OWNER provere.",code:"PROVIDER_MEDIA_EXISTS"},409);
+
+      const manualReview=Boolean(job.result?.recovery?.manual_review_required);
+      if(manualReview){
+        return json({
+          error:"Ovaj Meta job zahteva ručnu OWNER proveru zbog mogućeg duplog objavljivanja. Retry iz Publish Centra je blokiran.",
+          code:"MANUAL_REVIEW_REQUIRED"
+        },409);
+      }
+
+      if(Number(job.attempt_count||0)>=3){
+        return json({
+          error:"Automatski limit pokušaja je dostignut. Incident mora da proveri OWNER pre novog slanja.",
+          code:"RETRY_LIMIT_REACHED"
+        },409);
+      }
+
+      const{data:retryConnection}=await service.from("social_connections")
+        .select("id,status,token_expires_at")
+        .eq("id",job.connection_id)
+        .maybeSingle();
+      if(!retryConnection||retryConnection.status!=="connected"){
+        return json({error:"Meta konekcija nije aktivna. Poveži nalog ponovo pre retry-a.",code:"META_CONNECTION_NOT_READY"},409);
+      }
+      if(retryConnection.token_expires_at&&new Date(retryConnection.token_expires_at).getTime()<=Date.now()){
+        await service.from("social_connections").update({status:"expired",updated_at:new Date().toISOString()}).eq("id",retryConnection.id);
+        return json({error:"Meta token je istekao. Poveži nalog ponovo pre retry-a.",code:"META_TOKEN_EXPIRED"},409);
+      }
+
+      const{data:locked,error:lockError}=await service.from("social_publish_jobs")
+        .update({status:"processing",attempt_count:Number(job.attempt_count||0)+1,error_message:null,updated_at:new Date().toISOString()})
+        .eq("id",job.id)
+        .eq("status","failed")
+        .select("id")
+        .maybeSingle();
+      if(lockError)return json({error:lockError.message},400);
+      if(!locked)return json({error:"Job je u međuvremenu promenio status. Osveži Publish Center.",code:"RETRY_STATE_CHANGED"},409);
+
       try{return json({ok:true,result:await publishJobWithService(service,job,user.id)});}
       catch(error){
         const outcome=await handlePublishFailure(service,job,error,user.id);
