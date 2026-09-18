@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import '../owner-incident-center.css'
-import { Activity, AlertTriangle, BadgeEuro, Bell, Brain, CheckCircle2, CircleDollarSign, Download, Eye, EyeOff, Gauge, Image as ImageIcon, KeyRound, Megaphone, Power, RefreshCw, Save, Search, Send, Settings2, ShieldCheck, Sparkles, Store, TicketCheck, TrendingUp, UsersRound, WalletCards, WandSparkles, Zap } from 'lucide-react'
+import { Activity, AlertTriangle, BadgeEuro, Bell, Brain, CheckCircle2, CircleDollarSign, Download, Eye, EyeOff, Gauge, Image as ImageIcon, KeyRound, Megaphone, Power, RefreshCw, Save, Search, Send, Settings2, ShieldCheck, Sparkles, Store, TicketCheck, TrendingUp, UsersRound, WalletCards, WandSparkles, XCircle, Zap } from 'lucide-react'
 
 type View='overview'|'customers'|'sales'|'licenses'|'plans'|'trend'|'incidents'|'ops'|'system'
 type ToggleState={maintenance:boolean;sales:boolean;signup:boolean;ai:boolean;announcement:boolean}
