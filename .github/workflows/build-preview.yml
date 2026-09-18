@@ -66,5 +66,9 @@ jobs:
           grep -Fq 'Potvrdi proveru' /tmp/app.js
           grep -Fq 'Vrati u queue' /tmp/app.js
           grep -Fq 'Obavesti vlasnika' /tmp/app.js
-          echo "OWNER Incident Center preview markers OK"
+          PUBLISH_CHUNK=$(grep -oE 'PublishCenter-[A-Za-z0-9_-]+\.js' /tmp/app.js | head -1)
+          test -n "$PUBLISH_CHUNK"
+          curl --max-time 20 --retry 4 --retry-delay 2 --retry-all-errors -fsSL "$BASE/assets/$PUBLISH_CHUNK" -o /tmp/publish.js
+          grep -Fq 'OWNER provera' /tmp/publish.js
+          echo "OWNER Incident Center + risky retry preview markers OK"
           echo "Public preview OK: $BASE/index.html"
