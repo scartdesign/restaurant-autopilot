@@ -378,7 +378,7 @@ function App() {
   return <div className="app-shell"><NetworkStatus/>
     {pwaUpdateReady&&<div className="pwa-update-banner"><div><RefreshCw size={16}/><span><strong>Nova verzija je spremna.</strong><small>Osveži aplikaciju bez gubitka podataka.</small></span></div><button onClick={()=>void applyPwaUpdate()}>Ažuriraj</button><button className="icon-button" onClick={()=>setPwaUpdateReady(false)}><X size={14}/></button></div>}
     <aside className="sidebar sidebar-pro"><div>
-      <div className="brand-mark"><div className="brand-icon"><ChefHat size={21}/></div><span><strong>Restorapp</strong></span></div>
+      <div className="brand-mark brand-mark-restorapp"><img src="./restorapp-logo.webp" alt="Restorapp" /></div>
       <div className="restaurant-chip restaurant-switcher">{restaurant.logo_url?<img className="sidebar-logo" src={restaurant.logo_url} alt=""/>:<div className="avatar" style={{background:restaurant.secondary_color||undefined}}>{restaurant.name.slice(0,1).toUpperCase()}</div>}<div className="restaurant-switch-copy"><strong>{restaurant.name}</strong><small>{restaurant.neighborhood||restaurant.city||restaurant.cuisine_type||'Restoran'}</small></div></div>
       {(restaurants.length > 1 || restaurantLimit === null || (restaurantLimit || 1) > 1) && <div className="location-control"><label><Building2 size={14}/><select value={restaurant.id} onChange={e=>void selectRestaurant(e.target.value)}>{restaurants.map(item=><option key={item.id} value={item.id}>{item.name}{item.city?` · ${item.city}`:''}</option>)}</select></label>{canAddRestaurant?<button onClick={()=>setAddingRestaurant(true)} title="Dodaj restoran"><Plus size={15}/><span>Dodaj lokaciju</span></button>:<small>Limit paketa: {restaurants.length}/{restaurantLimit}</small>}</div>}
       <div className={`autopilot-status ${isSuperadmin?'owner-status':''}`}><span className="live-dot"/> {isSuperadmin?'OWNER · SUPERADMIN':`${planName.toUpperCase()} · AKTIVAN`}</div>
@@ -443,7 +443,7 @@ function App() {
 function LazyScreenFallback({label}:{label:string}){return <div className="screen-center lazy-screen-fallback"><div className="loader"/>{label}</div>}
 
 function MaintenanceScreen({message,version,onSignOut}:{message:string|null;version:string;onSignOut:()=>Promise<void>}){
-  return <div className="maintenance-screen"><div className="maintenance-card"><div className="maintenance-logo"><ChefHat size={30}/></div><span>RESTORAPP · v{version}</span><h1>Kratko održavanje.</h1><p>{message||'OWNER trenutno radi na sistemu. Tvoji podaci ostaju sačuvani i pristup će se vratiti čim održavanje bude završeno.'}</p><button className="secondary" onClick={onSignOut}><LogOut size={15}/> Odjavi se</button></div></div>
+  return <div className="maintenance-screen"><div className="maintenance-card"><div className="maintenance-logo maintenance-logo-restorapp"><img src="./restorapp-logo.webp" alt="Restorapp" /></div><span>RESTORAPP · v{version}</span><h1>Kratko održavanje.</h1><p>{message||'OWNER trenutno radi na sistemu. Tvoji podaci ostaju sačuvani i pristup će se vratiti čim održavanje bude završeno.'}</p><button className="secondary" onClick={onSignOut}><LogOut size={15}/> Odjavi se</button></div></div>
 }
 
 export default App
