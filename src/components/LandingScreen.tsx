@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { ArrowRight, CalendarClock, Camera, Check, ChefHat, ImagePlus, Palette, Play, ShieldCheck, Sparkles, WandSparkles } from 'lucide-react'
+import { ArrowRight, CalendarClock, Camera, Check, ImagePlus, Palette, Play, ShieldCheck, Sparkles, WandSparkles } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import type { SalesPlan } from '../types'
 
@@ -13,7 +13,7 @@ export function LandingScreen({onAuth,onDemo}:{onAuth:()=>void;onDemo:()=>void})
   async function load(){const{data}=await supabase.from('sales_plans').select('*').eq('active',true).eq('public',true).order('sort_order');setPlans((data||[]) as SalesPlan[])}
   const visible=useMemo(()=>plans.filter(p=>p.billing_interval===interval),[plans,interval])
   return <div className="public-landing">
-    <header className="landing-nav"><div className="landing-brand"><span><ChefHat size={21}/></span><strong>Restorapp</strong></div><nav><a href="#kako-radi">Kako radi</a><a href="#paketi">Paketi</a><button className="secondary" onClick={onDemo}><Play size={15}/> Demo</button><button className="primary" onClick={onAuth}>Prijava / Registracija</button></nav></header>
+    <header className="landing-nav"><div className="landing-brand"><img src="./restorapp-logo.webp" alt="Restorapp" /></div><nav><a href="#kako-radi">Kako radi</a><a href="#paketi">Paketi</a><button className="secondary" onClick={onDemo}><Play size={15}/> Demo</button><button className="primary" onClick={onAuth}>Prijava / Registracija</button></nav></header>
 
     <main>
       <section className="landing-hero" style={{backgroundImage:`linear-gradient(90deg,rgba(7,12,9,.97),rgba(7,12,9,.78) 48%,rgba(7,12,9,.18)),url(${HERO})`}}>
@@ -36,6 +36,6 @@ export function LandingScreen({onAuth,onDemo}:{onAuth:()=>void;onDemo:()=>void})
 
       <section className="landing-final-cta"><div><span className="eyebrow">RESTORAPP</span><h2>Marketing koji više ne počinje pitanjem: „Šta danas da objavim?“</h2></div><button className="landing-primary" onClick={onAuth}>Napravi nalog <ArrowRight size={18}/></button></section>
     </main>
-    <footer className="landing-footer"><div className="landing-brand"><span><ChefHat size={18}/></span><strong>Restorapp</strong></div><span>AI-assisted marketing system for restaurants.</span><div className="landing-legal-links"><a href="?legal=terms">Uslovi</a><a href="?legal=privacy">Privatnost</a><a href="?legal=ai">AI</a><a href="?legal=refund">Refund</a></div><button onClick={onAuth}>Prijava</button></footer>
+    <footer className="landing-footer"><div className="landing-brand"><img src="./restorapp-logo.webp" alt="Restorapp" /></div><span>AI-assisted marketing system for restaurants.</span><div className="landing-legal-links"><a href="?legal=terms">Uslovi</a><a href="?legal=privacy">Privatnost</a><a href="?legal=ai">AI</a><a href="?legal=refund">Refund</a></div><button onClick={onAuth}>Prijava</button></footer>
   </div>
 }
