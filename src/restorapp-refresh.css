@@ -425,3 +425,50 @@ input:focus,select:focus,textarea:focus{border-color:#c9a255!important;box-shado
   .restorapp-launch-hero{border-radius:18px!important;padding:24px 20px!important}
   .restorapp-launch-hero .launch-score{margin-top:18px}
 }
+
+/* Final sidebar treatment matching approved mockup */
+.sidebar.sidebar-pro{
+  background:linear-gradient(180deg,#071a15 0%,#0b241d 52%,#081b16 100%)!important;
+  border-right:1px solid rgba(255,255,255,.06)!important;
+  box-shadow:14px 0 38px rgba(10,24,19,.10)!important;
+}
+.brand-mark-restorapp{
+  background:#fff!important;
+  border:1px solid rgba(217,169,73,.35)!important;
+  box-shadow:0 10px 25px rgba(0,0,0,.20)!important;
+}
+.sidebar .restaurant-chip{background:rgba(255,255,255,.045)!important;border-color:rgba(255,255,255,.08)!important}
+.sidebar nav{gap:5px!important}
+.sidebar nav button,.sidebar .logout{color:#d9dfdc!important;font-size:12px!important}
+.sidebar nav button svg{color:#d9dfdc!important}
+.sidebar nav .nav-active{
+  background:linear-gradient(135deg,#efc66d,#d7a848)!important;
+  color:#18211c!important;
+  box-shadow:0 10px 24px rgba(214,168,72,.24)!important;
+}
+.sidebar nav .nav-active svg{color:#18211c!important}
+.sidebar .nav-beta{background:rgba(255,255,255,.08)!important;color:#e7c976!important}
+.sidebar nav .nav-active .nav-beta{background:rgba(19,32,25,.10)!important;color:#18211c!important}
+.autopilot-status{background:rgba(214,168,72,.10)!important;color:#e8cf96!important;border-color:rgba(214,168,72,.17)!important}
+.sidebar-plan-mini{opacity:.82}
+.restorapp-premium-card{
+  width:100%;
+  display:grid;
+  grid-template-columns:30px 1fr;
+  gap:8px;
+  align-items:start;
+  padding:13px;
+  border:1px solid rgba(236,194,104,.26);
+  border-radius:14px;
+  background:linear-gradient(145deg,rgba(220,172,70,.09),rgba(255,255,255,.025));
+  color:#fff;
+  text-align:left;
+}
+.restorapp-premium-card>span{color:#efc35e;font-size:22px;line-height:1}
+.restorapp-premium-card strong,.restorapp-premium-card small,.restorapp-premium-card b{display:block}
+.restorapp-premium-card strong{color:#efc35e;font-size:12px}
+.restorapp-premium-card small{margin-top:4px;color:#c1cbc5;font-size:9px;line-height:1.45}
+.restorapp-premium-card b{grid-column:1/-1;margin-top:3px;padding:10px 12px;border-radius:9px;background:linear-gradient(135deg,#edc36a,#d6a349);color:#162019;font-size:9px;text-align:center}
+.sidebar-bottom-actions{gap:10px!important}
+.wow-demo-shell .sidebar.sidebar-pro{background:linear-gradient(180deg,#071a15,#0b241d 58%,#081b16)!important}
+.wow-demo-shell .brand-mark-restorapp{background:#fff!important}
