@@ -35,6 +35,7 @@ import './launch-support.css'
 import './landing.css'
 import './legal.css'
 import './insights.css'
+import './restorapp-refresh.css'
 
 function PreviewShell({kind}:{kind:'creative'|'owner'}) {
   const [message, setMessage] = React.useState('')
