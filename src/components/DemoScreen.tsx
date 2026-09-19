@@ -4,7 +4,6 @@ import { VisualStudio } from './VisualStudio'
 import { BrandKit } from './BrandKit'
 import { DemoOwner } from './DemoOwner'
 import { RestorappDashboardV2 } from './RestorappDashboardV2'
-import { RestorappLogo } from './RestorappLogo'
 import type { MenuItem, Post, Restaurant } from '../types'
 
 type DemoTab = 'content' | 'studio' | 'brand' | 'publish' | 'insights' | 'menu' | 'promotions' | 'settings' | 'owner'
@@ -62,7 +61,7 @@ export function DemoScreen({ onExit }: { onExit: () => void }) {
     <div className="app-shell demo-shell wow-demo-shell">
       <aside className="sidebar sidebar-pro">
         <div>
-          <div className="brand-mark brand-mark-restorapp"><RestorappLogo surface="dark" tagline /></div>
+          <div className="brand-mark brand-mark-restorapp"><img src="./restorapp-logo.webp" alt="Restorapp" /></div>
           <div className="restaurant-chip"><img className="sidebar-logo" src={demoLogo} alt="" /><div><strong>Bella Napoli</strong><small>Vračar · Beograd</small></div></div>
           <div className="autopilot-status"><span className="live-dot" /> AUTOPILOT ACTIVE · AUTO WEEK ON</div>
           <nav>
