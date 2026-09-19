@@ -2,7 +2,6 @@ import { FormEvent, useEffect, useMemo, useState, type CSSProperties } from 'rea
 import { Activity, ArrowUpRight, CalendarDays, CheckCircle2, ChefHat, Clock3, Copy, CopyPlus, Facebook, Hash, Instagram, MapPin, Pencil, RefreshCw, Save, Search, ShieldCheck, Sparkles, Trash2, TrendingUp, UtensilsCrossed, WandSparkles, X, Zap } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import type { Entitlement, MenuItem, Post, Restaurant } from '../types'
-import { RestorappDashboardV2 } from './RestorappDashboardV2'
 
 type TrendOpportunity={id:string;restaurant_id:string;candidate_id:string;menu_item_id:string|null;trend_query:string;seed_query:string;trend_type:'rising'|'top';trend_value:string|null;trend_signal:number;relevance_score:number;opportunity_score:number;performance_boost:number;performance_samples:number;recommended_pillar:string;recommended_action:'post'|'campaign';reason:string;status:'pending'|'created'|'dismissed'|'expired';expires_at:string;created_at:string}
 
@@ -348,14 +347,7 @@ export function Dashboard({ restaurant, menuItems, posts, entitlement, onChanged
 
   return (
     <>
-      <RestorappDashboardV2
-        restaurant={restaurant}
-        menuItems={menuItems}
-        posts={posts}
-        heroImage={heroImage}
-        onCreate={()=>void generateWeek()}
-        onNavigate={onNavigate}
-      />
+
       <section className={`wow-hero ${heroImage ? 'has-image' : ''}`} style={heroImage ? { backgroundImage: `linear-gradient(90deg, rgba(7,12,9,.96) 0%, rgba(7,12,9,.76) 45%, rgba(7,12,9,.16) 100%), url(${heroImage})` } : undefined}>
         <div className="wow-hero-copy">
           <div className="hero-kicker"><span className="live-dot" /> AUTOPILOT ACTIVE <b className={restaurant.weekly_autopilot_enabled?'auto-week-on':'auto-week-off'}>{restaurant.weekly_autopilot_enabled?'AUTO WEEK ON':'MANUAL WEEK'}</b></div>
