@@ -7,10 +7,10 @@ import { AuthScreen } from './components/AuthScreen'
 import { PasswordRecovery } from './components/PasswordRecovery'
 import { Onboarding } from './components/Onboarding'
 import { AdminSetup } from './components/AdminSetup'
-import { LaunchCenter } from './components/LaunchCenter'
 import { LandingScreen } from './components/LandingScreen'
 import { LegalScreen } from './components/LegalScreen'
 import { NetworkStatus } from './components/NetworkStatus'
+import { RestorappDashboardV2 } from './components/RestorappDashboardV2'
 
 const DemoScreen = lazy(() => import('./components/DemoScreen').then((m) => ({ default: m.DemoScreen })))
 const VisualStudio = lazy(() => import('./components/VisualStudio').then((m) => ({ default: m.VisualStudio })))
@@ -401,7 +401,7 @@ function App() {
         {isSuperadmin&&<button className={(activeTab==='admin'?'nav-active admin-nav':'admin-nav')+' mobile-hide'} onClick={()=>void openTab('admin')}><ShieldCheck size={18}/> Superadmin <span className="nav-beta">OWNER</span></button>}
         <button className="mobile-nav-more" onClick={()=>setMobileMenuOpen(true)}><MenuIcon size={18}/> Više</button>
       </nav>
-    </div><div className="sidebar-bottom-actions">{!pwaInstalled&&<button className="pwa-install-sidebar" onClick={()=>void installPwa()}><Download size={17}/><span><strong>Instaliraj aplikaciju</strong><small>telefon / desktop</small></span></button>}<button className="logout" onClick={signOut}><LogOut size={18}/> Odjavi se</button></div></aside>
+    </div><div className="sidebar-bottom-actions">{!isSuperadmin&&<button className="restorapp-premium-card" onClick={()=>void openTab('billing')}><span>♛</span><div><strong>Go Premium</strong><small>Otključaj više growth alata za svoj restoran.</small></div><b>Upgrade now →</b></button>}{!pwaInstalled&&<button className="pwa-install-sidebar" onClick={()=>void installPwa()}><Download size={17}/><span><strong>Instaliraj aplikaciju</strong><small>telefon / desktop</small></span></button>}<button className="logout" onClick={signOut}><LogOut size={18}/> Odjavi se</button></div></aside>
 
     {mobileMenuOpen&&<div className="mobile-drawer-backdrop" onMouseDown={()=>setMobileMenuOpen(false)}><div className="mobile-drawer" onMouseDown={e=>e.stopPropagation()}><div className="mobile-drawer-head"><div><strong>{restaurant.name}</strong><small>Restorapp</small></div><button className="icon-button" onClick={()=>setMobileMenuOpen(false)}><X size={19}/></button></div><div className="mobile-drawer-grid">
       <button onClick={()=>mobileGo('brand')}><Palette size={19}/><span>Brend</span><small>logo i boje</small></button>
@@ -430,7 +430,7 @@ function App() {
       {appControls.announcement_enabled&&appControls.announcement_text&&<div className={`global-announcement ${appControls.announcement_tone}`}><Megaphone size={15}/><span>{appControls.announcement_text}</span></div>}
       {notice&&<div className="notice"><span>{notice}</span><button onClick={()=>setNotice('')}><X size={15}/></button></div>}
       <Suspense fallback={<LazyScreenFallback label="Učitavam modul…" />}>
-      {activeTab==='launch'&&<LaunchCenter restaurant={restaurant} menuItems={menuItems} posts={posts} pwaInstalled={pwaInstalled} onInstall={()=>void installPwa()} onNavigate={(tab)=>void openTab(tab as Tab)}/>} 
+      {activeTab==='launch'&&<RestorappDashboardV2 restaurant={restaurant} menuItems={menuItems} posts={posts} onCreate={()=>void openTab('creative')} onNavigate={(tab)=>void openTab(tab as Tab)}/>} 
       {activeTab==='dashboard'&&<Dashboard restaurant={restaurant} menuItems={menuItems} posts={posts} entitlement={isSuperadmin?{active:true,is_superadmin:true,generation_limit:null,generated_this_month:0,features:{}}:entitlement} onChanged={refreshContent} setNotice={setNotice} onNavigate={(tab)=>void openTab(tab)}/>} 
       {activeTab==='creative'&&<CreativeHub restaurant={restaurant} menuItems={menuItems} entitlement={isSuperadmin?{active:true,is_superadmin:true,features:{campaign_pack:true}}:entitlement} onChanged={refreshContent} setNotice={setNotice}/>} 
       {activeTab==='studio'&&<VisualStudio restaurant={restaurant} menuItems={menuItems} posts={posts} setNotice={setNotice} onChanged={()=>loadPosts(restaurant.id)}/>} 
