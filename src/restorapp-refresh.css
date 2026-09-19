@@ -597,3 +597,60 @@ input:focus,select:focus,textarea:focus{border-color:#c9a255!important;box-shado
   .landing-brand svg{width:155px}
   .auth-logo{width:165px!important}
 }
+
+/* Exact original Restorapp artwork from user upload */
+.sidebar .brand-mark-restorapp,
+.wow-demo-shell .brand-mark-restorapp{
+  width:100%!important;
+  min-height:0!important;
+  margin:0 0 16px!important;
+  padding:0!important;
+  border:0!important;
+  border-radius:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+  overflow:visible!important;
+}
+.sidebar .brand-mark-restorapp img,
+.wow-demo-shell .brand-mark-restorapp img{
+  display:block!important;
+  width:100%!important;
+  max-width:220px!important;
+  height:auto!important;
+  object-fit:contain!important;
+}
+.landing-brand img{
+  display:block!important;
+  width:190px!important;
+  height:auto!important;
+  max-height:none!important;
+  object-fit:contain!important;
+}
+.auth-showcase-brand img{
+  display:block!important;
+  width:190px!important;
+  height:auto!important;
+  object-fit:contain!important;
+}
+.auth-logo{
+  width:190px!important;
+  height:auto!important;
+  min-height:0!important;
+  padding:0!important;
+  background:transparent!important;
+  border:0!important;
+  box-shadow:none!important;
+}
+.auth-logo img,
+.maintenance-logo-restorapp img{
+  display:block!important;
+  width:100%!important;
+  height:auto!important;
+  object-fit:contain!important;
+}
+@media(max-width:900px){
+  .sidebar .brand-mark-restorapp,
+  .wow-demo-shell .brand-mark-restorapp{width:185px!important;margin:0 10px 0 0!important}
+  .sidebar .brand-mark-restorapp img,
+  .wow-demo-shell .brand-mark-restorapp img{max-width:185px!important}
+}
