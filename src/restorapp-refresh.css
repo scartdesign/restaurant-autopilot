@@ -654,3 +654,37 @@ input:focus,select:focus,textarea:focus{border-color:#c9a255!important;box-shado
   .sidebar .brand-mark-restorapp img,
   .wow-demo-shell .brand-mark-restorapp img{max-width:185px!important}
 }
+
+/* Final exact-logo treatment: preserve original artwork, give it the correct light surface */
+.sidebar .brand-mark-restorapp,
+.wow-demo-shell .brand-mark-restorapp{
+  width:100%!important;
+  min-height:0!important;
+  margin:0 0 18px!important;
+  padding:9px 10px 8px!important;
+  border:1px solid rgba(216,168,79,.38)!important;
+  border-radius:14px!important;
+  background:linear-gradient(145deg,#fffdf9 0%,#f5eddf 100%)!important;
+  box-shadow:0 12px 26px rgba(0,0,0,.18)!important;
+  overflow:hidden!important;
+}
+.sidebar .brand-mark-restorapp img,
+.wow-demo-shell .brand-mark-restorapp img{
+  display:block!important;
+  width:100%!important;
+  max-width:216px!important;
+  height:auto!important;
+  margin:0 auto!important;
+  object-fit:contain!important;
+}
+@media(max-width:900px){
+  .sidebar .brand-mark-restorapp,
+  .wow-demo-shell .brand-mark-restorapp{
+    width:190px!important;
+    margin:0 10px 0 0!important;
+    padding:6px 8px!important;
+    border-radius:11px!important;
+  }
+  .sidebar .brand-mark-restorapp img,
+  .wow-demo-shell .brand-mark-restorapp img{max-width:174px!important}
+}
