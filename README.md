@@ -1,4 +1,4 @@
-# Restaurant Autopilot
+# Restorapp
 
 MVP web aplikacija koja pretvara meni, fotografije, brend i ponude restorana u nedeljni marketing sadržaj spreman za pregled, dizajn i objavu.
 

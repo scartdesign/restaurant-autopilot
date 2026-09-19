@@ -25,13 +25,13 @@ export function LegalScreen({ kind, onBack }: { kind: LegalKind; onBack: () => v
   useEffect(() => { void supabase.rpc('public_sales_identity').then(({ data }) => setId((data || {}) as Identity)) }, [])
   const meta = titles[kind]
   const Icon = meta.icon
-  const seller = id.legal_name || id.company_name || 'Restaurant Autopilot'
+  const seller = id.legal_name || id.company_name || 'Restorapp'
   const contact = id.support_email || id.sales_email || 'podrška unutar aplikacije'
 
   return <div className="legal-screen">
     <header className="legal-top">
       <button className="secondary" onClick={onBack}><ArrowLeft size={16}/> Nazad</button>
-      <div className="landing-brand"><span><ShieldCheck size={18}/></span><strong>Restaurant Autopilot</strong></div>
+      <div className="landing-brand"><span><ShieldCheck size={18}/></span><strong>Restorapp</strong></div>
     </header>
     <main className="legal-wrap">
       <div className="legal-title"><span className="eyebrow"><Icon size={14}/> {meta.eyebrow}</span><h1>{meta.title}</h1><p>Poslednje ažuriranje: 15.09.2026.</p></div>
@@ -46,7 +46,7 @@ export function LegalScreen({ kind, onBack }: { kind: LegalKind; onBack: () => v
 function Terms({ seller, contact, id }: { seller: string; contact: string; id: Identity }) {
   const identity = [seller, id.address, id.tax_id ? 'PIB ' + id.tax_id : '', id.company_number ? 'MB ' + id.company_number : ''].filter(Boolean).join(' · ')
   return <div className="legal-copy">
-    <section><h2>1. Usluga</h2><p>Restaurant Autopilot je softverska usluga za planiranje, izradu i organizaciju marketinškog sadržaja restorana. Funkcije mogu uključivati Brand Kit, Visual Studio, AI predloge, generisanje tekstova i slika, kalendar objava, export i administraciju naloga.</p></section>
+    <section><h2>1. Usluga</h2><p>Restorapp je softverska usluga za planiranje, izradu i organizaciju marketinškog sadržaja restorana. Funkcije mogu uključivati Brand Kit, Visual Studio, AI predloge, generisanje tekstova i slika, kalendar objava, export i administraciju naloga.</p></section>
     <section><h2>2. Nalog i odgovornost korisnika</h2><p>Korisnik odgovara za tačnost podataka koje unosi, prava na logotipe i fotografije koje postavlja, kao i za konačnu proveru sadržaja pre objavljivanja. Pristupni podaci naloga ne treba da se dele sa neovlašćenim licima.</p></section>
     <section><h2>3. Paketi i limiti</h2><p>Funkcije, broj lokacija, mesečni limit generacija i AI slika zavise od aktivnog paketa. Sistem može tehnički ograničiti korišćenje kada je paket istekao ili kada je dostignut limit.</p></section>
     <section><h2>4. AI sadržaj</h2><p>AI sadržaj je pomoćni predlog, ne garancija rezultata. Korisnik treba da proveri cene, popuste, radno vreme, tvrdnje i sve druge činjenice pre objavljivanja.</p></section>
@@ -68,7 +68,7 @@ function Privacy({ seller, contact }: { seller: string; contact: string }) {
 
 function Ai({ seller }: { seller: string }) {
   return <div className="legal-copy">
-    <section><h2>AI asistira, korisnik odlučuje</h2><p>Restaurant Autopilot može koristiti generativne AI modele za marketinške preporuke, tekst i food fotografije. Sistem ne treba posmatrati kao automatskog donosioca poslovnih odluka.</p></section>
+    <section><h2>AI asistira, korisnik odlučuje</h2><p>Restorapp može koristiti generativne AI modele za marketinške preporuke, tekst i food fotografije. Sistem ne treba posmatrati kao automatskog donosioca poslovnih odluka.</p></section>
     <section><h2>Činjenice restorana</h2><p>Promptovi su projektovani tako da koriste podatke koje je restoran uneo i da ne izmišljaju popuste, cene, radno vreme, promet, recenzije ili rezultate kampanja. Ipak, korisnik mora da pregleda sadržaj pre objave.</p></section>
     <section><h2>Generisane slike</h2><p>AI food fotografije predstavljaju vizuelizaciju jela na osnovu opisa. Mogu se razlikovati od stvarnog serviranja. Restoran treba da ih koristi na način koji ne dovodi gosta u zabludu.</p></section>
     <section><h2>Provider</h2><p>AI funkcije zavise od provider konfiguracije koju kontroliše OWNER. Ako provider nije konfigurisan ili nije dostupan, sistem može koristiti Smart fallback tamo gde je to podržano.</p></section>

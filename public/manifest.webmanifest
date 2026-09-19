@@ -1,7 +1,7 @@
 {
   "id": "./",
-  "name": "Restaurant Autopilot",
-  "short_name": "Autopilot",
+  "name": "Restorapp",
+  "short_name": "Restorapp",
   "description": "AI marketing, content, visuals and publishing workflow for restaurants.",
   "start_url": "./?source=pwa",
   "scope": "./",

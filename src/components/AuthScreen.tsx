@@ -16,7 +16,7 @@ export function AuthScreen({ onDemo, onBack, signupOpen=true }: { onDemo: () => 
 
   async function submit(event: FormEvent) {
     event.preventDefault()
-    if(mode==='signup'&&!signupOpen){setMessage('Nove registracije su trenutno zatvorene. Kontaktiraj Restaurant Autopilot prodaju za aktivaciju.');return}
+    if(mode==='signup'&&!signupOpen){setMessage('Nove registracije su trenutno zatvorene. Kontaktiraj Restorapp prodaju za aktivaciju.');return}
     if(mode==='signup'&&strength<4){setMessage('Lozinka treba da ima najmanje 10 karaktera, veliko i malo slovo i broj.');return}
     setWorking(true)
     setMessage('')
@@ -40,7 +40,7 @@ export function AuthScreen({ onDemo, onBack, signupOpen=true }: { onDemo: () => 
   return (
     <div className="auth-page auth-page-wow">
       <section className="auth-showcase" style={{ backgroundImage: `linear-gradient(180deg, rgba(8,13,10,.08), rgba(8,13,10,.88)), url(${LOGIN_FOOD})` }}>
-        <div className="auth-showcase-top"><div className="auth-showcase-brand"><span><ChefHat size={22} /></span><strong>Restaurant Autopilot</strong></div><span className="auth-live"><i /> AI MARKETING SYSTEM</span></div>
+        <div className="auth-showcase-top"><div className="auth-showcase-brand"><span><ChefHat size={22} /></span><strong>Restorapp</strong></div><span className="auth-live"><i /> AI MARKETING SYSTEM</span></div>
         <div className="auth-showcase-copy"><span className="auth-overline">OD MENIJA DO OBJAVE</span><h2>Tvoj restoran izgleda dobro.<br /><em>Sada neka tako izgleda i online.</em></h2><p>Fotografije, tekstovi, lokalni discovery, kampanje i gotovi vizuali — u jednom toku.</p><div className="auth-showcase-pills"><span><Camera size={15} /> Realne fotografije</span><span><CalendarDays size={15} /> Nedeljni plan</span><span><Hash size={15} /> Smart discovery</span></div></div>
         <div className="auth-floating-card"><div className="auth-floating-head"><div><span>Sledeća objava</span><strong>Pizza Capricciosa</strong></div><span className="auth-score">94/100</span></div><div className="auth-floating-meta"><span><CheckCircle2 size={14} /> spremno</span><span>Feed 4:5</span><span>18:30</span></div></div>
       </section>
