@@ -472,3 +472,31 @@ input:focus,select:focus,textarea:focus{border-color:#c9a255!important;box-shado
 .sidebar-bottom-actions{gap:10px!important}
 .wow-demo-shell .sidebar.sidebar-pro{background:linear-gradient(180deg,#071a15,#0b241d 58%,#081b16)!important}
 .wow-demo-shell .brand-mark-restorapp{background:#fff!important}
+
+/* Sidebar logo — transparent vector treatment */
+.sidebar .brand-mark-restorapp{
+  min-height:82px!important;
+  margin:0 2px 16px!important;
+  padding:8px 4px 10px!important;
+  border:0!important;
+  border-radius:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+  overflow:visible!important;
+}
+.sidebar .brand-mark-restorapp img{
+  width:100%!important;
+  max-width:222px!important;
+  height:auto!important;
+  display:block!important;
+  object-fit:contain!important;
+}
+@media(max-width:900px){
+  .sidebar .brand-mark-restorapp{
+    width:182px!important;
+    min-height:50px!important;
+    margin:0 10px 0 0!important;
+    padding:2px 0!important;
+  }
+  .sidebar .brand-mark-restorapp img{max-width:182px!important}
+}
