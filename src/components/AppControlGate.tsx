@@ -13,7 +13,7 @@ type Controls = {
 }
 
 const fallback: Controls = {
-  app_name: 'Restaurant Autopilot',
+  app_name: 'Restorapp',
   app_version: '1.0',
   maintenance_mode: false,
   maintenance_message: null,

@@ -15,9 +15,9 @@ import { OwnerIncidentCenter } from './OwnerIncidentCenter'
 type OwnerSection='control'|'trend'|'incidents'|'promos'|'email'|'support'|'health'
 
 function initialOwnerSection():OwnerSection{
-  const requested=sessionStorage.getItem('restaurant-autopilot-owner-section')
+  const requested=sessionStorage.getItem('restorapp-owner-section')
   if(requested==='trend'){
-    sessionStorage.removeItem('restaurant-autopilot-owner-section')
+    sessionStorage.removeItem('restorapp-owner-section')
     return 'trend'
   }
   return 'control'

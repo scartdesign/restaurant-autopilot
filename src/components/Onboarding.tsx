@@ -47,8 +47,8 @@ export function Onboarding({ userId, onCreated, onCancel, additional = false }: 
           if (logoError) logoWarning = 'Restoran je kreiran, ali logo nije sačuvan. Dodaj ga kasnije u Brend.'
         }
       }
-      localStorage.setItem('restaurant-autopilot-active-restaurant', restaurant.id)
-      if (logoWarning) sessionStorage.setItem('restaurant-autopilot-onboarding-warning', logoWarning)
+      localStorage.setItem('restorapp-active-restaurant', restaurant.id)
+      if (logoWarning) sessionStorage.setItem('restorapp-onboarding-warning', logoWarning)
       await onCreated()
     } catch (error) { setMessage(error instanceof Error ? humanError(error.message) : 'Nisam uspeo da kreiram restoran.') }
     setWorking(false)

@@ -30,7 +30,7 @@ export function AccountDataTools({setNotice}:{setNotice:(v:string)=>void}){
     if(error){setNotice(error.message);setWorking(false);return}
     const payload={exported_at:new Date().toISOString(),account:{id:uid,email:userRes.data.user.email},profile:profile.data,restaurants:restaurants.data||[],menu_items:menu.data||[],posts:posts.data||[],promotions:promotions.data||[],post_performance:performance.data||[],subscriptions:subs.data||[],orders:orders.data||[],creative_assets:assets.data||[],ai_usage_events:aiUsage.data||[],design_presets:presets.data||[],support_tickets:support.data||[],notifications:notifications.data||[]}
     const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json;charset=utf-8'})
-    const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`restaurant-autopilot-data-${new Date().toISOString().slice(0,10)}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)
+    const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`restorapp-data-${new Date().toISOString().slice(0,10)}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)
     setNotice('Izvoz podataka je spreman.')
     setWorking(false)
   }
@@ -41,7 +41,7 @@ export function AccountDataTools({setNotice}:{setNotice:(v:string)=>void}){
     const userRes=await supabase.auth.getUser()
     if(!userRes.data.user){setNotice('Sesija je istekla.');setDeleteWorking(false);return}
     const{data:restaurant}=await supabase.from('restaurants').select('id').eq('owner_id',userRes.data.user.id).limit(1).maybeSingle()
-    const{error}=await supabase.from('support_tickets').insert({user_id:userRes.data.user.id,restaurant_id:restaurant?.id||null,subject:'Zahtev za gašenje naloga / brisanje podataka',category:'account',priority:'high',message:'Molim OWNER podršku da pregleda zahtev za gašenje Restaurant Autopilot naloga i brisanje podataka koji nisu obavezni za zakonsko ili računovodstveno čuvanje. Kontaktirajte me pre konačnog izvršenja.'})
+    const{error}=await supabase.from('support_tickets').insert({user_id:userRes.data.user.id,restaurant_id:restaurant?.id||null,subject:'Zahtev za gašenje naloga / brisanje podataka',category:'account',priority:'high',message:'Molim OWNER podršku da pregleda zahtev za gašenje Restorapp naloga i brisanje podataka koji nisu obavezni za zakonsko ili računovodstveno čuvanje. Kontaktirajte me pre konačnog izvršenja.'})
     if(error)setNotice(error.message);else setNotice('Zahtev je poslat OWNER podršci. Nalog nije automatski obrisan.')
     setDeleteWorking(false)
   }

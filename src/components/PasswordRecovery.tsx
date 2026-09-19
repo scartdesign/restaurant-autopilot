@@ -27,7 +27,7 @@ export function PasswordRecovery({ onDone }: { onDone: () => Promise<void> | voi
       <div className="auth-logo"><KeyRound size={28}/></div>
       <p className="eyebrow">SIGURAN PRISTUP</p>
       <h1>Postavi novu lozinku.</h1>
-      <p className="muted">Izaberi novu lozinku za Restaurant Autopilot nalog.</p>
+      <p className="muted">Izaberi novu lozinku za Restorapp nalog.</p>
       <form onSubmit={submit}>
         <label>Nova lozinka<input type="password" minLength={8} value={password} onChange={e=>setPassword(e.target.value)} autoComplete="new-password" placeholder="Najmanje 8 karaktera" required/></label>
         <label>Ponovi lozinku<input type="password" minLength={8} value={confirm} onChange={e=>setConfirm(e.target.value)} autoComplete="new-password" placeholder="Ponovi novu lozinku" required/></label>
