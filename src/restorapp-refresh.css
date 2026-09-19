@@ -373,3 +373,55 @@ input:focus,select:focus,textarea:focus{border-color:#c9a255!important;box-shado
   .wow-score-card{position:static!important;margin-top:18px!important;width:100%!important}
   .panel,.stat-card,.post-card{border-radius:16px!important}
 }
+
+/* Launch Center now uses the same approved visual language */
+.restorapp-launch-hero{
+  position:relative;
+  overflow:hidden;
+  border:1px solid rgba(255,255,255,.08)!important;
+  border-radius:22px!important;
+  background:
+    radial-gradient(circle at 85% 15%,rgba(214,168,78,.18),transparent 25%),
+    linear-gradient(135deg,#10281f,#173a2f)!important;
+  color:#fff!important;
+  box-shadow:0 18px 48px rgba(18,30,24,.14)!important;
+}
+.restorapp-launch-hero.has-image{background-size:cover!important;background-position:center!important}
+.restorapp-launch-hero>div:first-child{position:relative;z-index:2;max-width:720px}
+.restorapp-launch-hero h1{color:#fff!important;letter-spacing:-.045em!important}
+.restorapp-launch-hero p{color:rgba(255,255,255,.72)!important;max-width:630px}
+.restorapp-launch-hero .creative-kicker{color:#f0ca79!important}
+.restorapp-launch-hero .secondary{background:rgba(255,255,255,.92)!important;border-color:rgba(255,255,255,.65)!important;color:#263029!important}
+.restorapp-launch-hero .launch-score{
+  position:relative;
+  z-index:2;
+  background:rgba(255,255,255,.92)!important;
+  color:#172019!important;
+  border:1px solid rgba(255,255,255,.65)!important;
+  backdrop-filter:blur(14px);
+  box-shadow:0 14px 30px rgba(0,0,0,.14)!important;
+}
+.restorapp-launch-hero .launch-score span{color:#6f7772!important}
+.launch-preflight{
+  border-color:#e7decd!important;
+  background:#fff!important;
+  box-shadow:0 9px 28px rgba(20,31,25,.04)!important;
+}
+.launch-task{
+  border-color:#e8e0d2!important;
+  background:rgba(255,255,255,.96)!important;
+  box-shadow:0 8px 24px rgba(18,31,24,.035);
+}
+.launch-task:hover{border-color:#d7c293!important;box-shadow:0 12px 30px rgba(20,31,25,.065)!important;transform:translateY(-2px)}
+.launch-task.done .launch-task-status{color:#b5812d!important}
+.launch-task>svg{color:#b5812d!important}
+.launch-bottom-grid article{
+  border-color:#e8e0d2!important;
+  background:#fff!important;
+  box-shadow:0 8px 24px rgba(18,31,24,.035);
+}
+.launch-bottom-grid article button{color:#8d6725!important}
+@media(max-width:700px){
+  .restorapp-launch-hero{border-radius:18px!important;padding:24px 20px!important}
+  .restorapp-launch-hero .launch-score{margin-top:18px}
+}
