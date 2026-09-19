@@ -129,24 +129,17 @@ Deno.serve(async(req:Request)=>{
       if(stripeMode!=="live")return json({error:"Stripe je još u TEST modu. Kartično plaćanje nije pušteno kupcima.",code:"STRIPE_NOT_LIVE"},409);
     }
 
-    const{data:order,error}=await userClient.rpc("create_sales_order",{
+    const{data:order,error}=await service.rpc("service_create_sales_order",{
+      p_user_id:user.id,
       p_plan_id:planId,
       p_payment_method:paymentMethod,
       p_customer_note:customerNote,
       p_coupon_code:couponCode,
+      p_accepted_legal:acceptedLegal,
     });
     if(error)return json({error:error.message},400);
     if(!order?.id)return json({error:"Narudžbina nije kreirana."},500);
-
-    const now=new Date().toISOString();
-    const consent={
-      accepted_terms_at:settings?.terms_url&&acceptedLegal?now:null,
-      accepted_terms_url:settings?.terms_url||null,
-      accepted_privacy_at:settings?.privacy_url&&acceptedLegal?now:null,
-      accepted_privacy_url:settings?.privacy_url||null,
-    };
-    let{data:updated,error:updateError}=await service.from("sales_orders").update(consent).eq("id",order.id).eq("user_id",user.id).select().single();
-    if(updateError)return json({error:updateError.message},500);
+    let updated=order;
 
     if(paymentMethod!=="card")return json({ok:true,order:updated});
 
