@@ -1,4 +1,4 @@
-const CACHE='restaurant-autopilot-shell-v3';
+const CACHE='restorapp-shell-v4';
 const CORE=['./','./manifest.webmanifest','./autopilot-icon.svg'];
 
 self.addEventListener('install',event=>{
