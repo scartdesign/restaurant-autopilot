@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from 'react'
 import { ArrowRight, CalendarClock, Camera, Check, ImagePlus, Palette, Play, ShieldCheck, Sparkles, WandSparkles } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import type { SalesPlan } from '../types'
-import { RestorappLogo } from './RestorappLogo'
 
 const HERO='https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?auto=format&fit=crop&w=1800&q=90'
 const FOOD='https://images.unsplash.com/photo-1551183053-bf91a1d81141?auto=format&fit=crop&w=1000&q=88'
@@ -15,7 +14,7 @@ export function LandingScreen({onAuth,onDemo}:{onAuth:()=>void;onDemo:()=>void})
   const visible=useMemo(()=>plans.filter(p=>p.billing_interval===interval),[plans,interval])
   function choosePlan(plan:SalesPlan){localStorage.setItem('restorapp-intended-plan',plan.code);onAuth()}
   return <div className="public-landing">
-    <header className="landing-nav"><div className="landing-brand"><RestorappLogo surface="light" tagline /></div><nav><a href="#kako-radi">Kako radi</a><a href="#paketi">Paketi</a><button className="secondary" onClick={onDemo}><Play size={15}/> Demo</button><button className="primary" onClick={onAuth}>Prijava / Registracija</button></nav></header>
+    <header className="landing-nav"><div className="landing-brand"><img src="./restorapp-logo.webp" alt="Restorapp" /></div><nav><a href="#kako-radi">Kako radi</a><a href="#paketi">Paketi</a><button className="secondary" onClick={onDemo}><Play size={15}/> Demo</button><button className="primary" onClick={onAuth}>Prijava / Registracija</button></nav></header>
 
     <main>
       <section className="landing-hero" style={{backgroundImage:`linear-gradient(90deg,rgba(7,12,9,.97),rgba(7,12,9,.78) 48%,rgba(7,12,9,.18)),url(${HERO})`}}>
