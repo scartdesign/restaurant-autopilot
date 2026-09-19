@@ -282,7 +282,7 @@ export function MenuManager({ restaurant, userId, items, onChanged, setNotice }:
     const blob = new Blob(['\ufeff', csv], { type: 'text/csv;charset=utf-8' })
     const link = document.createElement('a')
     link.href = URL.createObjectURL(blob)
-    link.download = 'restaurant-autopilot-menu-template.csv'
+    link.download = 'restorapp-menu-template.csv'
     link.click()
     setTimeout(() => URL.revokeObjectURL(link.href), 1000)
     setNotice('CSV šablon je preuzet. Popuni ga i vrati kroz „Uvezi CSV“.')

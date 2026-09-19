@@ -7,9 +7,9 @@ type EmailStatus={configured:boolean;provider:string;from:string|null;sender_nam
 type DispatchStatus={configured:boolean;from_ready:boolean;from:string|null;sender_name:string|null;queued:number;failed:number}
 
 export function EmailAdmin({setNotice}:{setNotice:(v:string)=>void}){
-  const[provider,setProvider]=useState<EmailStatus>({configured:false,provider:'resend',from:null,sender_name:'Restaurant Autopilot'})
-  const[dispatch,setDispatch]=useState<DispatchStatus>({configured:false,from_ready:false,from:null,sender_name:'Restaurant Autopilot',queued:0,failed:0})
-  const[key,setKey]=useState(''),[senderName,setSenderName]=useState('Restaurant Autopilot'),[fromEmail,setFromEmail]=useState(''),[testEmail,setTestEmail]=useState('')
+  const[provider,setProvider]=useState<EmailStatus>({configured:false,provider:'resend',from:null,sender_name:'Restorapp'})
+  const[dispatch,setDispatch]=useState<DispatchStatus>({configured:false,from_ready:false,from:null,sender_name:'Restorapp',queued:0,failed:0})
+  const[key,setKey]=useState(''),[senderName,setSenderName]=useState('Restorapp'),[fromEmail,setFromEmail]=useState(''),[testEmail,setTestEmail]=useState('')
   const[outbox,setOutbox]=useState<NotificationOutbox[]>([]),[working,setWorking]=useState(false)
 
   useEffect(()=>{void load()},[])
@@ -24,8 +24,8 @@ export function EmailAdmin({setNotice}:{setNotice:(v:string)=>void}){
     const err=statusRes.error||settingsRes.error||outboxRes.error
     if(err)setNotice(err.message)
     const status=(statusRes.data||{}) as EmailStatus
-    setProvider({configured:Boolean(status.configured),provider:'resend',from:status.from||null,sender_name:status.sender_name||'Restaurant Autopilot'})
-    setSenderName(settingsRes.data?.email_sender_name||status.sender_name||'Restaurant Autopilot')
+    setProvider({configured:Boolean(status.configured),provider:'resend',from:status.from||null,sender_name:status.sender_name||'Restorapp'})
+    setSenderName(settingsRes.data?.email_sender_name||status.sender_name||'Restorapp')
     setFromEmail(settingsRes.data?.email_from||status.from||'')
     setTestEmail(current=>current||userRes.data.user?.email||'')
     setOutbox((outboxRes.data||[]) as NotificationOutbox[])
@@ -40,7 +40,7 @@ export function EmailAdmin({setNotice}:{setNotice:(v:string)=>void}){
   async function saveSender(){
     if(!fromEmail.trim()||!fromEmail.includes('@')){setNotice('Unesi validan email pošiljaoca sa verifikovanog domena.');return}
     setWorking(true)
-    const{error}=await supabase.from('sales_settings').update({email_from:fromEmail.trim(),email_sender_name:senderName.trim()||'Restaurant Autopilot'}).eq('id',1)
+    const{error}=await supabase.from('sales_settings').update({email_from:fromEmail.trim(),email_sender_name:senderName.trim()||'Restorapp'}).eq('id',1)
     if(error)setNotice(error.message);else{setNotice('Email pošiljalac je sačuvan.');await refreshDispatch(false)}
     setWorking(false)
   }
@@ -78,7 +78,7 @@ export function EmailAdmin({setNotice}:{setNotice:(v:string)=>void}){
     <div className="email-admin-grid">
       <section className="admin-panel"><div className="admin-panel-head"><div><p className="eyebrow">1 · PROVIDER</p><h2>Resend API</h2></div><ShieldCheck size={21}/></div><div className={`email-provider-state ${provider.configured?'ready':''}`}><Mail size={21}/><div><strong>{provider.configured?'API ključ je bezbedno sačuvan':'API ključ nije podešen'}</strong><small>Ključ ide direktno u Supabase Vault i ne vraća se browseru.</small></div></div><label>Resend API ključ<input type="password" autoComplete="new-password" value={key} onChange={e=>setKey(e.target.value)} placeholder={provider.configured?'re_… samo ako menjaš postojeći ključ':'re_…'}/></label><button className="secondary full" onClick={saveKey} disabled={working||!key.trim()}><Save size={15}/>{provider.configured?'Promeni provider ključ':'Aktiviraj provider'}</button></section>
 
-      <section className="admin-panel"><div className="admin-panel-head"><div><p className="eyebrow">2 · POŠILJALAC</p><h2>Ime i email</h2></div><Mail size={21}/></div><label>Ime pošiljaoca<input value={senderName} onChange={e=>setSenderName(e.target.value)} placeholder="Restaurant Autopilot"/></label><label>Email pošiljaoca<input type="email" value={fromEmail} onChange={e=>setFromEmail(e.target.value)} placeholder="noreply@tvojdomen.com"/></label><p className="email-hint">Email domen mora prethodno biti verifikovan kod email provajdera.</p><button className="primary full" onClick={saveSender} disabled={working}><Save size={15}/> Sačuvaj pošiljaoca</button></section>
+      <section className="admin-panel"><div className="admin-panel-head"><div><p className="eyebrow">2 · POŠILJALAC</p><h2>Ime i email</h2></div><Mail size={21}/></div><label>Ime pošiljaoca<input value={senderName} onChange={e=>setSenderName(e.target.value)} placeholder="Restorapp"/></label><label>Email pošiljaoca<input type="email" value={fromEmail} onChange={e=>setFromEmail(e.target.value)} placeholder="noreply@tvojdomen.com"/></label><p className="email-hint">Email domen mora prethodno biti verifikovan kod email provajdera.</p><button className="primary full" onClick={saveSender} disabled={working}><Save size={15}/> Sačuvaj pošiljaoca</button></section>
 
       <section className="admin-panel email-test-card"><div className="admin-panel-head"><div><p className="eyebrow">3 · PROVERA</p><h2>Pošalji test</h2></div><Send size={21}/></div><label>Test email<input type="email" value={testEmail} onChange={e=>setTestEmail(e.target.value)} placeholder="tvoj@email.com"/></label><button className="secondary full" onClick={()=>void action('test')} disabled={working||!ready}><Send size={15}/> Pošalji test email</button><div className="email-run-actions"><button className="primary" onClick={()=>void action('send_queued')} disabled={working||!ready}><Send size={15}/> Pošalji čekajuće ({dispatch.queued})</button><button className="secondary" onClick={()=>void action('retry_failed')} disabled={working||!ready||dispatch.failed===0}><RotateCcw size={15}/> Ponovi neuspele</button><button className="secondary" onClick={()=>void load()} disabled={working}><RefreshCw size={15}/> Osveži</button></div></section>
     </div>
