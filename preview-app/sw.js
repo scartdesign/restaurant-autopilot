@@ -1,5 +1,5 @@
 const CACHE='restorapp-shell-v5';
-const CORE=['./','./manifest.webmanifest','./restorapp-icon.svg'];
+const CORE=['./','./manifest.webmanifest','./restorapp-icon.webp'];
 
 self.addEventListener('install',event=>{
   event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(CORE)).catch(()=>null));
