@@ -535,3 +535,65 @@ input:focus,select:focus,textarea:focus{border-color:#c9a255!important;box-shado
   }
   .sidebar .brand-mark-restorapp img{max-width:176px!important}
 }
+
+/* Restorapp inline brand — final override */
+.sidebar .brand-mark-restorapp,
+.wow-demo-shell .brand-mark-restorapp{
+  min-height:72px!important;
+  margin:0 2px 16px!important;
+  padding:4px 2px!important;
+  border:0!important;
+  border-radius:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+  overflow:visible!important;
+}
+.sidebar .brand-mark-restorapp svg,
+.wow-demo-shell .brand-mark-restorapp svg{
+  display:block!important;
+  width:100%!important;
+  max-width:218px!important;
+  height:auto!important;
+}
+.landing-brand svg{
+  display:block;
+  width:190px;
+  max-width:100%;
+  height:auto;
+}
+.auth-showcase-brand svg{
+  display:block;
+  width:190px;
+  max-width:100%;
+  height:auto;
+}
+.auth-logo{
+  width:190px!important;
+  height:auto!important;
+  min-height:58px!important;
+  padding:6px 8px!important;
+}
+.auth-logo svg,
+.maintenance-logo-restorapp svg{
+  display:block;
+  width:100%;
+  height:auto;
+}
+.rd2-phone-logo{
+  width:24px!important;
+  height:24px!important;
+  display:block!important;
+}
+@media(max-width:900px){
+  .sidebar .brand-mark-restorapp,
+  .wow-demo-shell .brand-mark-restorapp{
+    width:185px!important;
+    min-height:48px!important;
+    margin:0 10px 0 0!important;
+    padding:0!important;
+  }
+  .sidebar .brand-mark-restorapp svg,
+  .wow-demo-shell .brand-mark-restorapp svg{max-width:185px!important}
+  .landing-brand svg{width:155px}
+  .auth-logo{width:165px!important}
+}
