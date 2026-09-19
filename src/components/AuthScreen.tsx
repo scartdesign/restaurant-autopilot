@@ -1,6 +1,7 @@
 import { FormEvent, useState } from 'react'
 import { ArrowRight, CalendarDays, Camera, CheckCircle2, Eye, Hash, KeyRound, MapPin, ShieldCheck, Sparkles } from 'lucide-react'
 import { supabase } from '../lib/supabase'
+import { RestorappLogo } from './RestorappLogo'
 
 const LOGIN_FOOD = 'https://images.unsplash.com/photo-1574071318508-1cdbab80d002?auto=format&fit=crop&w=1800&q=88'
 
@@ -40,14 +41,14 @@ export function AuthScreen({ onDemo, onBack, signupOpen=true }: { onDemo: () => 
   return (
     <div className="auth-page auth-page-wow">
       <section className="auth-showcase" style={{ backgroundImage: `linear-gradient(180deg, rgba(8,13,10,.08), rgba(8,13,10,.88)), url(${LOGIN_FOOD})` }}>
-        <div className="auth-showcase-top"><div className="auth-showcase-brand"><img src="./restorapp-logo.webp" alt="Restorapp" /></div><span className="auth-live"><i /> AI MARKETING SYSTEM</span></div>
+        <div className="auth-showcase-top"><div className="auth-showcase-brand"><RestorappLogo surface="dark" tagline /></div><span className="auth-live"><i /> AI MARKETING SYSTEM</span></div>
         <div className="auth-showcase-copy"><span className="auth-overline">OD MENIJA DO OBJAVE</span><h2>Tvoj restoran izgleda dobro.<br /><em>Sada neka tako izgleda i online.</em></h2><p>Fotografije, tekstovi, lokalni discovery, kampanje i gotovi vizuali — u jednom toku.</p><div className="auth-showcase-pills"><span><Camera size={15} /> Realne fotografije</span><span><CalendarDays size={15} /> Nedeljni plan</span><span><Hash size={15} /> Smart discovery</span></div></div>
         <div className="auth-floating-card"><div className="auth-floating-head"><div><span>Sledeća objava</span><strong>Pizza Capricciosa</strong></div><span className="auth-score">94/100</span></div><div className="auth-floating-meta"><span><CheckCircle2 size={14} /> spremno</span><span>Feed 4:5</span><span>18:30</span></div></div>
       </section>
 
       <section className="auth-form-zone">
         <div className="auth-card auth-card-pro auth-card-wow">{onBack&&<button type="button" className="auth-back-home" onClick={onBack}>← Nazad na početnu</button>}
-          <div className="auth-logo"><img src="./restorapp-logo.webp" alt="Restorapp" /></div><p className="eyebrow">MARKETING BEZ CIMANJA</p><h1>{mode === 'login' ? <>Dobrodošao<br />nazad.</> : <>Pokreni svoj<br />Autopilot.</>}</h1><p className="muted">{mode === 'login' ? 'Uđi u komandni centar svog restorana.' : signupOpen?'Napravi nalog i pripremi prvi sadržaj za nekoliko minuta.':'Registracije su trenutno zatvorene od strane OWNER-a.'}</p>
+          <div className="auth-logo"><RestorappLogo surface="light" /></div><p className="eyebrow">MARKETING BEZ CIMANJA</p><h1>{mode === 'login' ? <>Dobrodošao<br />nazad.</> : <>Pokreni svoj<br />Autopilot.</>}</h1><p className="muted">{mode === 'login' ? 'Uđi u komandni centar svog restorana.' : signupOpen?'Napravi nalog i pripremi prvi sadržaj za nekoliko minuta.':'Registracije su trenutno zatvorene od strane OWNER-a.'}</p>
           <div className="auth-benefits"><span><Sparkles size={13} /> sadržaj</span><span><MapPin size={13} /> local reach</span><span><Hash size={13} /> discovery</span></div>
           <form onSubmit={submit}><label>Email<input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required placeholder="restoran@email.com" autoComplete="email" /></label><label>Lozinka<input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={mode==='signup'?10:6} placeholder={mode==='signup'?'10+ karaktera, slova i broj':'Tvoja lozinka'} autoComplete={mode==='login'?'current-password':'new-password'} /></label>{mode==='signup'&&<div className="password-strength"><div><i className={strength>=1?'on':''}/><i className={strength>=2?'on':''}/><i className={strength>=3?'on':''}/><i className={strength>=4?'on':''}/></div><span><ShieldCheck size={12}/> {strength<2?'Slaba':strength<4?'Dobra':'Jaka'} lozinka</span></div>}<button className="primary full auth-submit" disabled={working||(mode==='signup'&&(!signupOpen||strength<4))}>{working ? 'Sačekaj…' : mode === 'login' ? 'Prijavi se' : signupOpen?'Napravi nalog':'Registracije zatvorene'} <ArrowRight size={17} /></button></form>
           {mode==='login'&&<button className="auth-recovery-link" type="button" onClick={sendRecovery} disabled={recoveryWorking}><KeyRound size={14}/>{recoveryWorking?'Šaljem link…':'Zaboravljena lozinka?'}</button>}
