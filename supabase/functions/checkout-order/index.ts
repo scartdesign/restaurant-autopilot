@@ -50,10 +50,10 @@ Deno.serve(async(req:Request)=>{
     const action=String(body.action||"create_order");
 
     const{data:stripeConfig,error:stripeConfigError}=await service.rpc("service_stripe_config");
+    const stripeKey=String(stripeConfig?.secret_key||"");
+    const stripeMode=stripeKey.startsWith("sk_live_")?"live":stripeKey.startsWith("sk_test_")?"test":"unknown";
     if(action==="status"){
-      const key=String(stripeConfig?.secret_key||"");
-      const mode=key.startsWith("sk_live_")?"live":key.startsWith("sk_test_")?"test":"unknown";
-      return json({ok:true,provider:"stripe",configured:Boolean(!stripeConfigError&&stripeConfig?.configured),mode});
+      return json({ok:true,provider:"stripe",configured:Boolean(!stripeConfigError&&stripeConfig?.configured),mode:stripeMode});
     }
 
     if(action==="cancel_checkout"){
@@ -126,6 +126,7 @@ Deno.serve(async(req:Request)=>{
     if(paymentMethod==="card"){
       if(!settings?.allow_card)return json({error:"Kartično plaćanje trenutno nije uključeno."},409);
       if(stripeConfigError||!stripeConfig?.configured)return json({error:"Stripe kartično plaćanje još nije konfigurisan.",code:"STRIPE_NOT_CONFIGURED"},503);
+      if(stripeMode!=="live")return json({error:"Stripe je još u TEST modu. Kartično plaćanje nije pušteno kupcima.",code:"STRIPE_NOT_LIVE"},409);
     }
 
     const{data:order,error}=await userClient.rpc("create_sales_order",{
