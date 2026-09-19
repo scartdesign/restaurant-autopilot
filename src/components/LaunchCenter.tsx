@@ -26,6 +26,7 @@ export function LaunchCenter({restaurant,menuItems,posts,onNavigate,pwaInstalled
   const photos=activeItems.filter(i=>i.image_url).length
   const photoCoverage=activeItems.length?Math.round((photos/activeItems.length)*100):0
   const heroDish=activeItems.find(i=>(i.marketing_priority||0)>=3)
+  const launchHeroImage=heroDish?.image_url||activeItems.find(i=>i.image_url)?.image_url||null
   const future=posts.filter(p=>p.scheduled_for&&new Date(p.scheduled_for).getTime()>Date.now()).length
   const approved=posts.filter(p=>p.status==='approved'||p.status==='published').length
   const hoursConfigured=Boolean(restaurant.opening_hours&&Object.keys(restaurant.opening_hours).length>=7)
@@ -46,7 +47,7 @@ export function LaunchCenter({restaurant,menuItems,posts,onNavigate,pwaInstalled
   const next=tasks.find(t=>!t.done)
 
   return <div className="launch-center">
-    <section className="launch-hero">
+    <section className={`launch-hero restorapp-launch-hero ${launchHeroImage?'has-image':''}`} style={launchHeroImage?{backgroundImage:`linear-gradient(90deg,rgba(7,20,15,.97),rgba(7,20,15,.76) 52%,rgba(7,20,15,.20)),url(${launchHeroImage})`}:undefined}>
       <div><span className="creative-kicker"><Sparkles size={16}/> LAUNCH CENTER</span><h1>{score===100?'Restoran je spreman za Autopilot.':'Dovedi restoran do 100% spremnosti.'}</h1><p>Jedan ekran pokazuje šta još nedostaje da klijent može samostalno da koristi sistem bez tvoje pomoći.</p>
       <div className="launch-actions">{next?<button className="primary" onClick={()=>onNavigate(next.tab)}>Nastavi: {next.title}</button>:<button className="primary" onClick={()=>onNavigate('creative')}><Megaphone size={16}/> Napravi novu kampanju</button>}<button className="secondary" onClick={()=>onNavigate('dashboard')}><LayoutDashboard size={16}/> Otvori sadržaj</button></div></div>
       <div className="launch-score"><strong>{score}<small>%</small></strong><span>{completed}/{tasks.length} koraka završeno</span><div className="launch-ring"><i style={{'--score':score} as React.CSSProperties}/></div></div>
