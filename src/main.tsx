@@ -66,7 +66,7 @@ if ('serviceWorker' in navigator && import.meta.env.PROD) {
     })
 
     void navigator.serviceWorker.register('./sw.js',{updateViaCache:'none'}).then(registration=>{
-      const notifyUpdate=()=>window.dispatchEvent(new CustomEvent('restaurant-autopilot-sw-update'))
+      const notifyUpdate=()=>{window.dispatchEvent(new CustomEvent('restorapp-sw-update'));window.dispatchEvent(new CustomEvent('restaurant-autopilot-sw-update'))}
       if(registration.waiting&&navigator.serviceWorker.controller)notifyUpdate()
 
       registration.addEventListener('updatefound',()=>{
