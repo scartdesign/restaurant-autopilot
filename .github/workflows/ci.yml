@@ -35,6 +35,11 @@ jobs:
           set -euo pipefail
           grep -Fq 'service.from("app_controls").select("sales_open")' supabase/functions/checkout-order/index.ts
           grep -Fq 'STRIPE_NOT_LIVE' supabase/functions/checkout-order/index.ts
+          grep -Fq 'service.rpc("service_create_sales_order"' supabase/functions/checkout-order/index.ts
+          if grep -Fq 'userClient.rpc("create_sales_order"' supabase/functions/checkout-order/index.ts; then
+            echo "Direct customer order RPC bypass is forbidden"
+            exit 1
+          fi
           if grep -Fq 'sales_settings").select("terms_url,privacy_url,sales_open' supabase/functions/checkout-order/index.ts; then
             echo "checkout-order must not read sales_open from sales_settings"
             exit 1
