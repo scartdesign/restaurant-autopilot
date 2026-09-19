@@ -114,9 +114,13 @@ Deno.serve(async(req:Request)=>{
     const acceptedLegal=body.acceptedLegal===true;
     if(!planId||!paymentMethod)return json({error:"Plan i način plaćanja su obavezni."},400);
 
-    const{data:settings,error:settingsError}=await service.from("sales_settings").select("terms_url,privacy_url,sales_open,allow_card").eq("id",1).maybeSingle();
+    const[{data:settings,error:settingsError},{data:controls,error:controlsError}]=await Promise.all([
+      service.from("sales_settings").select("terms_url,privacy_url,allow_card").eq("id",1).maybeSingle(),
+      service.from("app_controls").select("sales_open").eq("id",1).maybeSingle(),
+    ]);
     if(settingsError)return json({error:settingsError.message},500);
-    if(settings?.sales_open===false)return json({error:"Prodaja je trenutno zatvorena."},403);
+    if(controlsError)return json({error:controlsError.message},500);
+    if(controls?.sales_open===false)return json({error:"Prodaja je trenutno zatvorena."},403);
     const legalRequired=Boolean(settings?.terms_url||settings?.privacy_url);
     if(legalRequired&&!acceptedLegal)return json({error:"Potvrdi Uslove korišćenja i Politiku privatnosti pre kupovine.",code:"LEGAL_CONSENT_REQUIRED"},400);
     if(paymentMethod==="card"){
