@@ -65,13 +65,13 @@ export function DemoScreen({ onExit }: { onExit: () => void }) {
           <div className="restaurant-chip"><img className="sidebar-logo" src={demoLogo} alt="" /><div><strong>Bella Napoli</strong><small>Vračar · Beograd</small></div></div>
           <div className="autopilot-status"><span className="live-dot" /> AUTOPILOT ACTIVE · AUTO WEEK ON</div>
           <nav>
-            <button className={tab === 'content' ? 'nav-active' : ''} onClick={() => setTab('content')}><CalendarDays size={18} /> Sadržaj</button>
+            <button className={tab === 'content' ? 'nav-active' : ''} onClick={() => setTab('content')}><CalendarDays size={18} /> Dashboard</button>
             <button className={tab === 'studio' ? 'nav-active' : ''} onClick={() => setTab('studio')}><ImageIcon size={18} /> Visual Studio</button>
             <button className={tab === 'brand' ? 'nav-active brand-nav' : 'brand-nav'} onClick={() => setTab('brand')}><Palette size={18} /> Brend <span className="nav-beta">LOGO</span></button>
-            <button className={tab === 'publish' ? 'nav-active' : ''} onClick={() => setTab('publish')}><Send size={18} /> Publish Center</button>
-            <button className={tab === 'insights' ? 'nav-active insights-nav' : 'insights-nav'} onClick={() => setTab('insights')}><BarChart3 size={18} /> Rezultati <span className="nav-beta">DATA</span></button>
-            <button className={tab === 'menu' ? 'nav-active' : ''} onClick={() => setTab('menu')}><UtensilsCrossed size={18} /> Meni</button>
-            <button className={tab === 'promotions' ? 'nav-active' : ''} onClick={() => setTab('promotions')}><Megaphone size={18} /> Akcije</button>
+            <button className={tab === 'publish' ? 'nav-active' : ''} onClick={() => setTab('publish')}><Send size={18} /> Social Media</button>
+            <button className={tab === 'insights' ? 'nav-active insights-nav' : 'insights-nav'} onClick={() => setTab('insights')}><BarChart3 size={18} /> Analytics <span className="nav-beta">DATA</span></button>
+            <button className={tab === 'menu' ? 'nav-active' : ''} onClick={() => setTab('menu')}><UtensilsCrossed size={18} /> Menu & Offers</button>
+            <button className={tab === 'promotions' ? 'nav-active' : ''} onClick={() => setTab('promotions')}><Megaphone size={18} /> Campaigns</button>
             <button className={tab === 'settings' ? 'nav-active' : ''} onClick={() => setTab('settings')}><Settings size={18} /> Podešavanja</button>
             <button className={tab === 'owner' ? 'nav-active admin-nav' : 'admin-nav'} onClick={() => setTab('owner')}><ShieldCheck size={18} /> OWNER demo <span className="nav-beta">OPS</span></button>
           </nav>
