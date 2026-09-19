@@ -173,7 +173,7 @@ Deno.serve(async(req:Request)=>{
       "line_items[0][quantity]":"1",
       "line_items[0][price_data][currency]":String(updated.currency||"EUR").toLowerCase(),
       "line_items[0][price_data][unit_amount]":String(amountMinor),
-      "line_items[0][price_data][product_data][name]":`Restaurant Autopilot · ${plan.name}`,
+      "line_items[0][price_data][product_data][name]":`Restorapp · ${plan.name}`,
       "metadata[order_id]":String(updated.id),
       "metadata[user_id]":String(user.id),
       "metadata[plan_id]":String(plan.id),

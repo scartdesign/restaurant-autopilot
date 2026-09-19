@@ -77,7 +77,7 @@ export function PublishCenter({ restaurant, posts, onChanged, setNotice }: {
     void loadMetaStatus()
     void loadMetaJobs()
     const handler=(event:MessageEvent)=>{
-      if(event.data?.type!=='restaurant-autopilot-meta')return
+      if(event.data?.type!=='restorapp-meta')return
       void loadMetaStatus()
       setNotice(event.data?.ok?'Meta povezivanje je završeno. Proveravam stranicu i Instagram nalog…':'Meta povezivanje nije završeno.')
     }
@@ -102,7 +102,7 @@ export function PublishCenter({ restaurant, posts, onChanged, setNotice }: {
     setMetaWorking(true)
     const{data,error}=await supabase.functions.invoke('meta-publisher',{body:{action:'start',restaurantId:restaurant.id}})
     if(error||data?.error){setNotice(data?.error||error?.message||'Meta Connect nije pokrenut.');setMetaWorking(false);return}
-    const popup=window.open(data.authorization_url,'restaurant-autopilot-meta','popup=yes,width=620,height=760')
+    const popup=window.open(data.authorization_url,'restorapp-meta','popup=yes,width=620,height=760')
     if(!popup)window.location.href=data.authorization_url
     else setNotice('Meta Connect je otvoren u novom prozoru. Odobri pristup Facebook stranici i Instagram nalogu.')
     setMetaWorking(false)
@@ -193,11 +193,11 @@ export function PublishCenter({ restaurant, posts, onChanged, setNotice }: {
   function exportCalendar() {
     const scheduled = ordered.filter((post) => post.scheduled_for)
     if (!scheduled.length) { setNotice('Nema zakazanih termina za kalendar.'); return }
-    const body = ['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Restaurant Autopilot//Content Calendar//SR']
+    const body = ['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Restorapp//Content Calendar//SR']
     scheduled.forEach((post) => {
       const start = new Date(post.scheduled_for!).toISOString().replace(/[-:]/g, '').replace(/\.\d{3}Z$/, 'Z')
       const end = new Date(new Date(post.scheduled_for!).getTime() + 30 * 60 * 1000).toISOString().replace(/[-:]/g, '').replace(/\.\d{3}Z$/, 'Z')
-      body.push('BEGIN:VEVENT', `UID:${post.id}@restaurant-autopilot`, `DTSTART:${start}`, `DTEND:${end}`, `SUMMARY:${icsText(`${post.post_type.toUpperCase()} · ${post.title || 'Objava'}`)}`, `DESCRIPTION:${icsText(post.caption || '')}`, 'END:VEVENT')
+      body.push('BEGIN:VEVENT', `UID:${post.id}@restorapp`, `DTSTART:${start}`, `DTEND:${end}`, `SUMMARY:${icsText(`${post.post_type.toUpperCase()} · ${post.title || 'Objava'}`)}`, `DESCRIPTION:${icsText(post.caption || '')}`, 'END:VEVENT')
     })
     body.push('END:VCALENDAR')
     downloadBlob(`autopilot-${slug(restaurant.name)}-calendar.ics`, new Blob([body.join('\r\n')], { type: 'text/calendar;charset=utf-8' }))
@@ -280,7 +280,7 @@ export function PublishCenter({ restaurant, posts, onChanged, setNotice }: {
 
   async function markOverduePublished(){
     if(!overdue.length)return
-    const confirmed=window.confirm(`Potvrdi da je ${overdue.length} odobrenih objava zaista objavljeno na društvenim mrežama. Ova akcija samo menja status u Restaurant Autopilotu.`)
+    const confirmed=window.confirm(`Potvrdi da je ${overdue.length} odobrenih objava zaista objavljeno na društvenim mrežama. Ova akcija samo menja status u Restorappu.`)
     if(!confirmed)return
     setBulkWorking(true)
     const ids=overdue.map(post=>post.id)

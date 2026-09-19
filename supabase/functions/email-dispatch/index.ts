@@ -47,7 +47,7 @@ Deno.serve(async(req:Request)=>{
     const {data:settings,error:settingsError}=await service.from("sales_settings").select("email_from,email_sender_name,support_email,sales_email").eq("id",1).maybeSingle();
     if(settingsError) return json({error:settingsError.message},500);
     const senderEmail=String(settings?.email_from||"").trim();
-    const senderName=String(settings?.email_sender_name||"Restaurant Autopilot").trim()||"Restaurant Autopilot";
+    const senderName=String(settings?.email_sender_name||"Restorapp").trim()||"Restorapp";
 
     if(action==="status"){
       return json({ok:true,provider:"resend",configured:Boolean(apiKey),sender_ready:Boolean(senderEmail),sender_email:senderEmail||null});
@@ -97,7 +97,7 @@ Deno.serve(async(req:Request)=>{
     for(const row of rows||[]){
       const recipient=String(row.recipient_email||"").trim();
       if(!recipient) continue;
-      const html='<!doctype html><html><body style="margin:0;background:#f5f6f1;font-family:Arial,sans-serif;color:#1d261f"><div style="max-width:640px;margin:0 auto;padding:28px 16px"><div style="background:#17211b;color:#fff;border-radius:18px;padding:24px"><div style="font-size:12px;letter-spacing:.08em;color:#c9ef83;font-weight:700">RESTAURANT AUTOPILOT</div><h1 style="font-size:24px;margin:10px 0 18px">'+esc(String(row.subject||"Restaurant Autopilot"))+'</h1><div style="font-size:15px;line-height:1.65;color:#edf2ed">'+nl2br(String(row.body||""))+'</div></div><div style="padding:14px 4px;color:#798279;font-size:11px">Automatska servisna poruka Restaurant Autopilot sistema.</div></div></body></html>';
+      const html='<!doctype html><html><body style="margin:0;background:#f5f6f1;font-family:Arial,sans-serif;color:#1d261f"><div style="max-width:640px;margin:0 auto;padding:28px 16px"><div style="background:#17211b;color:#fff;border-radius:18px;padding:24px"><div style="font-size:12px;letter-spacing:.08em;color:#c9ef83;font-weight:700">RESTORAPP</div><h1 style="font-size:24px;margin:10px 0 18px">'+esc(String(row.subject||"Restorapp"))+'</h1><div style="font-size:15px;line-height:1.65;color:#edf2ed">'+nl2br(String(row.body||""))+'</div></div><div style="padding:14px 4px;color:#798279;font-size:11px">Automatska servisna poruka Restorapp sistema.</div></div></body></html>';
       const send=await fetch("https://api.resend.com/emails",{
         method:"POST",
         headers:{
@@ -108,7 +108,7 @@ Deno.serve(async(req:Request)=>{
         body:JSON.stringify({
           from:senderName+" <"+senderEmail+">",
           to:[recipient],
-          subject:String(row.subject||"Restaurant Autopilot"),
+          subject:String(row.subject||"Restorapp"),
           text:String(row.body||""),
           html,
         })
