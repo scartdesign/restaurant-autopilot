@@ -5,8 +5,8 @@ import '../owner-incident-center.css'
 
 type Summary={meta_failed:number;meta_manual_review:number;meta_connection_issues:number;discovery_issues:number}
 type MetaJob={
-  id:string;restaurant_id:string;restaurant_name:string;post_id:string|null;post_title:string;connection_id:string;platform:string;status:string;attempt_count:number;error_message:string|null;updated_at:string;created_at:string;
-  manual_review_required:boolean;manual_review_acknowledged_at:string|null;manual_retry_count:number;connection_status:string|null;token_expires_at:string|null;can_retry:boolean
+  id:string;restaurant_id:string;restaurant_name:string;post_id:string|null;post_title:string;connection_id:string;platform:string;status:string;attempt_count:number;provider_media_id:string|null;error_message:string|null;updated_at:string;created_at:string;
+  manual_review_required:boolean;manual_review_acknowledged_at:string|null;manual_retry_count:number;connection_status:string|null;token_expires_at:string|null;can_retry:boolean;retry_block_reason:string|null
 }
 type ConnectionIssue={id:string;restaurant_id:string;restaurant_name:string;owner_id:string;status:string;page_name:string|null;instagram_username:string|null;token_expires_at:string|null;last_verified_at:string|null;updated_at:string;severity:number;reason:string}
 type DiscoveryIssue={id:string;source:string;mode:string|null;status:string;started_at:string;finished_at:string|null;error_message:string|null;reason:string;api_calls:number;candidates_upserted:number;budget_exhausted:boolean}
@@ -14,6 +14,15 @@ type Feed={summary:Summary;meta_jobs:MetaJob[];connections:ConnectionIssue[];dis
 const empty:Feed={summary:{meta_failed:0,meta_manual_review:0,meta_connection_issues:0,discovery_issues:0},meta_jobs:[],connections:[],discovery:[],generated_at:''}
 
 function when(value:string|null){if(!value)return '—';try{return new Intl.DateTimeFormat('sr-RS',{dateStyle:'short',timeStyle:'short'}).format(new Date(value))}catch{return value}}
+function retryBlockLabel(reason:string|null){
+  if(reason==='provider_media_exists')return 'Meta već ima media ID — proveri objavu pre bilo kakvog retry-a'
+  if(reason==='attempt_limit')return 'ukupan retry limit je dostignut'
+  if(reason==='manual_retry_limit')return 'OWNER manual retry limit je dostignut'
+  if(reason==='token_expired')return 'Meta token je istekao'
+  if(reason==='connection_not_connected')return 'Meta konekcija nije povezana'
+  if(reason==='manual_review_not_acknowledged')return 'manual review još nije potvrđen'
+  return 'server safety guard'
+}
 
 export function OwnerIncidentCenter({setNotice,onOpenTrend}:{setNotice:(value:string)=>void;onOpenTrend:()=>void}){
   const[data,setData]=useState<Feed>(empty)
@@ -84,7 +93,7 @@ export function OwnerIncidentCenter({setNotice,onOpenTrend}:{setNotice:(value:st
           <div className="incident-actions">
             {job.manual_review_required&&!ack&&<button className="primary" disabled={busy} onClick={()=>void action(job.id,'admin_acknowledge_meta_manual_review')}><ShieldCheck size={14}/> Potvrdi proveru</button>}
             {(!job.manual_review_required||ack)&&job.can_retry&&<button className="primary" disabled={busy} onClick={()=>void action(job.id,'admin_queue_meta_retry')}><RotateCcw size={14}/> Vrati u queue</button>}
-            {!job.can_retry&&(!job.manual_review_required||ack)&&<span className="incident-blocked">Retry blokiran · proveri Meta konekciju</span>}
+            {!job.can_retry&&(!job.manual_review_required||ack)&&<span className="incident-blocked">Retry blokiran · {retryBlockLabel(job.retry_block_reason)}</span>}
             <button className="secondary" disabled={busy} onClick={()=>void action(job.id,'admin_dismiss_meta_publish_incident')}><XCircle size={14}/> Zatvori incident</button>
           </div>
         </article>
