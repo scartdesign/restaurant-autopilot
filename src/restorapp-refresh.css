@@ -222,3 +222,154 @@ input:focus,select:focus,textarea:focus{border-color:#c9a255!important;box-shado
 }
 
 .maintenance-logo-restorapp{width:220px!important;height:86px!important;border-radius:16px!important;background:#fff!important;padding:8px 12px!important;border:1px solid #eadfc8!important;box-shadow:0 12px 32px rgba(20,31,25,.08)!important}.maintenance-logo-restorapp img{width:100%;height:100%;object-fit:contain}
+
+/* Premium application topbar */
+.restorapp-topbar{
+  min-height:66px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:16px;
+  margin:0 0 18px;
+  padding:10px 12px 10px 16px;
+  border:1px solid rgba(226,218,202,.88);
+  border-radius:17px;
+  background:rgba(255,255,255,.88);
+  box-shadow:0 9px 28px rgba(20,31,25,.045);
+  backdrop-filter:blur(18px);
+}
+.restorapp-topbar-copy{min-width:0}
+.restorapp-topbar-copy>span{
+  display:block;
+  margin-bottom:2px;
+  color:#a5772a;
+  font-size:10px;
+  font-weight:900;
+  letter-spacing:.12em;
+  text-transform:uppercase;
+}
+.restorapp-topbar-copy>strong{
+  display:inline-block;
+  max-width:460px;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  font-size:17px;
+  letter-spacing:-.02em;
+}
+.restorapp-topbar-copy>small{
+  margin-left:8px;
+  color:#858d87;
+  font-size:11px;
+}
+.restorapp-topbar-actions{display:flex;align-items:center;gap:8px}
+.restorapp-topbar-button{
+  position:relative;
+  width:42px;
+  height:42px;
+  display:grid;
+  place-items:center;
+  border:1px solid #e7e0d4;
+  border-radius:12px;
+  background:#fbfaf7;
+  color:#3b4540;
+  transition:.18s ease;
+}
+.restorapp-topbar-button:hover{border-color:#d9c69d;background:#fff8ea;color:#8c6727;transform:translateY(-1px)}
+.restorapp-topbar-button b{
+  position:absolute;
+  top:-5px;
+  right:-5px;
+  min-width:18px;
+  height:18px;
+  display:grid;
+  place-items:center;
+  padding:0 4px;
+  border:2px solid #fff;
+  border-radius:999px;
+  background:#c79335;
+  color:#fff;
+  font-size:8px;
+}
+.restorapp-profile-chip{
+  min-width:190px;
+  height:46px;
+  display:grid;
+  grid-template-columns:34px 1fr;
+  align-items:center;
+  gap:9px;
+  padding:5px 11px 5px 6px;
+  border:1px solid #e7e0d4;
+  border-radius:14px;
+  background:#fff;
+  text-align:left;
+  color:#202a25;
+  transition:.18s ease;
+}
+.restorapp-profile-chip:hover{border-color:#d7c18f;box-shadow:0 7px 18px rgba(33,38,34,.06)}
+.restorapp-profile-chip>img,.restorapp-profile-chip>span{
+  width:34px;height:34px;border-radius:10px;object-fit:cover;
+}
+.restorapp-profile-chip>span{display:grid;place-items:center;color:#fff;font-size:13px;font-weight:900;background:#17382e}
+.restorapp-profile-chip strong,.restorapp-profile-chip small{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.restorapp-profile-chip strong{font-size:12px}
+.restorapp-profile-chip small{margin-top:1px;color:#8a918c;font-size:9px;text-transform:uppercase;letter-spacing:.06em}
+
+/* App-wide card hierarchy inspired by the approved direction */
+.main-area>.page-header:first-of-type{
+  padding:4px 2px 0;
+}
+.main-area>.page-header:first-of-type h1{
+  letter-spacing:-.045em!important;
+}
+.wow-panel-head h2,.panel-heading h2,.section-title h2{letter-spacing:-.025em}
+.wow-week-strip{gap:10px!important}
+.wow-day{background:#fbfaf7!important;border-color:#eee6d7!important}
+.wow-day:hover{border-color:#d9c49a!important;box-shadow:0 9px 20px rgba(33,37,31,.06)}
+.wow-health-bar{background:#eee8dc!important}
+.wow-health-bar i{background:linear-gradient(90deg,#c59236,#e0b75e)!important}
+.week-quality-ring{background:conic-gradient(#d3a345 calc(var(--quality)*1%),#eee8dc 0)!important}
+.autopilot-health-checks .ok,.preflight-checks .ok{background:#f0f6ec!important;color:#447047!important;border-color:#dae9d5!important}
+.activity-dot{background:#d3a345!important;box-shadow:0 0 0 5px rgba(211,163,69,.12)!important}
+.wow-card-price,.wow-card-cta{color:#f0ca79!important}
+.content-section.wow-content-section{margin-top:20px}
+.post-card:hover{transform:translateY(-2px);box-shadow:0 15px 36px rgba(20,31,25,.08)!important}
+
+/* Mobile visual cleanup */
+@media(max-width:900px){
+  .restorapp-topbar{display:none}
+  .sidebar.sidebar-pro{
+    background:linear-gradient(180deg,#10271f,#0c211b)!important;
+    border-bottom:1px solid rgba(214,168,78,.18)!important;
+    box-shadow:0 8px 25px rgba(8,22,17,.16)!important;
+  }
+  .sidebar .restaurant-chip{
+    background:rgba(255,255,255,.07)!important;
+    border-color:rgba(255,255,255,.09)!important;
+  }
+  .sidebar nav{
+    background:rgba(10,26,21,.98)!important;
+    border-top:1px solid rgba(214,168,78,.16)!important;
+  }
+  .sidebar nav button{color:#c7d0cb!important}
+  .sidebar nav .nav-active{
+    background:linear-gradient(135deg,#efcb79,#d2a047)!important;
+    color:#142019!important;
+  }
+  .mobile-drawer{
+    background:linear-gradient(180deg,#fbfaf7,#f4f1e9)!important;
+  }
+  .mobile-drawer-grid>button{
+    border-color:#e8dfcf!important;
+    box-shadow:0 7px 18px rgba(20,31,25,.035);
+  }
+  .mobile-drawer-grid>button svg{color:#b4822b!important}
+  .main-area{background:linear-gradient(180deg,#f9f8f5,#f5f2eb)!important}
+}
+@media(max-width:560px){
+  .wow-kpi-grid{grid-template-columns:1fr!important}
+  .wow-hero{min-height:390px}
+  .wow-hero-copy{padding-right:0!important}
+  .wow-score-card{position:static!important;margin-top:18px!important;width:100%!important}
+  .panel,.stat-card,.post-card{border-radius:16px!important}
+}
