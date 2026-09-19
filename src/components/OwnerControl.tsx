@@ -108,7 +108,20 @@ export function OwnerControl({onCloseApp,setNotice}:{onCloseApp?:()=>void;setNot
   async function revoke(x:LicenseCodeRow){if(!confirm('Opozovi ovu licencu?'))return;const{error}=await supabase.from('license_codes').update({status:'revoked'}).eq('id',x.id);if(error)setNotice(error.message);else await load()}
   async function savePlan(p:SalesPlan,patch:{price:number;monthly_generation_limit:number;max_restaurants:number;trial_days:number;active:boolean;public:boolean;features:Record<string,unknown>}){const{error}=await supabase.from('sales_plans').update(patch).eq('id',p.id);if(error)setNotice(error.message);else{setNotice(`${p.name}: paket i funkcije su sačuvani.`);await load()}}
   async function saveSystem(){setWorking(true);const{error}=await supabase.from('app_controls').update({...controls,updated_at:new Date().toISOString()}).eq('id',1);if(error)setNotice(error.message);else{setNotice('Globalna kontrola aplikacije je sačuvana.');await load()}setWorking(false)}
-  async function saveSales(){if(!settings)return;if(settings.allow_card&&(!stripeConfigured||stripeMode!=='live')){setNotice(stripeMode==='test'?'Kartice nisu puštene: Stripe je još u TEST modu. Unesi live ključ i live webhook secret pre uključivanja kupcima.':'Kartice nisu puštene: prvo podesi Stripe provider.');setSettings({...settings,allow_card:false});return}setWorking(true);const{error}=await supabase.from('sales_settings').update(settings).eq('id',1);if(error)setNotice(error.message);else setNotice('Firma, banka i načini prodaje su sačuvani.');setWorking(false)}
+  async function saveSales(){
+    if(!settings)return
+    const sellerReady=Boolean((settings.legal_name||settings.company_name)?.trim()&&settings.address?.trim()&&settings.tax_id?.trim())
+    const bankReady=Boolean(settings.bank_account?.trim()||settings.bank_instructions?.trim())
+    if(settings.allow_bank_transfer&&!bankReady){setNotice('Uplata na račun nije sačuvana: prvo unesi broj računa ili jasne instrukcije za uplatu.');return}
+    if(settings.allow_invoice&&!sellerReady){setNotice('Predračun nije spreman: unesi pravni naziv, adresu i PIB prodavca.');return}
+    if(settings.allow_paypal&&!settings.paypal_url?.trim()){setNotice('PayPal nije uključen: prvo unesi validan PayPal payment link.');return}
+    if(settings.allow_card&&(!stripeConfigured||stripeMode!=='live')){setNotice(stripeMode==='test'?'Kartice nisu puštene: Stripe je još u TEST modu. Unesi live ključ i live webhook secret pre uključivanja kupcima.':'Kartice nisu puštene: prvo podesi Stripe provider.');setSettings({...settings,allow_card:false});return}
+    setWorking(true)
+    const{error}=await supabase.from('sales_settings').update(settings).eq('id',1)
+    if(error)setNotice(error.message)
+    else{setNotice('Firma, banka i načini prodaje su sačuvani.');await load()}
+    setWorking(false)
+  }
   async function saveAiKey(){if(!aiKey.trim()){setNotice('Unesi OpenAI API ključ.');return}setWorking(true);const{error}=await supabase.rpc('admin_set_ai_provider_key',{p_key:aiKey.trim()});if(error)setNotice(error.message);else{setAiKey('');setAiConfigured(true);setNotice('AI provider je aktiviran server-side. Ključ se ne prikazuje kupcima.')}setWorking(false)}
   async function saveEmailKey(){if(!emailKey.trim()){setNotice('Unesi Resend API ključ.');return}setWorking(true);const{error}=await supabase.rpc('admin_set_email_provider_key',{p_key:emailKey.trim()});if(error)setNotice(error.message);else{setEmailKey('');setEmailConfigured(true);setNotice('Email provider je aktiviran server-side. Sada podesi Email from adresu i možeš slati Outbox.')}setWorking(false)}
   async function saveMetaProvider(){if(!metaAppId.trim()||!metaAppSecret.trim()){setNotice('Unesi Meta App ID i App Secret.');return}setWorking(true);const{error}=await supabase.rpc('admin_set_meta_provider',{p_app_id:metaAppId.trim(),p_app_secret:metaAppSecret.trim()});if(error)setNotice(error.message);else{setMetaAppId('');setMetaAppSecret('');setMetaConfigured(true);setNotice('Meta provider je aktiviran server-side. Restorani sada mogu da pokrenu Facebook / Instagram Connect.')}setWorking(false)}
