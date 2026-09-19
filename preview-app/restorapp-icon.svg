@@ -1,1 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" rx="112" fill="#17211b"/><circle cx="256" cy="256" r="164" fill="#b9df72"/><path d="M177 264c-30 0-54-24-54-54 0-27 20-49 46-53 10-48 53-84 105-84 56 0 103 43 108 98 20 8 34 28 34 51 0 30-24 54-54 54h-8v75c0 20-16 36-36 36H194c-20 0-36-16-36-36v-87h19zm24 16v58h110v-58H201zm5-93c8 10 13 23 13 37h74c0-17 7-33 18-45-14-17-35-28-58-28-20 0-38 8-47 20z" fill="#17211b"/><path d="M209 318h94" stroke="#b9df72" stroke-width="12" stroke-linecap="round"/></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-label="Restorapp">
+  <rect width="256" height="256" rx="58" fill="#10271f"/>
+  <path d="M64 111c-19-2-34-18-34-38 0-22 18-40 41-40 7 0 14 2 20 5 10-17 29-28 50-28 31 0 57 24 59 54 17 4 30 20 30 38 0 22-18 40-40 40H73" fill="none" stroke="#d6a84e" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M81 97v42m18-42v42m18-42v42M99 139v51" fill="none" stroke="#f8f6f1" stroke-width="12" stroke-linecap="round"/>
+  <path d="M67 190c30-33 76-45 126-29-33 3-65 20-91 48" fill="none" stroke="#d6a84e" stroke-width="12" stroke-linecap="round"/>
+</svg>
