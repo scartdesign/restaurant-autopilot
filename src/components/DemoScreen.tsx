@@ -81,7 +81,7 @@ export function DemoScreen({ onExit }: { onExit: () => void }) {
 
       <main className="main-area">
         <div className="restorapp-topbar demo-restorapp-topbar"><div className="restorapp-topbar-copy"><span>Live product demo</span><strong>Bella Napoli</strong><small>Vračar · Beograd · Premium</small></div><div className="restorapp-topbar-actions"><div className="restorapp-profile-chip demo-profile-chip"><img src={demoLogo} alt="Bella Napoli"/><div><strong>Bella Napoli</strong><small>Demo restoran</small></div></div></div></div>
-        <div className="demo-banner"><Sparkles size={14} /> LIVE PRODUCT DEMO · Brand Kit, Visual Studio i Publish Center su interaktivni.</div>
+        
         {tab === 'content' && <DemoContent approved={approved} setApproved={setApproved} notify={notify} />}
         {tab === 'studio' && <VisualStudio restaurant={demoRestaurant} posts={demoVisualPosts} menuItems={demoMenu} setNotice={notify} onChanged={async()=>{}} />}
         {tab === 'brand' && <BrandKit restaurant={demoRestaurant} menuItems={demoMenu} onSaved={async () => {}} setNotice={notify} demo />}
