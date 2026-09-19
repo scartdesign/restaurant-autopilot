@@ -37,6 +37,6 @@ export function LandingScreen({onAuth,onDemo}:{onAuth:()=>void;onDemo:()=>void})
 
       <section className="landing-final-cta"><div><span className="eyebrow">RESTORAPP</span><h2>Marketing koji više ne počinje pitanjem: „Šta danas da objavim?“</h2></div><button className="landing-primary" onClick={onAuth}>Napravi nalog <ArrowRight size={18}/></button></section>
     </main>
-    <footer className="landing-footer"><div className="landing-brand"><RestorappLogo surface="light" tagline /></div><span>AI-assisted marketing system for restaurants.</span><div className="landing-legal-links"><a href="?legal=terms">Uslovi</a><a href="?legal=privacy">Privatnost</a><a href="?legal=ai">AI</a><a href="?legal=refund">Refund</a></div><button onClick={onAuth}>Prijava</button></footer>
+    <footer className="landing-footer"><div className="landing-brand"><img src="./restorapp-logo.webp" alt="Restorapp" /></div><span>AI-assisted marketing system for restaurants.</span><div className="landing-legal-links"><a href="?legal=terms">Uslovi</a><a href="?legal=privacy">Privatnost</a><a href="?legal=ai">AI</a><a href="?legal=refund">Refund</a></div><button onClick={onAuth}>Prijava</button></footer>
   </div>
 }
