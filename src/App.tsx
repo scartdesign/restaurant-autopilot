@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
-import { BadgeEuro, BarChart3, Bell, Building2, CalendarDays, ChefHat, Download, Image as ImageIcon, LifeBuoy, LockKeyhole, LogOut, Megaphone, Menu as MenuIcon, Palette, Plus, RefreshCw, Rocket, Send, Settings, Share2, ShieldCheck, Smartphone, Sparkles, UtensilsCrossed, X } from 'lucide-react'
+import { BadgeEuro, BarChart3, Bell, Building2, CalendarDays, Download, Image as ImageIcon, LifeBuoy, LockKeyhole, LogOut, Megaphone, Menu as MenuIcon, Palette, Plus, RefreshCw, Rocket, Send, Settings, Share2, ShieldCheck, Smartphone, Sparkles, UtensilsCrossed, X } from 'lucide-react'
 import type { Session } from '@supabase/supabase-js'
 import { supabase } from './lib/supabase'
 import type { Entitlement, MenuItem, Post, Restaurant } from './types'
