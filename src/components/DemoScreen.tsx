@@ -1,5 +1,5 @@
 import { useState, type CSSProperties } from 'react'
-import { ArrowLeft, BarChart3, CalendarClock, CalendarDays, CheckCircle2, ChefHat, Clock3, Facebook, Hash, Image as ImageIcon, Instagram, MapPin, Megaphone, MousePointerClick, Palette, Pencil, Save, Search, Send, Settings, ShieldCheck, Sparkles, Target, TrendingUp, UtensilsCrossed, X, Zap } from 'lucide-react'
+import { ArrowLeft, BarChart3, CalendarClock, CalendarDays, CheckCircle2, Clock3, Facebook, Hash, Image as ImageIcon, Instagram, MapPin, Megaphone, MousePointerClick, Palette, Pencil, Save, Search, Send, Settings, ShieldCheck, Sparkles, Target, TrendingUp, UtensilsCrossed, X, Zap } from 'lucide-react'
 import { VisualStudio } from './VisualStudio'
 import { BrandKit } from './BrandKit'
 import { DemoOwner } from './DemoOwner'
@@ -60,7 +60,7 @@ export function DemoScreen({ onExit }: { onExit: () => void }) {
     <div className="app-shell demo-shell wow-demo-shell">
       <aside className="sidebar sidebar-pro">
         <div>
-          <div className="brand-mark"><div className="brand-icon"><ChefHat size={21} /></div><span>Restaurant<br /><strong>Autopilot</strong></span></div>
+          <div className="brand-mark brand-mark-restorapp"><img src="./restorapp-logo.webp" alt="Restorapp" /></div>
           <div className="restaurant-chip"><img className="sidebar-logo" src={demoLogo} alt="" /><div><strong>Bella Napoli</strong><small>Vračar · Beograd</small></div></div>
           <div className="autopilot-status"><span className="live-dot" /> AUTOPILOT ACTIVE · AUTO WEEK ON</div>
           <nav>
