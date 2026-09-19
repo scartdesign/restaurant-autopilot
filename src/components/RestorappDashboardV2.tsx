@@ -1,7 +1,7 @@
-import { BarChart3, CalendarDays, ChevronRight, Image as ImageIcon, Instagram, Facebook, Search, Sparkles, TrendingUp, UtensilsCrossed, WandSparkles } from 'lucide-react'
+import { BarChart3, Bell, CalendarDays, ChevronRight, Instagram, Megaphone, Search, Sparkles, Star, TrendingUp, Users, UtensilsCrossed, WandSparkles } from 'lucide-react'
 import type { MenuItem, Post, Restaurant } from '../types'
 
-type NavTarget='menu'|'publish'|'settings'|'billing'
+type NavTarget='menu'|'publish'|'settings'|'billing'|'creative'|'promotions'|'insights'|'notifications'
 
 export function RestorappDashboardV2({
   restaurant,
@@ -28,95 +28,113 @@ export function RestorappDashboardV2({
   const topPost=sorted[0]||posts[0]||null
   const topImage=resolveImage(topPost,menuItems)
   const image=heroImage||activeItems.find(item=>item.image_url)?.image_url||topImage||null
-  const upcoming=[...posts].filter(post=>post.status!=='rejected').sort((a,b)=>new Date(a.scheduled_for||0).getTime()-new Date(b.scheduled_for||0).getTime()).slice(0,4)
+  const primaryDish=activeItems[0]||menuItems[0]||null
 
   const stats=demo?[
-    {label:'Novi gosti',value:'+48',detail:'ove nedelje',delta:'+12%'},
-    {label:'Ukupan reach',value:'12.4K',detail:'ove nedelje',delta:'+28%'},
-    {label:'Prosečna ocena',value:'4.8',detail:'ovog meseca',delta:'+0.3'},
-    {label:'Online akcije',value:'+32',detail:'ove nedelje',delta:'+18%'},
+    {label:'Novi gosti',value:'+48',detail:'Ove nedelje',delta:'+12%',icon:'users'},
+    {label:'Ukupan reach',value:'12.4K',detail:'Ove nedelje',delta:'+28%',icon:'reach'},
+    {label:'Prosečna ocena',value:'4.8',detail:'Ovog meseca',delta:'+0.3',icon:'rating'},
+    {label:'Online akcije',value:'+32',detail:'Ove nedelje',delta:'+18%',icon:'orders'},
   ]:[
-    {label:'Aktivna jela',value:String(activeItems.length),detail:'u meniju',delta:activeItems.length>=3?'spremno':'dodaj još'},
-    {label:'Planirane objave',value:String(scheduled),detail:'u redu čekanja',delta:posts.length?posts.length+' ukupno':'nov plan'},
-    {label:'Spremno',value:String(approved),detail:'odobreno / objavljeno',delta:posts.length?Math.round(approved/Math.max(1,posts.length)*100)+'%':'0%'},
-    {label:'Discovery',value:averageDiscovery?String(averageDiscovery):'—',detail:'prosek sadržaja',delta:averageDiscovery>=80?'odlično':averageDiscovery?'aktivno':'čeka'},
+    {label:'Planirano',value:String(scheduled),detail:'Objava u rasporedu',delta:posts.length?posts.length+' ukupno':'nov plan',icon:'users'},
+    {label:'Discovery',value:averageDiscovery?String(averageDiscovery):'—',detail:'Prosek sadržaja',delta:averageDiscovery>=80?'odlično':averageDiscovery?'aktivno':'čeka',icon:'reach'},
+    {label:'Spremno',value:String(approved),detail:'Odobreno / objavljeno',delta:posts.length?Math.round(approved/Math.max(1,posts.length)*100)+'%':'0%',icon:'rating'},
+    {label:'Aktivna jela',value:String(activeItems.length),detail:'U meniju',delta:activeItems.length>=3?'spremno':'dodaj još',icon:'orders'},
   ]
 
   return <div className="restorapp-dashboard-v2-root">
     <div className="rd2-topbar">
       <label className="rd2-search"><Search size={18}/><input aria-label="Pretraga" placeholder="Pretraži sadržaj, ideje, kampanje…" /></label>
-      <div className="rd2-restaurant-pill">
-        {restaurant.logo_url?<img src={restaurant.logo_url} alt=""/>:<span>{restaurant.name.slice(0,1).toUpperCase()}</span>}
-        <div><strong>{restaurant.name}</strong><small>{restaurant.neighborhood||restaurant.city||'Restoran'}</small></div>
+      <div className="rd2-top-actions">
+        <button className="rd2-bell" onClick={()=>onNavigate?.('notifications')} aria-label="Obaveštenja"><Bell size={19}/><i/></button>
+        <button className="rd2-restaurant-pill" onClick={()=>onNavigate?.('settings')}>
+          {restaurant.logo_url?<img src={restaurant.logo_url} alt=""/>:<span>{restaurant.name.slice(0,1).toUpperCase()}</span>}
+          <div><strong>{restaurant.name}</strong><small>{restaurant.neighborhood||restaurant.city||'Restoran'}</small></div>
+          <ChevronRight size={15}/>
+        </button>
       </div>
     </div>
 
-    <section className={'rd2-hero '+(image?'has-image':'')} style={image?{backgroundImage:`linear-gradient(90deg,rgba(251,246,236,.98) 0%,rgba(251,246,236,.93) 39%,rgba(251,246,236,.14) 66%),url(${image})`}:undefined}>
-      <div className="rd2-hero-copy">
-        <span>PLAN ZA OVU NEDELJU</span>
-        <h1>Pametniji sadržaj.<br/><em>Više gostiju.</em></h1>
-        <p>Restorapp planira, kreira i priprema sadržaj dok se ti baviš restoranom.</p>
-        <div className="rd2-hero-actions">
-          <button className="rd2-primary" onClick={onCreate}><Sparkles size={17}/> Kreiraj novi sadržaj <ChevronRight size={16}/></button>
-          <button className="rd2-secondary" onClick={()=>onNavigate?.('publish')}>Pogledaj plan</button>
-        </div>
-      </div>
-      <div className="rd2-hero-note"><span>Autentični ukusi.</span><strong>Stvarni ljudi.</strong><em>Veće priče.</em></div>
-    </section>
-
-    <section className="rd2-stats">
-      {stats.map((stat,index)=><article key={stat.label}>
-        <div className="rd2-stat-icon">{index===0?<TrendingUp size={18}/>:index===1?<BarChart3 size={18}/>:index===2?<Sparkles size={18}/>:<CalendarDays size={18}/>}</div>
-        <div><span>{stat.label}</span><strong>{stat.value}</strong><small>{stat.detail}</small></div>
-        <b>{stat.delta}</b>
-      </article>)}
-    </section>
-
-    <section className="rd2-grid">
-      <article className="rd2-card rd2-creative">
-        <header><div><span>CREATIVE AI</span><h2>Kreiraj sadržaj koji izgleda kao restoran.</h2></div><button onClick={()=>onNavigate?.('menu')}>Meni <ChevronRight size={15}/></button></header>
-        <div className="rd2-thumbs">
-          {(activeItems.length?activeItems.slice(0,4):menuItems.slice(0,4)).map(item=><div key={item.id} className="rd2-thumb">
-            {item.image_url?<img src={item.image_url} alt=""/>:<span><UtensilsCrossed size={20}/></span>}
-            <strong>{item.name}</strong><small>{item.category||'Jelo'}</small>
-          </div>)}
-          {!menuItems.length&&<div className="rd2-empty-mini"><ImageIcon size={22}/><span>Dodaj fotografije jela</span></div>}
-        </div>
-        <button className="rd2-prompt" onClick={onCreate}><WandSparkles size={17}/><span>Opiši šta želiš da kreiraš…</span><b>Generiši vizual</b></button>
-      </article>
-
-      <article className="rd2-card rd2-publish">
-        <header><div><span>PUBLISH CENTER</span><h2>Planirani sadržaj</h2></div><button onClick={()=>onNavigate?.('publish')}>Prikaži sve <ChevronRight size={15}/></button></header>
-        <div className="rd2-post-list">
-          {upcoming.length?upcoming.map((post,index)=>{
-            const postImage=resolveImage(post,menuItems)
-            return <div className="rd2-post-row" key={post.id}>
-              {postImage?<img src={postImage} alt=""/>:<span className="rd2-post-fallback"><Sparkles size={15}/></span>}
-              <div><strong>{post.title||'Nova objava'}</strong><small>{post.scheduled_for?formatDate(post.scheduled_for,restaurant.timezone):'Bez termina'}</small></div>
-              <span className={'rd2-network '+(index%2?'fb':'ig')}>{index%2?<Facebook size={15}/>:<Instagram size={15}/>}</span>
-              <b className={'rd2-status '+post.status}>{statusLabel(post.status)}</b>
+    <div className="rd2-layout">
+      <div className="rd2-main">
+        <section className={'rd2-hero '+(image?'has-image':'')} style={image?{backgroundImage:`linear-gradient(90deg,rgba(8,18,14,.96) 0%,rgba(8,18,14,.78) 39%,rgba(8,18,14,.18) 70%),url(${image})`}:undefined}>
+          <div className="rd2-hero-copy">
+            <span>GOOD AFTERNOON,</span>
+            <h1>Time to make<br/><em>today delicious!</em></h1>
+            <p>Restorapp pomaže da privučeš više gostiju, napraviš bolji sadržaj i razvijaš restoran — sve na jednom mestu.</p>
+            <div className="rd2-hero-actions">
+              <button className="rd2-primary" onClick={onCreate}><Sparkles size={17}/> Kreiraj novi sadržaj</button>
+              <button className="rd2-secondary" onClick={()=>onNavigate?.('creative')}><WandSparkles size={16}/> Pogledaj predloge</button>
             </div>
-          }):<div className="rd2-empty-list"><Sparkles size={20}/><span>Nema planiranih objava.</span></div>}
-        </div>
-      </article>
+          </div>
+          <div className="rd2-hero-script"><span>Great food</span><strong>brings people</strong><em>together</em></div>
+        </section>
 
-      <article className="rd2-card rd2-results">
-        <header><div><span>REZULTATI I UVIDI</span><h2>{demo?'28.6K':(averageDiscovery?averageDiscovery+'/100':'Nema podataka')}</h2></div><small>{demo?'Poslednjih 30 dana':'Discovery signal'}</small></header>
-        <div className="rd2-chart">
-          <svg viewBox="0 0 360 130" preserveAspectRatio="none" aria-hidden="true">
-            <defs><linearGradient id="rd2fill" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stopColor="#2f8b57" stopOpacity=".28"/><stop offset="100%" stopColor="#2f8b57" stopOpacity="0"/></linearGradient></defs>
-            <path d="M0 110 C28 94,42 82,68 88 S105 62,132 70 S172 48,198 58 S235 36,260 44 S310 24,360 12 L360 130 L0 130 Z" fill="url(#rd2fill)"/>
-            <path d="M0 110 C28 94,42 82,68 88 S105 62,132 70 S172 48,198 58 S235 36,260 44 S310 24,360 12" fill="none" stroke="#2f8b57" strokeWidth="3"/>
-          </svg>
-          <div className="rd2-axis"><span>1. ned</span><span>2. ned</span><span>3. ned</span><span>4. ned</span></div>
+        <section className="rd2-stats">
+          {stats.map((stat,index)=><article key={stat.label}>
+            <div className={'rd2-stat-icon s'+index}>{stat.icon==='users'?<Users size={20}/>:stat.icon==='reach'?<Instagram size={20}/>:stat.icon==='rating'?<Star size={20}/>:<CalendarDays size={20}/>}</div>
+            <div><span>{stat.label}</span><strong>{stat.value}</strong><small>{stat.detail}</small></div>
+            <b>{stat.delta}</b>
+            <div className={'rd2-mini-bars bars-'+index}>{Array.from({length:11}).map((_,i)=><i key={i} style={{height:(7+((i*7+index*5)%19))+'px'}}/>)}</div>
+          </article>)}
+        </section>
+
+        <section className="rd2-bottom-grid">
+          <article className="rd2-panel rd2-growth">
+            <header><div><h2>Guest growth</h2><span>Više gostiju, veće prilike.</span></div><button>Ovaj mesec <ChevronRight size={13}/></button></header>
+            <div className="rd2-growth-chart">
+              <svg viewBox="0 0 520 190" preserveAspectRatio="none" aria-hidden="true">
+                <defs><linearGradient id="rd2-growth-fill" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stopColor="#35a46a" stopOpacity=".28"/><stop offset="100%" stopColor="#35a46a" stopOpacity="0"/></linearGradient></defs>
+                <path d="M0 162 C48 118,72 142,105 112 S166 88,199 105 S263 68,302 80 S360 48,400 60 S463 38,520 22 L520 190 L0 190 Z" fill="url(#rd2-growth-fill)"/>
+                <path d="M0 162 C48 118,72 142,105 112 S166 88,199 105 S263 68,302 80 S360 48,400 60 S463 38,520 22" fill="none" stroke="#2e9f62" strokeWidth="4"/>
+                <circle cx="520" cy="22" r="7" fill="#2e9f62" stroke="#fff" strokeWidth="4"/>
+              </svg>
+              <div className="rd2-growth-bubble"><strong>{demo?'124':Math.max(approved+scheduled,posts.length)}</strong><span>{demo?'+28%':'aktivnosti'}</span></div>
+              <div className="rd2-growth-axis"><span>1. Mar</span><span>8. Mar</span><span>15. Mar</span><span>22. Mar</span><span>31. Mar</span></div>
+            </div>
+          </article>
+
+          <article className="rd2-panel rd2-toppost-card">
+            <header><h2>Top performing post</h2><button onClick={()=>onNavigate?.('insights')}>Prikaži sve <ChevronRight size={13}/></button></header>
+            <div className="rd2-toppost-image" style={topImage?{backgroundImage:`url(${topImage})`}:undefined}>
+              {!topImage&&<Sparkles size={28}/>}
+              <span>{demo?'12.4K reach':topPost?((topPost.discovery_score||0)+' score'):'Čeka rezultate'}</span>
+            </div>
+            <h3>{topPost?.title||primaryDish?.name||'Tvoj najbolji sadržaj'}</h3>
+            <p>{topPost?.caption?.slice(0,90)||'Ovde će se prikazati sadržaj koji ostvaruje najbolje rezultate.'}</p>
+            <div className="rd2-post-metrics"><span>♡ {demo?'1.2K':approved*24}</span><span>▢ {demo?'86':posts.length}</span><span>➤ {demo?'24':scheduled}</span></div>
+          </article>
+
+          <article className="rd2-panel rd2-quick">
+            <header><h2>Quick actions</h2></header>
+            <button onClick={()=>onNavigate?.('creative')}><Sparkles size={17}/><span>Generiši sadržaj (AI)</span><ChevronRight size={15}/></button>
+            <button onClick={()=>onNavigate?.('promotions')}><Megaphone size={17}/><span>Planiraj kampanju</span><ChevronRight size={15}/></button>
+            <button onClick={()=>onNavigate?.('menu')}><UtensilsCrossed size={17}/><span>Ažuriraj meni</span><ChevronRight size={15}/></button>
+            <button onClick={()=>onNavigate?.('publish')}><CalendarDays size={17}/><span>Upravljaj rasporedom</span><ChevronRight size={15}/></button>
+            <button onClick={()=>onNavigate?.('insights')}><BarChart3 size={17}/><span>Pogledaj analitiku</span><ChevronRight size={15}/></button>
+          </article>
+        </section>
+      </div>
+
+      <aside className="rd2-mobile-preview">
+        <header><div className="rd2-mobile-icon">▯</div><div><strong>Mobile Preview</strong><span>Kako tvoj restoran izgleda gostima.</span></div></header>
+        <div className="rd2-phone">
+          <div className="rd2-phone-notch"/>
+          <div className="rd2-phone-top"><img src="./restorapp-icon.svg" alt=""/><strong>Restorapp</strong><Bell size={15}/></div>
+          <div className="rd2-phone-hero" style={image?{backgroundImage:`linear-gradient(180deg,rgba(4,12,9,.08),rgba(4,12,9,.76)),url(${image})`}:undefined}>
+            <h3>Good food<br/>great stories</h3><p>Authentic taste.<br/>Real people.<br/>Your restaurant.</p>
+          </div>
+          <div className="rd2-phone-actions">
+            <button><UtensilsCrossed size={18}/><span>View Menu</span></button>
+            <button><CalendarDays size={18}/><span>Book a Table</span></button>
+            <button><Star size={18}/><span>Reviews</span></button>
+            <button><Instagram size={18}/><span>Follow Us</span></button>
+          </div>
+          <div className="rd2-phone-nav"><b>⌂</b><span>Menu</span><span>Social</span><span>Reserve</span><span>•••</span></div>
         </div>
-        <div className="rd2-toppost">
-          {topImage?<img src={topImage} alt=""/>:<span><Sparkles size={18}/></span>}
-          <div><small>Najuspešniji sadržaj</small><strong>{topPost?.title||'Čeka prve rezultate'}</strong><span>{demo?'12.4K dometa · 1.2K reakcija':topPost?((topPost.discovery_score||0)+' discovery score'):'Objavi prvi sadržaj'}</span></div>
-          <ChevronRight size={16}/>
-        </div>
-      </article>
-    </section>
+        <div className="rd2-mobile-script">Same great food.<br/><strong>Everywhere.</strong></div>
+      </aside>
+    </div>
   </div>
 }
 
@@ -127,14 +145,4 @@ function resolveImage(post:Post|null|undefined,items:MenuItem[]){
   const meta=post.generation_meta?.image_url
   if(typeof meta==='string'&&meta)return meta
   return items.find(item=>item.id===post.menu_item_id)?.image_url||null
-}
-function formatDate(value:string,timeZone?:string|null){
-  try{return new Intl.DateTimeFormat('sr-Latn-RS',{timeZone:timeZone||'Europe/Belgrade',weekday:'short',hour:'2-digit',minute:'2-digit'}).format(new Date(value))}
-  catch{return new Date(value).toLocaleString('sr-RS')}
-}
-function statusLabel(status:Post['status']){
-  if(status==='approved')return 'Spremno'
-  if(status==='published')return 'Objavljeno'
-  if(status==='rejected')return 'Odbijeno'
-  return 'U pripremi'
 }
