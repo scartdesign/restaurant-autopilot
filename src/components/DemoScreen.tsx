@@ -3,6 +3,7 @@ import { ArrowLeft, BarChart3, CalendarClock, CalendarDays, CheckCircle2, Clock3
 import { VisualStudio } from './VisualStudio'
 import { BrandKit } from './BrandKit'
 import { DemoOwner } from './DemoOwner'
+import { RestorappDashboardV2 } from './RestorappDashboardV2'
 import type { MenuItem, Post, Restaurant } from '../types'
 
 type DemoTab = 'content' | 'studio' | 'brand' | 'publish' | 'insights' | 'menu' | 'promotions' | 'settings' | 'owner'
@@ -97,6 +98,15 @@ export function DemoScreen({ onExit }: { onExit: () => void }) {
 
 function DemoContent({ approved, setApproved, notify }: { approved: string[]; setApproved: (value: string[]) => void; notify: (value: string) => void }) {
   return <>
+    <RestorappDashboardV2
+      restaurant={demoRestaurant}
+      menuItems={demoMenu}
+      posts={demoVisualPosts}
+      demo
+      heroImage={food.pizza}
+      onCreate={()=>notify('Demo: Creative AI je spreman za novi sadržaj.')}
+      onNavigate={(target)=>notify(target==='publish'?'Otvaram plan objava.':target==='menu'?'Otvaram meni i ponude.':'Demo akcija je spremna.')}
+    />
     <section className="wow-hero wow-demo-hero has-image" style={{ backgroundImage: `linear-gradient(90deg, rgba(7,12,9,.97), rgba(7,12,9,.68) 47%, rgba(7,12,9,.10)), url(${food.pizza})` }}>
       <div className="wow-hero-copy"><div className="hero-kicker"><span className="live-dot" /> AUTOPILOT ACTIVE <b className="auto-week-on">AUTO WEEK ON</b></div><span className="wow-brand-label">BELLA NAPOLI</span><h1>Prava italijanska priča u tvom gradu.</h1><p>Fotografije, sadržaj, termini i lokalni discovery — spremni bez svakodnevnog cimanja.</p><div className="wow-hero-actions"><button className="wow-primary" onClick={() => notify('Nova nedelja je generisana: 5 premium predloga sa terminima.')}><Sparkles size={18} /> Kreiraj novi sadržaj</button><div className="wow-hero-meta"><span><MapPin size={14} /> Vračar, Beograd</span><span><Hash size={14} /> Smart Discovery</span></div></div></div>
       <div className="wow-score-card"><div><TrendingUp size={19} /><span>Discovery score</span></div><strong>94<small>/100</small></strong><p>plan + vreme + vizual spremni</p></div>
