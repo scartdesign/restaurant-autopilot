@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 112" role="img" aria-labelledby="title desc">
+<title id="title">Restorapp</title>
+<desc id="desc">Restorapp logo with golden restaurant monogram and wordmark.</desc>
+<g fill="none" stroke="#D8A84F" stroke-linecap="round" stroke-linejoin="round">
+  <path d="M20 18v50M31 18v50M42 18v50M20 44h22M31 68v25" stroke-width="5"/>
+  <path d="M60 17h29c21 0 35 11 35 29 0 13-8 23-20 27l23 25" stroke-width="6"/>
+  <path d="M60 17v81M60 56h29c11 0 18-4 18-11s-7-11-18-11H74" stroke-width="6"/>
+  <path d="M13 103h121" stroke-width="3"/>
+</g>
+<text x="153" y="58" font-family="Inter,Arial,sans-serif" font-size="45" font-weight="800" letter-spacing="-1.7" fill="#F8F6F1">Restor<tspan fill="#D8A84F">app</tspan></text>
+<text x="155" y="84" font-family="Inter,Arial,sans-serif" font-size="11.5" font-weight="700" letter-spacing="3.2" fill="#AEBAB4">SMART RESTAURANTS GROW FASTER</text>
+</svg>
