@@ -12,7 +12,7 @@ export function LandingScreen({onAuth,onDemo}:{onAuth:()=>void;onDemo:()=>void})
   useEffect(()=>{void load()},[])
   async function load(){const{data}=await supabase.from('sales_plans').select('*').eq('active',true).eq('public',true).order('sort_order');setPlans((data||[]) as SalesPlan[])}
   const visible=useMemo(()=>plans.filter(p=>p.billing_interval===interval),[plans,interval])
-  function choosePlan(plan:SalesPlan){sessionStorage.setItem('restorapp-intended-plan',plan.code);onAuth()}
+  function choosePlan(plan:SalesPlan){localStorage.setItem('restorapp-intended-plan',plan.code);onAuth()}
   return <div className="public-landing">
     <header className="landing-nav"><div className="landing-brand"><img src="./restorapp-logo.webp" alt="Restorapp" /></div><nav><a href="#kako-radi">Kako radi</a><a href="#paketi">Paketi</a><button className="secondary" onClick={onDemo}><Play size={15}/> Demo</button><button className="primary" onClick={onAuth}>Prijava / Registracija</button></nav></header>
 
