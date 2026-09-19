@@ -1,5 +1,6 @@
 import { BarChart3, Bell, CalendarDays, ChevronRight, Instagram, Megaphone, Search, Sparkles, Star, TrendingUp, Users, UtensilsCrossed, WandSparkles } from 'lucide-react'
 import type { MenuItem, Post, Restaurant } from '../types'
+import { RestorappLogo } from './RestorappLogo'
 
 type NavTarget='menu'|'publish'|'settings'|'billing'|'creative'|'promotions'|'insights'|'notifications'
 
@@ -120,7 +121,7 @@ export function RestorappDashboardV2({
         <header><div className="rd2-mobile-icon">▯</div><div><strong>Mobile Preview</strong><span>Kako tvoj restoran izgleda gostima.</span></div></header>
         <div className="rd2-phone">
           <div className="rd2-phone-notch"/>
-          <div className="rd2-phone-top"><img src="./restorapp-icon.webp" alt=""/><strong>Restorapp</strong><Bell size={15}/></div>
+          <div className="rd2-phone-top"><RestorappLogo variant="icon" surface="dark" className="rd2-phone-logo"/><strong>Restorapp</strong><Bell size={15}/></div>
           <div className="rd2-phone-hero" style={image?{backgroundImage:`linear-gradient(180deg,rgba(4,12,9,.08),rgba(4,12,9,.76)),url(${image})`}:undefined}>
             <h3>Good food<br/>great stories</h3><p>Authentic taste.<br/>Real people.<br/>Your restaurant.</p>
           </div>
