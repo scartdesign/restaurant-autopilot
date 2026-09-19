@@ -419,7 +419,7 @@ function App() {
     {showIosInstall&&<div className="pwa-ios-backdrop" onMouseDown={()=>setShowIosInstall(false)}><div className="pwa-ios-card" onMouseDown={e=>e.stopPropagation()}><div className="pwa-ios-icon"><Smartphone size={26}/></div><button className="icon-button pwa-ios-close" onClick={()=>setShowIosInstall(false)}><X size={16}/></button><span>IPHONE / IPAD</span><h3>Dodaj Restorapp na početni ekran</h3><ol><li>U Safariju dodirni <b>Share</b> <Share2 size={14}/></li><li>Izaberi <b>Add to Home Screen</b></li><li>Potvrdi sa <b>Add</b></li></ol><p>Posle toga aplikacija se otvara preko svoje ikonice, bez browser trake.</p></div></div>}
 
     <main className={`main-area ${activeTab==='admin'?'admin-main-area':''}`}>
-      {activeTab!=='admin'&&activeTab!=='dashboard'&&<div className="restorapp-topbar">
+      {activeTab!=='admin'&&activeTab!=='dashboard'&&activeTab!=='launch'&&<div className="restorapp-topbar">
         <div className="restorapp-topbar-copy"><span>{activeSectionLabel}</span><strong>{restaurant.name}</strong><small>{restaurant.neighborhood||restaurant.city||restaurant.cuisine_type||'Restoran'} · {planName}</small></div>
         <div className="restorapp-topbar-actions">
           <button className="restorapp-topbar-button" onClick={()=>void openTab('notifications')} title="Obaveštenja"><Bell size={18}/>{unreadNotifications>0&&<b>{unreadNotifications>99?'99+':unreadNotifications}</b>}</button>
