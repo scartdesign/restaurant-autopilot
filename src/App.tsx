@@ -30,7 +30,8 @@ const NotificationsCenter = lazy(() => import('./components/NotificationsCenter'
 type BeforeInstallPromptEvent = Event & { prompt:()=>Promise<void>; userChoice:Promise<{outcome:'accepted'|'dismissed';platform:string}> }
 type Tab = 'launch' | 'dashboard' | 'creative' | 'studio' | 'brand' | 'publish' | 'insights' | 'menu' | 'promotions' | 'settings' | 'support' | 'notifications' | 'billing' | 'admin'
 type AppControlsLite = { maintenance_mode:boolean; maintenance_message:string|null; sales_open:boolean; signup_open:boolean; announcement_enabled:boolean; announcement_text:string|null; announcement_tone:'info'|'success'|'warning'; app_version:string }
-const ACTIVE_RESTAURANT_KEY = 'restorapp-active-restaurant'\nconst LEGACY_ACTIVE_RESTAURANT_KEY = 'restaurant-autopilot-active-restaurant'
+const ACTIVE_RESTAURANT_KEY = 'restorapp-active-restaurant'
+const LEGACY_ACTIVE_RESTAURANT_KEY = 'restaurant-autopilot-active-restaurant'
 const defaultControls:AppControlsLite={maintenance_mode:false,maintenance_message:null,sales_open:true,signup_open:true,announcement_enabled:false,announcement_text:null,announcement_tone:'info',app_version:'1.0'}
 
 function App() {
@@ -133,14 +134,16 @@ function App() {
     const updateHandler=()=>setPwaUpdateReady(true)
     window.addEventListener('beforeinstallprompt',installHandler)
     window.addEventListener('appinstalled',installedHandler)
-    window.addEventListener('restorapp-sw-update',updateHandler)\n    window.addEventListener('restaurant-autopilot-sw-update',updateHandler)
+    window.addEventListener('restorapp-sw-update',updateHandler)
+    window.addEventListener('restaurant-autopilot-sw-update',updateHandler)
     const media=window.matchMedia('(display-mode: standalone)')
     const modeHandler=()=>setPwaInstalled(isStandaloneApp())
     media.addEventListener?.('change',modeHandler)
     return()=>{
       window.removeEventListener('beforeinstallprompt',installHandler)
       window.removeEventListener('appinstalled',installedHandler)
-      window.removeEventListener('restorapp-sw-update',updateHandler)\n      window.removeEventListener('restaurant-autopilot-sw-update',updateHandler)
+      window.removeEventListener('restorapp-sw-update',updateHandler)
+      window.removeEventListener('restaurant-autopilot-sw-update',updateHandler)
       media.removeEventListener?.('change',modeHandler)
     }
   },[])
@@ -191,7 +194,8 @@ function App() {
     } else { setMenuItems([]); setPosts([]) }
     const onboardingWarning = sessionStorage.getItem('restorapp-onboarding-warning') || sessionStorage.getItem('restaurant-autopilot-onboarding-warning')
     if (onboardingWarning) {
-      sessionStorage.removeItem('restorapp-onboarding-warning')\n      sessionStorage.removeItem('restaurant-autopilot-onboarding-warning')
+      sessionStorage.removeItem('restorapp-onboarding-warning')
+      sessionStorage.removeItem('restaurant-autopilot-onboarding-warning')
       setNotice(onboardingWarning)
     }
   }
