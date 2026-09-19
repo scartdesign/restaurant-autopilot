@@ -355,7 +355,7 @@ function App() {
   const remainingRestaurants = restaurantLimit === null ? null : Math.max(0, restaurantLimit - restaurants.length)
   const planName = isSuperadmin ? 'OWNER' : entitlement?.plan_name || 'Aktivan paket'
   const generationUsage = useMemo(() => entitlement?.generation_limit == null ? null : `${entitlement.generated_this_month || 0}/${entitlement.generation_limit}`, [entitlement])
-  const activeSectionLabel = ({launch:'Start',dashboard:'Sadržaj',creative:'Creative AI',studio:'Visual Studio',brand:'Brend',publish:'Publish Center',insights:'Rezultati',menu:'Meni',promotions:'Akcije',settings:'Podešavanja',support:'Podrška',notifications:'Obaveštenja',billing:'Paket / licenca',admin:'OWNER Control'} as Record<Tab,string>)[activeTab]
+  const activeSectionLabel = ({launch:'Dashboard',dashboard:'Content',creative:'AI Assistant',studio:'Visual Studio',brand:'Brend',publish:'Social Media',insights:'Analytics',menu:'Menu & Offers',promotions:'Campaigns',settings:'Podešavanja',support:'Podrška',notifications:'Obaveštenja',billing:'Paket / licenca',admin:'OWNER Control'} as Record<Tab,string>)[activeTab]
 
   if (legalParam && ['terms','privacy','ai','refund'].includes(legalParam)) return <LegalScreen kind={legalParam} onBack={()=>{window.history.replaceState({},'',window.location.pathname);window.location.reload()}} />
   if (demo) return <Suspense fallback={<LazyScreenFallback label="Učitavam demo…" />}><DemoScreen onExit={() => { const next = new URL(window.location.href); next.searchParams.delete('demo'); window.history.replaceState({}, '', `${next.pathname}${next.search}${next.hash}`); setDemo(false) }} /></Suspense>
@@ -385,15 +385,15 @@ function App() {
       <div className={`autopilot-status ${isSuperadmin?'owner-status':''}`}><span className="live-dot"/> {isSuperadmin?'OWNER · SUPERADMIN':`${planName.toUpperCase()} · AKTIVAN`}</div>
       {!isSuperadmin && <div className="sidebar-plan-mini"><span>{restaurants.length}/{restaurantLimit || '∞'} lokacija</span>{generationUsage&&<span>{generationUsage} objava</span>}{remainingRestaurants===0&&restaurantLimit!==null?<small>Za više lokacija promeni paket.</small>:null}</div>}
       <nav>
-        <button className={activeTab==='launch'?'nav-active launch-nav':''} onClick={()=>void openTab('launch')}><Rocket size={18}/> Start <span className="nav-beta">100%</span></button>
-        <button className={activeTab==='dashboard'?'nav-active':''} onClick={()=>void openTab('dashboard')}><CalendarDays size={18}/> Sadržaj</button>
-        <button className={activeTab==='creative'?'nav-active creative-nav':''} onClick={()=>void openTab('creative')}><Sparkles size={18}/> Creative AI <span className="nav-beta">NEW</span></button>
+        <button className={activeTab==='launch'?'nav-active launch-nav':''} onClick={()=>void openTab('launch')}><Rocket size={18}/> Dashboard <span className="nav-beta">100%</span></button>
+        <button className={activeTab==='dashboard'?'nav-active':''} onClick={()=>void openTab('dashboard')}><CalendarDays size={18}/> Content</button>
+        <button className={activeTab==='creative'?'nav-active creative-nav':''} onClick={()=>void openTab('creative')}><Sparkles size={18}/> AI Assistant <span className="nav-beta">AI</span></button>
         <button className={activeTab==='studio'?'nav-active':''} onClick={()=>void openTab('studio')}><ImageIcon size={18}/> Visual Studio</button>
         <button className={(activeTab==='brand'?'nav-active brand-nav':'brand-nav')+' mobile-hide'} onClick={()=>void openTab('brand')}><Palette size={18}/> Brend <span className="nav-beta">LOGO</span></button>
-        <button className={activeTab==='publish'?'nav-active':''} onClick={()=>void openTab('publish')}><Send size={18}/> Publish Center</button>
-        <button className={(activeTab==='insights'?'nav-active insights-nav':'insights-nav')+' mobile-hide'} onClick={()=>void openTab('insights')}><BarChart3 size={18}/> Rezultati <span className="nav-beta">DATA</span></button>
-        <button className={(activeTab==='menu'?'nav-active':'')+' mobile-hide'} onClick={()=>void openTab('menu')}><UtensilsCrossed size={18}/> Meni</button>
-        <button className={`${activeTab==='promotions'?'nav-active ':''}${canUseCampaigns?'':'locked-nav'} mobile-hide`} onClick={()=>void openTab('promotions')}><Megaphone size={18}/> Akcije {!canUseCampaigns&&<span className="nav-beta"><LockKeyhole size={9}/> PRO</span>}</button>
+        <button className={activeTab==='publish'?'nav-active':''} onClick={()=>void openTab('publish')}><Send size={18}/> Social Media</button>
+        <button className={(activeTab==='insights'?'nav-active insights-nav':'insights-nav')+' mobile-hide'} onClick={()=>void openTab('insights')}><BarChart3 size={18}/> Analytics <span className="nav-beta">DATA</span></button>
+        <button className={(activeTab==='menu'?'nav-active':'')+' mobile-hide'} onClick={()=>void openTab('menu')}><UtensilsCrossed size={18}/> Menu & Offers</button>
+        <button className={`${activeTab==='promotions'?'nav-active ':''}${canUseCampaigns?'':'locked-nav'} mobile-hide`} onClick={()=>void openTab('promotions')}><Megaphone size={18}/> Campaigns {!canUseCampaigns&&<span className="nav-beta"><LockKeyhole size={9}/> PRO</span>}</button>
         <button className={(activeTab==='billing'?'nav-active billing-nav':'billing-nav')+' mobile-hide'} onClick={()=>void openTab('billing')}><BadgeEuro size={18}/> Paket / licenca</button>
         <button className={(activeTab==='settings'?'nav-active':'')+' mobile-hide'} onClick={()=>void openTab('settings')}><Settings size={18}/> Podešavanja</button>
         <button className={(activeTab==='support'?'nav-active support-nav':'support-nav')+' mobile-hide'} onClick={()=>void openTab('support')}><LifeBuoy size={18}/> Podrška</button>
@@ -419,7 +419,7 @@ function App() {
     {showIosInstall&&<div className="pwa-ios-backdrop" onMouseDown={()=>setShowIosInstall(false)}><div className="pwa-ios-card" onMouseDown={e=>e.stopPropagation()}><div className="pwa-ios-icon"><Smartphone size={26}/></div><button className="icon-button pwa-ios-close" onClick={()=>setShowIosInstall(false)}><X size={16}/></button><span>IPHONE / IPAD</span><h3>Dodaj Restorapp na početni ekran</h3><ol><li>U Safariju dodirni <b>Share</b> <Share2 size={14}/></li><li>Izaberi <b>Add to Home Screen</b></li><li>Potvrdi sa <b>Add</b></li></ol><p>Posle toga aplikacija se otvara preko svoje ikonice, bez browser trake.</p></div></div>}
 
     <main className={`main-area ${activeTab==='admin'?'admin-main-area':''}`}>
-      {activeTab!=='admin'&&<div className="restorapp-topbar">
+      {activeTab!=='admin'&&activeTab!=='dashboard'&&<div className="restorapp-topbar">
         <div className="restorapp-topbar-copy"><span>{activeSectionLabel}</span><strong>{restaurant.name}</strong><small>{restaurant.neighborhood||restaurant.city||restaurant.cuisine_type||'Restoran'} · {planName}</small></div>
         <div className="restorapp-topbar-actions">
           <button className="restorapp-topbar-button" onClick={()=>void openTab('notifications')} title="Obaveštenja"><Bell size={18}/>{unreadNotifications>0&&<b>{unreadNotifications>99?'99+':unreadNotifications}</b>}</button>
