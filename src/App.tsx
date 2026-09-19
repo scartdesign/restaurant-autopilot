@@ -355,6 +355,7 @@ function App() {
   const remainingRestaurants = restaurantLimit === null ? null : Math.max(0, restaurantLimit - restaurants.length)
   const planName = isSuperadmin ? 'OWNER' : entitlement?.plan_name || 'Aktivan paket'
   const generationUsage = useMemo(() => entitlement?.generation_limit == null ? null : `${entitlement.generated_this_month || 0}/${entitlement.generation_limit}`, [entitlement])
+  const activeSectionLabel = ({launch:'Start',dashboard:'Sadržaj',creative:'Creative AI',studio:'Visual Studio',brand:'Brend',publish:'Publish Center',insights:'Rezultati',menu:'Meni',promotions:'Akcije',settings:'Podešavanja',support:'Podrška',notifications:'Obaveštenja',billing:'Paket / licenca',admin:'OWNER Control'} as Record<Tab,string>)[activeTab]
 
   if (legalParam && ['terms','privacy','ai','refund'].includes(legalParam)) return <LegalScreen kind={legalParam} onBack={()=>{window.history.replaceState({},'',window.location.pathname);window.location.reload()}} />
   if (demo) return <Suspense fallback={<LazyScreenFallback label="Učitavam demo…" />}><DemoScreen onExit={() => { const next = new URL(window.location.href); next.searchParams.delete('demo'); window.history.replaceState({}, '', `${next.pathname}${next.search}${next.hash}`); setDemo(false) }} /></Suspense>
@@ -418,6 +419,14 @@ function App() {
     {showIosInstall&&<div className="pwa-ios-backdrop" onMouseDown={()=>setShowIosInstall(false)}><div className="pwa-ios-card" onMouseDown={e=>e.stopPropagation()}><div className="pwa-ios-icon"><Smartphone size={26}/></div><button className="icon-button pwa-ios-close" onClick={()=>setShowIosInstall(false)}><X size={16}/></button><span>IPHONE / IPAD</span><h3>Dodaj Restorapp na početni ekran</h3><ol><li>U Safariju dodirni <b>Share</b> <Share2 size={14}/></li><li>Izaberi <b>Add to Home Screen</b></li><li>Potvrdi sa <b>Add</b></li></ol><p>Posle toga aplikacija se otvara preko svoje ikonice, bez browser trake.</p></div></div>}
 
     <main className={`main-area ${activeTab==='admin'?'admin-main-area':''}`}>
+      {activeTab!=='admin'&&<div className="restorapp-topbar">
+        <div className="restorapp-topbar-copy"><span>{activeSectionLabel}</span><strong>{restaurant.name}</strong><small>{restaurant.neighborhood||restaurant.city||restaurant.cuisine_type||'Restoran'} · {planName}</small></div>
+        <div className="restorapp-topbar-actions">
+          <button className="restorapp-topbar-button" onClick={()=>void openTab('notifications')} title="Obaveštenja"><Bell size={18}/>{unreadNotifications>0&&<b>{unreadNotifications>99?'99+':unreadNotifications}</b>}</button>
+          <button className="restorapp-topbar-button" onClick={()=>void openTab('settings')} title="Podešavanja"><Settings size={18}/></button>
+          <button className="restorapp-profile-chip" onClick={()=>void openTab('brand')} title="Otvori brend">{restaurant.logo_url?<img src={restaurant.logo_url} alt=""/>:<span style={{background:restaurant.primary_color||undefined}}>{restaurant.name.slice(0,1).toUpperCase()}</span>}<div><strong>{restaurant.name}</strong><small>{planName}</small></div></button>
+        </div>
+      </div>}
       {appControls.announcement_enabled&&appControls.announcement_text&&<div className={`global-announcement ${appControls.announcement_tone}`}><Megaphone size={15}/><span>{appControls.announcement_text}</span></div>}
       {notice&&<div className="notice"><span>{notice}</span><button onClick={()=>setNotice('')}><X size={15}/></button></div>}
       <Suspense fallback={<LazyScreenFallback label="Učitavam modul…" />}>
