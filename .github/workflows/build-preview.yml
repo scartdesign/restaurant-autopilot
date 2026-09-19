@@ -48,6 +48,11 @@ jobs:
           tr -d '\r' < /tmp/html.headers > /tmp/html.clean
           grep -Eiq '^content-type: *text/html' /tmp/html.clean
           grep -Fq '<div id="root"></div>' /tmp/app.html
+          grep -Fq 'Restorapp' /tmp/app.html
+          if grep -Fq 'Restaurant Autopilot' /tmp/app.html; then
+            echo "Legacy customer-facing brand found in preview HTML"
+            exit 1
+          fi
           JS_PATH=$(grep -oE 'src="./assets/[^"]+\.js"' /tmp/app.html | head -1 | cut -d'"' -f2)
           CSS_PATH=$(grep -oE 'href="./assets/[^"]+\.css"' /tmp/app.html | head -1 | cut -d'"' -f2)
           test -n "$JS_PATH"
@@ -62,6 +67,11 @@ jobs:
           grep -Eiq '^content-type: *text/css' /tmp/css.clean
           test -s /tmp/app.js
           test -s /tmp/app.css
+          grep -Fq 'Restorapp' /tmp/app.js
+          if grep -Fq 'Restaurant Autopilot' /tmp/app.js; then
+            echo "Legacy customer-facing brand found in compiled app"
+            exit 1
+          fi
           grep -Fq 'INCIDENT CENTER DEMO' /tmp/app.js
           grep -Fq 'Potvrdi proveru' /tmp/app.js
           grep -Fq 'Vrati u queue' /tmp/app.js
@@ -70,5 +80,12 @@ jobs:
           test -n "$PUBLISH_CHUNK"
           curl --max-time 20 --retry 4 --retry-delay 2 --retry-all-errors -fsSL "$BASE/assets/$PUBLISH_CHUNK" -o /tmp/publish.js
           grep -Fq 'OWNER provera' /tmp/publish.js
-          echo "OWNER Incident Center + risky retry preview markers OK"
+          CREATIVE_CHUNK=$(grep -oE 'CreativeHub-[A-Za-z0-9_-]+\.js' /tmp/app.js | head -1)
+          test -n "$CREATIVE_CHUNK"
+          curl --max-time 20 --retry 4 --retry-delay 2 --retry-all-errors -fsSL "$BASE/assets/$CREATIVE_CHUNK" -o /tmp/creative.js
+          if grep -Fq 'restaurant-autopilot-ai-' /tmp/creative.js; then
+            echo "Legacy AI download filename found in compiled Creative Hub"
+            exit 1
+          fi
+          echo "Restorapp branding + OWNER Incident Center + risky retry preview markers OK"
           echo "Public preview OK: $BASE/index.html"
