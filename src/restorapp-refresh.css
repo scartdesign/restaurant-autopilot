@@ -722,3 +722,25 @@ input:focus,select:focus,textarea:focus{border-color:#c9a255!important;box-shado
   .sidebar .brand-mark-restorapp img,
   .wow-demo-shell .brand-mark-restorapp img{max-width:178px!important}
 }
+
+/* Sidebar logo sizing refinement */
+.sidebar .brand-mark-restorapp,
+.wow-demo-shell .brand-mark-restorapp{
+  margin:4px 0 18px!important;
+  padding:0!important;
+}
+.sidebar .brand-mark-restorapp img,
+.wow-demo-shell .brand-mark-restorapp img{
+  width:224px!important;
+  max-width:224px!important;
+  margin:0 auto!important;
+}
+@media(max-width:900px){
+  .sidebar .brand-mark-restorapp,
+  .wow-demo-shell .brand-mark-restorapp{width:188px!important}
+  .sidebar .brand-mark-restorapp img,
+  .wow-demo-shell .brand-mark-restorapp img{
+    width:188px!important;
+    max-width:188px!important;
+  }
+}
