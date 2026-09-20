@@ -29,6 +29,23 @@ jobs:
           grep -Fq 'JOB_ALREADY_PROCESSING' supabase/functions/meta-publisher/index.ts
           grep -Fq 'USE_RETRY_FLOW' supabase/functions/meta-publisher/index.ts
           grep -Fq 'PUBLISH_STATE_CHANGED' supabase/functions/meta-publisher/index.ts
+      - name: Production E2E dry-run safety guard
+        shell: bash
+        run: |
+          set -euo pipefail
+          FILE="supabase/migrations/20260921012000_add_production_e2e_dry_run.sql"
+          grep -Fq 'admin_production_e2e_dry_run' "$FILE"
+          grep -Fq "'external_calls',false" "$FILE"
+          grep -Fq "'publishes',false" "$FILE"
+          grep -Fq "'mode','read_only'" "$FILE"
+          if grep -Eiq 'net\\.http_(get|post)|http_request|functions/v1/.+body' "$FILE"; then
+            echo "Production E2E dry-run must never call an external API"
+            exit 1
+          fi
+          if grep -Eiq '^[[:space:]]*(insert|update|delete)[[:space:]]' "$FILE"; then
+            echo "Production E2E dry-run migration contains a data mutation"
+            exit 1
+          fi
       - name: Checkout and Restorapp branding regression guards
         shell: bash
         run: |
