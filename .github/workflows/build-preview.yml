@@ -76,6 +76,8 @@ jobs:
           grep -Fq 'Potvrdi proveru' /tmp/app.js
           grep -Fq 'Vrati u queue' /tmp/app.js
           grep -Fq 'Obavesti vlasnika' /tmp/app.js
+          grep -Fq 'E2E dry-run' /tmp/app.js
+          grep -Fq 'READ-ONLY E2E DRY-RUN' /tmp/app.js
           PUBLISH_CHUNK=$(grep -oE 'PublishCenter-[A-Za-z0-9_-]+\.js' /tmp/app.js | head -1)
           test -n "$PUBLISH_CHUNK"
           curl --max-time 20 --retry 4 --retry-delay 2 --retry-all-errors -fsSL "$BASE/assets/$PUBLISH_CHUNK" -o /tmp/publish.js
