@@ -61,7 +61,7 @@ export function DemoScreen({ onExit }: { onExit: () => void }) {
     <div className="app-shell demo-shell wow-demo-shell">
       <aside className="sidebar sidebar-pro">
         <div>
-          <div className="brand-mark brand-mark-restorapp"><img src="./restorapp-logo.webp" alt="Restorapp" /></div>
+          <div className="brand-mark brand-mark-restorapp"><img src="./restorapp-logo-sidebar.webp" alt="Restorapp" /></div>
           <div className="restaurant-chip"><img className="sidebar-logo" src={demoLogo} alt="" /><div><strong>Bella Napoli</strong><small>Vračar · Beograd</small></div></div>
           <div className="autopilot-status"><span className="live-dot" /> AUTOPILOT ACTIVE · AUTO WEEK ON</div>
           <nav>
