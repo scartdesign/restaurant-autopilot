@@ -78,6 +78,8 @@ jobs:
           grep -Fq 'Obavesti vlasnika' /tmp/app.js
           grep -Fq 'E2E dry-run' /tmp/app.js
           grep -Fq 'READ-ONLY E2E DRY-RUN' /tmp/app.js
+          grep -Fq 'RELEASE GATE DEMO' /tmp/app.js
+          grep -Fq 'Meta publish E2E' /tmp/app.js
           PUBLISH_CHUNK=$(grep -oE 'PublishCenter-[A-Za-z0-9_-]+\.js' /tmp/app.js | head -1)
           test -n "$PUBLISH_CHUNK"
           curl --max-time 20 --retry 4 --retry-delay 2 --retry-all-errors -fsSL "$BASE/assets/$PUBLISH_CHUNK" -o /tmp/publish.js
@@ -89,5 +91,5 @@ jobs:
             echo "Legacy AI download filename found in compiled Creative Hub"
             exit 1
           fi
-          echo "Restorapp branding + OWNER Incident Center + risky retry preview markers OK"
+          echo "Restorapp branding + OWNER Incident Center + Release Gate + risky retry preview markers OK"
           echo "Public preview OK: $BASE/index.html"
