@@ -866,3 +866,14 @@ input:focus,select:focus,textarea:focus{border-color:#c9a255!important;box-shado
     max-width:none!important;
   }
 }
+
+/* Inline Restorapp sidebar logo: no external image, no crop/cache path */
+.sidebar .brand-mark-restorapp .restorapp-sidebar-logo-svg,
+.wow-demo-shell .brand-mark-restorapp .restorapp-sidebar-logo-svg{
+  display:block!important;
+  width:100%!important;
+  height:auto!important;
+  min-width:0!important;
+  max-width:none!important;
+  overflow:visible!important;
+}
