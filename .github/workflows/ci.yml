@@ -46,6 +46,18 @@ jobs:
             echo "Production E2E dry-run migration contains a data mutation"
             exit 1
           fi
+      - name: OWNER audit feed read-only guard
+        shell: bash
+        run: |
+          set -euo pipefail
+          FILE="supabase/migrations/20260921020000_add_owner_audit_feed.sql"
+          grep -Fq 'admin_owner_audit_feed' "$FILE"
+          grep -Fq 'from public.admin_audit_log' "$FILE"
+          grep -Fq 'if not private.is_superadmin()' "$FILE"
+          if grep -Eiq '^[[:space:]]*(insert|update|delete)[[:space:]]' "$FILE"; then
+            echo "OWNER audit feed must remain read-only"
+            exit 1
+          fi
       - name: Checkout and Restorapp branding regression guards
         shell: bash
         run: |
