@@ -819,3 +819,50 @@ input:focus,select:focus,textarea:focus{border-color:#c9a255!important;box-shado
     max-width:100%!important;
   }
 }
+
+/* CANONICAL Restorapp sidebar logo — keep the full wordmark visible */
+.sidebar .brand-mark-restorapp,
+.wow-demo-shell .brand-mark-restorapp{
+  display:block!important;
+  width:100%!important;
+  max-width:none!important;
+  min-width:0!important;
+  min-height:0!important;
+  height:auto!important;
+  margin:0 0 18px!important;
+  padding:0!important;
+  border:0!important;
+  border-radius:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+  overflow:visible!important;
+  box-sizing:border-box!important;
+}
+.sidebar .brand-mark-restorapp .restorapp-sidebar-logo,
+.wow-demo-shell .brand-mark-restorapp .restorapp-sidebar-logo{
+  display:block!important;
+  width:100%!important;
+  max-width:none!important;
+  min-width:0!important;
+  height:auto!important;
+  max-height:none!important;
+  margin:0!important;
+  padding:0!important;
+  object-fit:contain!important;
+  object-position:center center!important;
+  transform:none!important;
+  clip-path:none!important;
+  filter:none!important;
+}
+@media(max-width:900px){
+  .sidebar .brand-mark-restorapp,
+  .wow-demo-shell .brand-mark-restorapp{
+    width:100%!important;
+    margin:0 0 16px!important;
+  }
+  .sidebar .brand-mark-restorapp .restorapp-sidebar-logo,
+  .wow-demo-shell .brand-mark-restorapp .restorapp-sidebar-logo{
+    width:100%!important;
+    max-width:none!important;
+  }
+}
