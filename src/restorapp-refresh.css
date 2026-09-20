@@ -767,3 +767,26 @@ input:focus,select:focus,textarea:focus{border-color:#c9a255!important;box-shado
     max-width:180px!important;
   }
 }
+
+/* Definitive sidebar logo fit: padded source artwork, no clipping */
+.sidebar .brand-mark-restorapp,
+.wow-demo-shell .brand-mark-restorapp{
+  padding:0!important;
+  overflow:visible!important;
+}
+.sidebar .brand-mark-restorapp img,
+.wow-demo-shell .brand-mark-restorapp img{
+  display:block!important;
+  width:224px!important;
+  max-width:224px!important;
+  height:auto!important;
+  margin:0 auto!important;
+  object-fit:contain!important;
+}
+@media(max-width:900px){
+  .sidebar .brand-mark-restorapp img,
+  .wow-demo-shell .brand-mark-restorapp img{
+    width:188px!important;
+    max-width:188px!important;
+  }
+}
