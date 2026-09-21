@@ -82,6 +82,8 @@ jobs:
           grep -Fq 'Meta publish E2E' /tmp/app.js
           grep -Fq 'ACTION HISTORY DEMO' /tmp/app.js
           grep -Fq 'Potvrđen Meta manual review' /tmp/app.js
+          grep -Fq 'Prva jela za Autopilot' /tmp/app.js
+          grep -Fq 'Sa jednim HERO jelom Restorapp odmah ima fokus' /tmp/app.js
           DEMO_CHUNK=$(grep -oE 'DemoScreen-[A-Za-z0-9_-]+\.js' /tmp/app.js | head -1)
           test -n "$DEMO_CHUNK"
           curl --max-time 20 --retry 4 --retry-delay 2 --retry-all-errors -fsSL "$BASE/assets/$DEMO_CHUNK" -o /tmp/demo.js
@@ -102,5 +104,5 @@ jobs:
             echo "Legacy AI download filename found in compiled Creative Hub"
             exit 1
           fi
-          echo "Restorapp branding + customer Launch Center + interactive Meta safety demo + OWNER ops markers OK"
+          echo "Restorapp branding + starter-menu onboarding + Launch Center + interactive Meta safety demo + OWNER ops markers OK"
           echo "Public preview OK: $BASE/index.html"

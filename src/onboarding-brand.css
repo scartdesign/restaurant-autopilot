@@ -142,3 +142,21 @@
   .onboarding-step-intro{padding:12px}
   .onboarding-step-intro>span{width:34px;height:34px}
 }
+
+/* Starter menu — onboarding step 4 */
+.restorapp-onboarding .onboarding-progress{grid-template-columns:repeat(4,1fr)}
+.onboarding-menu-toolbar{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 16px;border:1px solid #e7dfd1;border-radius:15px;background:#fcfbf8}
+.onboarding-menu-toolbar>div{display:flex;align-items:center;gap:10px;min-width:0}.onboarding-menu-toolbar>div>svg{color:#71924b;flex:0 0 auto}
+.onboarding-menu-toolbar strong,.onboarding-menu-toolbar small{display:block}.onboarding-menu-toolbar strong{font-size:13px}.onboarding-menu-toolbar small{margin-top:2px;font-size:9px;color:#7c857e;line-height:1.4}
+.onboarding-menu-toolbar label{display:flex!important;align-items:center;gap:8px;font-size:10px!important;font-weight:850!important;color:#59645c!important}.onboarding-menu-toolbar select{min-width:92px!important;min-height:40px!important}
+.onboarding-starter-menu{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.onboarding-starter-dish{min-width:0;padding:14px;border:1px solid #e7dfd1;border-radius:16px;background:linear-gradient(180deg,#fff,#fbfaf7);box-shadow:0 8px 24px rgba(23,35,29,.035)}
+.starter-dish-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px}.starter-dish-head>strong{font-size:12px;color:#465149}
+.starter-dish-head>span{display:inline-flex;align-items:center;gap:4px;padding:5px 7px;border-radius:999px;font-size:7px;font-weight:950;letter-spacing:.08em}
+.starter-dish-head>span.hero{background:#17372d;color:#f0ca79}.starter-dish-head>span.priority{background:#eef5e8;color:#5a743e}
+.onboarding-starter-dish label{display:grid!important;gap:6px;font-size:10px!important;font-weight:850!important;color:#5d6761!important}
+.onboarding-starter-dish input{min-height:43px!important}.starter-dish-fields{display:grid;grid-template-columns:1.25fr .75fr;gap:8px;margin-top:9px}
+.onboarding-starter-note{display:flex;align-items:flex-start;gap:9px;padding:11px 13px;border:1px solid #dfe7d8;border-radius:12px;background:#f6faef;color:#60724e;font-size:10px;line-height:1.5}
+.onboarding-starter-note svg{flex:0 0 auto;margin-top:1px;color:#71924b}
+@media(max-width:760px){.restorapp-onboarding .onboarding-progress{grid-template-columns:repeat(2,1fr)}.onboarding-starter-menu{grid-template-columns:1fr}.onboarding-menu-toolbar{align-items:flex-start}.onboarding-menu-toolbar label{flex:0 0 auto}}
+@media(max-width:520px){.onboarding-menu-toolbar{display:grid}.onboarding-menu-toolbar label{justify-content:space-between}.starter-dish-fields{grid-template-columns:1fr 1fr}}

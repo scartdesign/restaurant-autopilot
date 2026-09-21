@@ -1,9 +1,11 @@
 import { type ChangeEvent, type FormEvent, useState } from 'react'
-import { ArrowLeft, ArrowRight, CheckCircle2, Hash, Image as ImageIcon, MapPin, Palette, Sparkles, Target, Upload } from 'lucide-react'
+import { ArrowLeft, ArrowRight, CheckCircle2, Hash, Image as ImageIcon, MapPin, Palette, Sparkles, Star, Target, Upload, UtensilsCrossed } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { OpeningHoursEditor, defaultOpeningHours } from './OpeningHoursEditor'
 import { optimizeImage } from '../lib/image'
 import { browserTimeZone, commonTimeZones, isValidTimeZone } from '../lib/timezone'
+
+type StarterDish={name:string;category:string;price:string}
 
 export function Onboarding({ userId, onCreated, onCancel, additional = false }: { userId: string; onCreated: () => Promise<void>; onCancel?: () => void; additional?: boolean }) {
   const [form, setForm] = useState({
@@ -16,6 +18,10 @@ export function Onboarding({ userId, onCreated, onCancel, additional = false }: 
   const [working, setWorking] = useState(false)
   const [message, setMessage] = useState('')
   const [step,setStep]=useState(1)
+  const [menuCurrency,setMenuCurrency]=useState('RSD')
+  const [starterDishes,setStarterDishes]=useState<StarterDish[]>([
+    {name:'',category:'',price:''},{name:'',category:'',price:''},{name:'',category:'',price:''},
+  ])
 
   function chooseLogo(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0]
@@ -26,7 +32,7 @@ export function Onboarding({ userId, onCreated, onCancel, additional = false }: 
   }
 
   async function submit(event: FormEvent) {
-    event.preventDefault(); if(!form.name.trim()){setStep(1);setMessage('Upiši naziv restorana.');return} if(!isValidTimeZone(form.timezone)){setStep(1);setMessage('Vremenska zona nije validna. Izaberi npr. Europe/Belgrade.');return} setWorking(true); setMessage('')
+    event.preventDefault(); if(!form.name.trim()){setStep(1);setMessage('Upiši naziv restorana.');return} if(!isValidTimeZone(form.timezone)){setStep(1);setMessage('Vremenska zona nije validna. Izaberi npr. Europe/Belgrade.');return} const invalidStarterPrice=starterDishes.some(dish=>dish.name.trim()&&dish.price.trim()!==''&&Number.isNaN(Number(dish.price.replace(',','.')))); if(invalidStarterPrice){setStep(4);setMessage('Proveri cenu u početnom meniju. Koristi broj, npr. 890 ili 12,90.');return} setWorking(true); setMessage('')
     try {
       const { data: restaurant, error } = await supabase.from('restaurants').insert({
         owner_id: userId, name: form.name.trim(), city: form.city.trim() || null, neighborhood: form.neighborhood.trim() || null, country: form.country.trim() || 'Serbia', timezone: form.timezone.trim() || 'Europe/Belgrade', cuisine_type: form.cuisine_type.trim() || null,
@@ -36,6 +42,7 @@ export function Onboarding({ userId, onCreated, onCancel, additional = false }: 
       }).select('id').single()
       if (error) throw error
       let logoWarning = ''
+      let menuWarning = ''
       if (logoFile && restaurant?.id) {
         const optimized = logoFile.type==='image/svg+xml' ? logoFile : await optimizeImage(logoFile,{maxSide:1400,quality:.92})
         const ext = optimized.name.split('.').pop()?.toLowerCase() || 'webp'
@@ -48,8 +55,26 @@ export function Onboarding({ userId, onCreated, onCancel, additional = false }: 
           if (logoError) logoWarning = 'Restoran je kreiran, ali logo nije sačuvan. Dodaj ga kasnije u Brend.'
         }
       }
+      const quickMenu=starterDishes.filter(dish=>dish.name.trim()).map((dish,index)=>({
+        restaurant_id:restaurant.id,
+        name:dish.name.trim(),
+        category:dish.category.trim()||null,
+        price:dish.price.trim()===''?null:Number(dish.price.replace(',','.')),
+        currency:menuCurrency,
+        is_active:true,
+        marketing_priority:index===0?3:index===1?2:1,
+      }))
+      if(quickMenu.length){
+        if(quickMenu.some(item=>item.price!==null&&Number.isNaN(item.price))) menuWarning='Restoran je kreiran, ali jedna cena nije bila validna pa početni meni nije dodat.'
+        else{
+          const{error:menuError}=await supabase.from('menu_items').insert(quickMenu)
+          if(menuError) menuWarning='Restoran je kreiran, ali početna jela nisu sačuvana. Dodaj ih kasnije u Menu & Offers.'
+          else void supabase.functions.invoke('content-engine',{body:{action:'log_activity',restaurantId:restaurant.id,eventType:'onboarding_menu_seeded',metadata:{count:quickMenu.length,hero:quickMenu[0]?.name||null}}}).catch(()=>null)
+        }
+      }
       localStorage.setItem('restorapp-active-restaurant', restaurant.id)
-      if (logoWarning) sessionStorage.setItem('restorapp-onboarding-warning', logoWarning)
+      const warning=[logoWarning,menuWarning].filter(Boolean).join(' ')
+      if (warning) sessionStorage.setItem('restorapp-onboarding-warning', warning)
       await onCreated()
     } catch (error) { setMessage(error instanceof Error ? humanError(error.message) : 'Nisam uspeo da kreiram restoran.') }
     setWorking(false)
@@ -58,15 +83,15 @@ export function Onboarding({ userId, onCreated, onCancel, additional = false }: 
   function nextStep(){
     if(step===1&&!form.name.trim()){setMessage('Upiši naziv restorana da nastavimo.');return}
     if(step===1&&!isValidTimeZone(form.timezone)){setMessage('Izaberi validnu vremensku zonu.');return}
-    setMessage('');setStep(value=>Math.min(3,value+1))
+    setMessage('');setStep(value=>Math.min(4,value+1))
   }
   function previousStep(){setMessage('');setStep(value=>Math.max(1,value-1))}
 
   return <div className="onboarding-page restorapp-onboarding"><div className="onboarding-card onboarding-pro">
-    <div className="onboarding-top">{additional && onCancel ? <button type="button" className="onboarding-back" onClick={onCancel}><ArrowLeft size={18}/></button> : <div className="onboarding-restorapp-logo"><img src="./restorapp-logo.webp" alt="Restorapp"/></div>}<div><p className="eyebrow">{additional ? 'NOVA LOKACIJA' : 'RESTORAPP SETUP'}</p><h1>{additional ? 'Dodaj još jedan restoran' : 'Postavi restoran za nekoliko minuta'}</h1><p className="muted">{additional ? 'Svaka lokacija dobija svoj meni, brend i marketing plan.' : 'Tri kratka koraka. Posle toga Restorapp već zna šta, gde i kako da promoviše.'}</p></div></div>
+    <div className="onboarding-top">{additional && onCancel ? <button type="button" className="onboarding-back" onClick={onCancel}><ArrowLeft size={18}/></button> : <div className="onboarding-restorapp-logo"><img src="./restorapp-logo.webp" alt="Restorapp"/></div>}<div><p className="eyebrow">{additional ? 'NOVA LOKACIJA' : 'RESTORAPP SETUP'}</p><h1>{additional ? 'Dodaj još jedan restoran' : 'Postavi restoran za nekoliko minuta'}</h1><p className="muted">{additional ? 'Svaka lokacija dobija svoj meni, brend i marketing plan.' : 'Četiri kratka koraka. Posle toga Restorapp već zna šta, gde i kako da promoviše.'}</p></div></div>
 
     <div className="onboarding-progress">
-      {[{n:1,label:'Restoran'},{n:2,label:'Marketing'},{n:3,label:'Brend'}].map(item=><button type="button" key={item.n} className={step===item.n?'active':step>item.n?'done':''} onClick={()=>item.n<step&&setStep(item.n)}><span>{step>item.n?<CheckCircle2 size={14}/>:item.n}</span><strong>{item.label}</strong></button>)}
+      {[{n:1,label:'Restoran'},{n:2,label:'Marketing'},{n:3,label:'Brend'},{n:4,label:'Prva jela'}].map(item=><button type="button" key={item.n} className={step===item.n?'active':step>item.n?'done':''} onClick={()=>item.n<step&&setStep(item.n)}><span>{step>item.n?<CheckCircle2 size={14}/>:item.n}</span><strong>{item.label}</strong></button>)}
     </div>
 
     <form onSubmit={submit} className="grid-form onboarding-grid onboarding-step-form">
@@ -98,10 +123,23 @@ export function Onboarding({ userId, onCreated, onCancel, additional = false }: 
         <div className="onboarding-hours-card span-2"><OpeningHoursEditor value={form.opening_hours} onChange={(opening_hours)=>setForm({...form,opening_hours})}/></div>
       </>}
 
+      {step===4&&<>
+        <div className="onboarding-step-intro span-2"><span>04</span><div><strong>Prva jela za Autopilot</strong><p>Dodaj do 3 signature jela. Prvo uneseno jelo automatski postaje HERO i vodi prve kampanje.</p></div></div>
+        <div className="onboarding-menu-toolbar span-2"><div><UtensilsCrossed size={18}/><span><strong>Brzi meni</strong><small>Korak je opcionalan — možeš ga preskočiti i meni dopuniti kasnije.</small></span></div><label>Valuta<select value={menuCurrency} onChange={e=>setMenuCurrency(e.target.value)}><option value="RSD">RSD</option><option value="EUR">EUR</option><option value="CHF">CHF</option><option value="USD">USD</option><option value="GBP">GBP</option><option value="BAM">BAM</option><option value="MKD">MKD</option><option value="BGN">BGN</option></select></label></div>
+        <div className="onboarding-starter-menu span-2">
+          {starterDishes.map((dish,index)=><article className="onboarding-starter-dish" key={index}>
+            <div className="starter-dish-head"><span className={index===0?'hero':'priority'}>{index===0?<><Star size={12}/> HERO</>:index===1?'VISOK':'STANDARD'}</span><strong>Jelo {index+1}</strong></div>
+            <label>Naziv<input value={dish.name} onChange={e=>setStarterDishes(items=>items.map((item,i)=>i===index?{...item,name:e.target.value}:item))} placeholder={index===0?'Pizza Capricciosa':index===1?'Carbonara':'Tiramisu'}/></label>
+            <div className="starter-dish-fields"><label>Kategorija<input value={dish.category} onChange={e=>setStarterDishes(items=>items.map((item,i)=>i===index?{...item,category:e.target.value}:item))} placeholder={index===0?'Pizza':index===1?'Pasta':'Desert'}/></label><label>Cena<input inputMode="decimal" value={dish.price} onChange={e=>setStarterDishes(items=>items.map((item,i)=>i===index?{...item,price:e.target.value}:item))} placeholder={menuCurrency==='RSD'?'890':'12.90'}/></label></div>
+          </article>)}
+        </div>
+        <div className="onboarding-starter-note span-2"><Sparkles size={16}/><span>Sa jednim HERO jelom Restorapp odmah ima fokus za Campaign Builder, Launch Center i AUTO WEEK preflight.</span></div>
+      </>}
+
       {message&&<p className="form-message span-2">{message}</p>}
       <div className="onboarding-step-actions span-2">
         {step>1?<button type="button" className="secondary" onClick={previousStep}><ArrowLeft size={16}/> Nazad</button>:additional&&onCancel?<button type="button" className="secondary" onClick={onCancel}>Otkaži</button>:<span/>}
-        {step<3?<button type="button" className="primary" onClick={nextStep}>Nastavi <ArrowRight size={16}/></button>:<button className="primary onboarding-submit" disabled={working}><Sparkles size={17}/> {working?'Kreiram…':additional?'Dodaj lokaciju':'Pokreni Restorapp'}</button>}
+        {step<4?<button type="button" className="primary" onClick={nextStep}>Nastavi <ArrowRight size={16}/></button>:<button className="primary onboarding-submit" disabled={working}><Sparkles size={17}/> {working?'Kreiram…':additional?'Dodaj lokaciju':'Pokreni Restorapp'}</button>}
       </div>
     </form>
   </div></div>
