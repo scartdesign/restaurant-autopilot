@@ -82,9 +82,12 @@ jobs:
           grep -Fq 'Meta publish E2E' /tmp/app.js
           grep -Fq 'ACTION HISTORY DEMO' /tmp/app.js
           grep -Fq 'Potvrđen Meta manual review' /tmp/app.js
-          grep -Fq 'LAUNCH CENTER DEMO' /tmp/app.js
-          grep -Fq 'META PUBLISH READINESS' /tmp/app.js
-          grep -Fq 'Direktno Meta objavljivanje je povezano' /tmp/app.js
+          DEMO_CHUNK=$(grep -oE 'DemoScreen-[A-Za-z0-9_-]+\.js' /tmp/app.js | head -1)
+          test -n "$DEMO_CHUNK"
+          curl --max-time 20 --retry 4 --retry-delay 2 --retry-all-errors -fsSL "$BASE/assets/$DEMO_CHUNK" -o /tmp/demo.js
+          grep -Fq 'LAUNCH CENTER DEMO' /tmp/demo.js
+          grep -Fq 'META PUBLISH READINESS' /tmp/demo.js
+          grep -Fq 'Direktno Meta objavljivanje je povezano' /tmp/demo.js
           PUBLISH_CHUNK=$(grep -oE 'PublishCenter-[A-Za-z0-9_-]+\.js' /tmp/app.js | head -1)
           test -n "$PUBLISH_CHUNK"
           curl --max-time 20 --retry 4 --retry-delay 2 --retry-all-errors -fsSL "$BASE/assets/$PUBLISH_CHUNK" -o /tmp/publish.js
