@@ -890,3 +890,7 @@ input:focus,select:focus,textarea:focus{border-color:#c9a255!important;box-shado
   .sidebar .simple-primary-nav button{min-height:44px!important}
   .sidebar .simple-primary-nav .simple-nav-more{margin-top:0!important;border-top:0!important;padding-top:0!important;border-radius:11px!important}
 }
+
+.demo-more-menu{display:grid;gap:5px;margin-top:8px;padding:8px;border:1px solid rgba(255,255,255,.08);border-radius:12px;background:rgba(255,255,255,.035)}
+.demo-more-menu button{min-height:38px;display:flex;align-items:center;gap:8px;padding:0 10px;border:0;border-radius:9px;background:transparent;color:#cbd4cf;font-size:10px;font-weight:750;text-align:left}
+.demo-more-menu button:hover{background:rgba(255,255,255,.07);color:#fff}
