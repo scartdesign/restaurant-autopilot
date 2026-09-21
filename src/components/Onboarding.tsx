@@ -55,7 +55,7 @@ export function Onboarding({ userId, onCreated, onCancel, additional = false }: 
           if (logoError) logoWarning = 'Restoran je kreiran, ali logo nije sačuvan. Dodaj ga kasnije u Brend.'
         }
       }
-      const quickMenu=starterDishes.map((dish,index)=>({
+      const quickMenu=starterDishes.filter(dish=>dish.name.trim()).map((dish,index)=>({
         restaurant_id:restaurant.id,
         name:dish.name.trim(),
         category:dish.category.trim()||null,
@@ -63,7 +63,7 @@ export function Onboarding({ userId, onCreated, onCancel, additional = false }: 
         currency:menuCurrency,
         is_active:true,
         marketing_priority:index===0?3:index===1?2:1,
-      })).filter(item=>item.name)
+      }))
       if(quickMenu.length){
         if(quickMenu.some(item=>item.price!==null&&Number.isNaN(item.price))) menuWarning='Restoran je kreiran, ali jedna cena nije bila validna pa početni meni nije dodat.'
         else{
