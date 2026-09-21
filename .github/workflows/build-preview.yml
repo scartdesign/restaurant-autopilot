@@ -83,7 +83,8 @@ jobs:
           grep -Fq 'ACTION HISTORY DEMO' /tmp/app.js
           grep -Fq 'Potvrđen Meta manual review' /tmp/app.js
           grep -Fq 'Prva jela za Autopilot' /tmp/app.js
-          grep -Fq 'Sa jednim HERO jelom Restorapp odmah ima fokus' /tmp/app.js
+          grep -Fq 'Sa jednim HERO jelom i fotografijom Restorapp odmah ima mnogo bolji start' /tmp/app.js
+          grep -Fq 'Dodaj fotografiju' /tmp/app.js
           DEMO_CHUNK=$(grep -oE 'DemoScreen-[A-Za-z0-9_-]+\.js' /tmp/app.js | head -1)
           test -n "$DEMO_CHUNK"
           curl --max-time 20 --retry 4 --retry-delay 2 --retry-all-errors -fsSL "$BASE/assets/$DEMO_CHUNK" -o /tmp/demo.js

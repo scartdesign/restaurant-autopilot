@@ -22,6 +22,8 @@ export function Onboarding({ userId, onCreated, onCancel, additional = false }: 
   const [starterDishes,setStarterDishes]=useState<StarterDish[]>([
     {name:'',category:'',price:''},{name:'',category:'',price:''},{name:'',category:'',price:''},
   ])
+  const [starterDishFiles,setStarterDishFiles]=useState<(File|null)[]>([null,null,null])
+  const [starterDishPreviews,setStarterDishPreviews]=useState<string[]>(['','',''])
 
   function chooseLogo(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0]
@@ -29,6 +31,21 @@ export function Onboarding({ userId, onCreated, onCancel, additional = false }: 
     if (!['image/png', 'image/jpeg', 'image/webp', 'image/svg+xml'].includes(file.type)) { setMessage('Logo mora biti PNG, JPG, WEBP ili SVG.'); return }
     if (file.size > 5 * 1024 * 1024) { setMessage('Logo može imati najviše 5 MB.'); return }
     setLogoFile(file); setLogoPreview(URL.createObjectURL(file)); setMessage('')
+  }
+
+  function chooseStarterDishPhoto(index:number,event:ChangeEvent<HTMLInputElement>){
+    const file=event.target.files?.[0]
+    if(!file)return
+    if(!['image/png','image/jpeg','image/webp'].includes(file.type)){setStep(4);setMessage('Fotografija jela mora biti PNG, JPG ili WEBP.');return}
+    if(file.size>8*1024*1024){setStep(4);setMessage('Fotografija jela može imati najviše 8 MB.');return}
+    setStarterDishFiles(items=>items.map((item,i)=>i===index?file:item))
+    setStarterDishPreviews(items=>{
+      const next=[...items]
+      if(next[index])URL.revokeObjectURL(next[index])
+      next[index]=URL.createObjectURL(file)
+      return next
+    })
+    setMessage('')
   }
 
   async function submit(event: FormEvent) {
@@ -55,7 +72,8 @@ export function Onboarding({ userId, onCreated, onCancel, additional = false }: 
           if (logoError) logoWarning = 'Restoran je kreiran, ali logo nije sačuvan. Dodaj ga kasnije u Brend.'
         }
       }
-      const quickMenu=starterDishes.filter(dish=>dish.name.trim()).map((dish,index)=>({
+      const quickMenuRows=starterDishes.map((dish,sourceIndex)=>({dish,sourceIndex})).filter(({dish})=>dish.name.trim())
+      const quickMenu=quickMenuRows.map(({dish},index)=>({
         restaurant_id:restaurant.id,
         name:dish.name.trim(),
         category:dish.category.trim()||null,
@@ -67,9 +85,29 @@ export function Onboarding({ userId, onCreated, onCancel, additional = false }: 
       if(quickMenu.length){
         if(quickMenu.some(item=>item.price!==null&&Number.isNaN(item.price))) menuWarning='Restoran je kreiran, ali jedna cena nije bila validna pa početni meni nije dodat.'
         else{
-          const{error:menuError}=await supabase.from('menu_items').insert(quickMenu)
+          const{data:insertedMenu,error:menuError}=await supabase.from('menu_items').insert(quickMenu).select('id,name')
           if(menuError) menuWarning='Restoran je kreiran, ali početna jela nisu sačuvana. Dodaj ih kasnije u Menu & Offers.'
-          else void supabase.functions.invoke('content-engine',{body:{action:'log_activity',restaurantId:restaurant.id,eventType:'onboarding_menu_seeded',metadata:{count:quickMenu.length,hero:quickMenu[0]?.name||null}}}).catch(()=>null)
+          else{
+            let photoFailures=0
+            for(let index=0;index<(insertedMenu||[]).length;index+=1){
+              const row=insertedMenu?.[index]
+              const sourceIndex=quickMenuRows[index]?.sourceIndex
+              const file=sourceIndex===undefined?null:starterDishFiles[sourceIndex]
+              if(!row?.id||!file)continue
+              try{
+                const optimized=await optimizeImage(file,{maxSide:1800,quality:.88})
+                const ext=optimized.name.split('.').pop()?.toLowerCase()||'webp'
+                const imagePath=`${userId}/${restaurant.id}/menu/onboarding-${row.id}-${Date.now()}.${ext}`
+                const{error:photoUploadError}=await supabase.storage.from('restaurant-assets').upload(imagePath,optimized,{upsert:false,contentType:optimized.type||undefined})
+                if(photoUploadError){photoFailures+=1;continue}
+                const imageUrl=supabase.storage.from('restaurant-assets').getPublicUrl(imagePath).data.publicUrl
+                const{error:photoSaveError}=await supabase.from('menu_items').update({image_url:imageUrl}).eq('id',row.id).eq('restaurant_id',restaurant.id)
+                if(photoSaveError)photoFailures+=1
+              }catch{photoFailures+=1}
+            }
+            if(photoFailures) menuWarning=`${photoFailures} fotografija nije sačuvano. Jela su dodata i slike možeš dopuniti kasnije u Menu & Offers.`
+            void supabase.functions.invoke('content-engine',{body:{action:'log_activity',restaurantId:restaurant.id,eventType:'onboarding_menu_seeded',metadata:{count:quickMenu.length,hero:quickMenu[0]?.name||null,photos:starterDishFiles.filter(Boolean).length-photoFailures}}}).catch(()=>null)
+          }
         }
       }
       localStorage.setItem('restorapp-active-restaurant', restaurant.id)
@@ -129,11 +167,12 @@ export function Onboarding({ userId, onCreated, onCancel, additional = false }: 
         <div className="onboarding-starter-menu span-2">
           {starterDishes.map((dish,index)=><article className="onboarding-starter-dish" key={index}>
             <div className="starter-dish-head"><span className={index===0?'hero':'priority'}>{index===0?<><Star size={12}/> HERO</>:index===1?'VISOK':'STANDARD'}</span><strong>Jelo {index+1}</strong></div>
+            <label className="starter-dish-photo"><div className="starter-dish-photo-preview">{starterDishPreviews[index]?<img src={starterDishPreviews[index]} alt={dish.name||`Jelo ${index+1}`}/>:<ImageIcon size={22}/>}</div><span><Upload size={13}/> {starterDishPreviews[index]?'Promeni fotografiju':'Dodaj fotografiju'}</span><input type="file" accept="image/png,image/jpeg,image/webp" onChange={e=>chooseStarterDishPhoto(index,e)}/></label>
             <label>Naziv<input value={dish.name} onChange={e=>setStarterDishes(items=>items.map((item,i)=>i===index?{...item,name:e.target.value}:item))} placeholder={index===0?'Pizza Capricciosa':index===1?'Carbonara':'Tiramisu'}/></label>
             <div className="starter-dish-fields"><label>Kategorija<input value={dish.category} onChange={e=>setStarterDishes(items=>items.map((item,i)=>i===index?{...item,category:e.target.value}:item))} placeholder={index===0?'Pizza':index===1?'Pasta':'Desert'}/></label><label>Cena<input inputMode="decimal" value={dish.price} onChange={e=>setStarterDishes(items=>items.map((item,i)=>i===index?{...item,price:e.target.value}:item))} placeholder={menuCurrency==='RSD'?'890':'12.90'}/></label></div>
           </article>)}
         </div>
-        <div className="onboarding-starter-note span-2"><Sparkles size={16}/><span>Sa jednim HERO jelom Restorapp odmah ima fokus za Campaign Builder, Launch Center i AUTO WEEK preflight.</span></div>
+        <div className="onboarding-starter-note span-2"><Sparkles size={16}/><span>Sa jednim HERO jelom i fotografijom Restorapp odmah ima mnogo bolji start za Campaign Builder, Launch Center i AUTO WEEK preflight.</span></div>
       </>}
 
       {message&&<p className="form-message span-2">{message}</p>}
