@@ -32,7 +32,7 @@ export function Onboarding({ userId, onCreated, onCancel, additional = false }: 
   }
 
   async function submit(event: FormEvent) {
-    event.preventDefault(); if(!form.name.trim()){setStep(1);setMessage('Upiši naziv restorana.');return} if(!isValidTimeZone(form.timezone)){setStep(1);setMessage('Vremenska zona nije validna. Izaberi npr. Europe/Belgrade.');return} setWorking(true); setMessage('')
+    event.preventDefault(); if(!form.name.trim()){setStep(1);setMessage('Upiši naziv restorana.');return} if(!isValidTimeZone(form.timezone)){setStep(1);setMessage('Vremenska zona nije validna. Izaberi npr. Europe/Belgrade.');return} const invalidStarterPrice=starterDishes.some(dish=>dish.name.trim()&&dish.price.trim()!==''&&Number.isNaN(Number(dish.price.replace(',','.')))); if(invalidStarterPrice){setStep(4);setMessage('Proveri cenu u početnom meniju. Koristi broj, npr. 890 ili 12,90.');return} setWorking(true); setMessage('')
     try {
       const { data: restaurant, error } = await supabase.from('restaurants').insert({
         owner_id: userId, name: form.name.trim(), city: form.city.trim() || null, neighborhood: form.neighborhood.trim() || null, country: form.country.trim() || 'Serbia', timezone: form.timezone.trim() || 'Europe/Belgrade', cuisine_type: form.cuisine_type.trim() || null,
