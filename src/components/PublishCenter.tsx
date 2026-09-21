@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { CalendarClock, CalendarRange, CheckCircle2, ClipboardCopy, Clock3, Download, ExternalLink, Facebook, Instagram, List, Pencil, RotateCcw, Save, Send, ShieldCheck, Sparkles, X } from 'lucide-react'
+import { AlertTriangle, CalendarClock, CalendarRange, CheckCircle2, ClipboardCopy, Clock3, Download, ExternalLink, Facebook, Instagram, List, Pencil, Rocket, RotateCcw, Save, Send, ShieldCheck, Sparkles, X } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import type { Post, Restaurant } from '../types'
 
@@ -29,6 +29,7 @@ export function PublishCenter({ restaurant, posts, onChanged, setNotice }: {
   const [metaWorking,setMetaWorking]=useState(false)
   const [metaPageId,setMetaPageId]=useState('')
   const [metaJobs,setMetaJobs]=useState<MetaJob[]>([])
+  const [metaStatusLoaded,setMetaStatusLoaded]=useState(false)
 
   const ordered = useMemo(() => [...posts].sort((a, b) => new Date(a.scheduled_for || 0).getTime() - new Date(b.scheduled_for || 0).getTime()), [posts])
   const approved = posts.filter((post) => post.status === 'approved')
@@ -59,18 +60,43 @@ export function PublishCenter({ restaurant, posts, onChanged, setNotice }: {
     return{ready,allDone,reasons,label:allDone?'Nedelja završena':ready?'Spremno za publishing':posts.length?'Treba završiti':'Čeka sadržaj'}
   },[posts.length,published.length,drafts.length,missingSchedule,overdue.length,conflicts])
 
+  const firstDraft=ordered.find(post=>post.status==='draft'||post.status==='rejected')||null
+  const firstApproved=ordered.find(post=>post.status==='approved')||null
+  const firstFutureApproved=ordered.find(post=>post.status==='approved'&&post.scheduled_for&&new Date(post.scheduled_for).getTime()>Date.now())||null
+  const firstActiveMetaJob=metaJobs.find(job=>job.status==='queued'||job.status==='processing'||job.status==='published')||null
+  const firstPublishStage=useMemo(()=>{
+    if(!posts.length)return 'hidden' as const
+    if(published.length>0||metaJobs.some(job=>job.status==='published'))return 'done' as const
+    if(metaJobs.some(job=>job.status==='queued'||job.status==='processing'))return 'queued' as const
+    if(!approved.length)return 'review' as const
+    if(!firstFutureApproved)return 'schedule' as const
+    if(!metaStatusLoaded)return 'checking' as const
+    if(!metaState)return 'meta_unavailable' as const
+    if(metaState.connection?.status!=='connected')return 'meta' as const
+    return 'queue' as const
+  },[posts.length,published.length,approved.length,firstFutureApproved?.id,metaStatusLoaded,metaState?.connection?.status,metaJobs])
+
+  const firstPublishSteps=[
+    {label:'Quality',done:approved.length>0||published.length>0},
+    {label:'Termin',done:Boolean(firstFutureApproved)||published.length>0},
+    {label:'Meta',done:metaState?.connection?.status==='connected'||Boolean(firstActiveMetaJob)},
+    {label:'Queue',done:Boolean(firstActiveMetaJob)||published.length>0},
+  ]
+
   async function loadMetaJobs(){
     const{data}=await supabase.from('social_publish_jobs').select('id,post_id,platform,status,publish_at,attempt_count,provider_media_id,error_message,published_at,result').eq('restaurant_id',restaurant.id).order('created_at',{ascending:false}).limit(150)
     setMetaJobs((data||[]) as MetaJob[])
   }
 
   async function loadMetaStatus(){
+    setMetaStatusLoaded(false)
     const{data,error}=await supabase.functions.invoke('meta-publisher',{body:{action:'status',restaurantId:restaurant.id}})
     if(!error&&!data?.error){
       setMetaState(data as MetaState)
       const candidates=(data?.connection?.connection_meta?.page_candidates||[]) as MetaCandidate[]
       if(data?.connection?.status==='pending_page_selection'&&candidates.length&&!metaPageId)setMetaPageId(candidates[0].id)
-    }
+    }else setMetaState(null)
+    setMetaStatusLoaded(true)
   }
 
   useEffect(()=>{
@@ -151,6 +177,65 @@ export function PublishCenter({ restaurant, posts, onChanged, setNotice }: {
     }else setNotice(`Meta queue: ${platforms.length} platforme zakazane za ${post.scheduled_for?formatDateLong(post.scheduled_for,restaurant.timezone)+' u '+formatTime(post.scheduled_for,restaurant.timezone):'prvi mogući termin'}.`)
     await loadMetaJobs()
     setWorkingId('')
+  }
+
+  async function approveFirstPost(){
+    const post=firstDraft
+    if(!post){setNotice('Nema draft objave za prvi approval.');return}
+    setWorkingId('first-approve')
+    const{data,error}=await supabase.functions.invoke('content-engine',{body:{action:'quality_check',restaurantId:restaurant.id,postId:post.id}})
+    if(error||data?.error){setNotice(data?.error||error?.message||'Quality check nije uspeo.');setWorkingId('');return}
+    const score=Number(data?.score||0)
+    setQualityScores(current=>({...current,[post.id]:score}))
+    if(score<70){setNotice(`Prva objava ima quality ${score}/100. Doteraj je pre odobravanja.`);setWorkingId('');return}
+    const{error:updateError}=await supabase.from('posts').update({status:'approved'}).eq('id',post.id).eq('restaurant_id',restaurant.id)
+    if(updateError)setNotice(updateError.message)
+    else{
+      await onChanged()
+      setNotice(`Prva objava je prošla quality gate (${score}/100) i odobrena je.`)
+    }
+    setWorkingId('')
+  }
+
+  async function scheduleFirstApproved(){
+    const post=firstApproved
+    if(!post){setNotice('Prvo odobri jednu objavu.');return}
+    setWorkingId('first-schedule')
+    const today=localDateString(new Date(),restaurant.timezone)
+    const draft=autopilotDraft(post,today,restaurant)
+    let scheduledFor=''
+    try{scheduledFor=zonedInputToIso(`${draft.date}T${draft.time}`,restaurant.timezone)}
+    catch{setNotice('Autopilot nije uspeo da izračuna termin. Promeni datum ručno.');setWorkingId('');openSchedule(post);return}
+    const{error}=await supabase.from('posts').update({scheduled_for:scheduledFor}).eq('id',post.id).eq('restaurant_id',restaurant.id)
+    if(error){setNotice(error.message);setWorkingId('');return}
+    await supabase.functions.invoke('meta-publisher',{body:{action:'sync_schedule',restaurantId:restaurant.id,updates:[{postId:post.id,publishAt:scheduledFor}]}})
+    await supabase.functions.invoke('content-engine',{body:{action:'log_activity',restaurantId:restaurant.id,eventType:'schedule_adjusted',metadata:{post_id:post.id,learned:true,count:1}}})
+    await loadMetaJobs()
+    await onChanged()
+    setNotice(`Prva objava je zakazana za ${formatDateLong(scheduledFor,restaurant.timezone)} u ${formatTime(scheduledFor,restaurant.timezone)}.`)
+    setWorkingId('')
+  }
+
+  async function handleFirstMeta(){
+    if(!metaStatusLoaded||!metaState){await loadMetaStatus();return}
+    if(metaState.connection?.status==='pending_page_selection'){
+      document.querySelector('.meta-connect-panel')?.scrollIntoView({behavior:'smooth',block:'center'})
+      setNotice('Izaberi Facebook stranicu u Meta Publishing delu i potvrdi povezivanje.')
+      return
+    }
+    if(!metaState.provider_configured){
+      document.querySelector('.meta-connect-panel')?.scrollIntoView({behavior:'smooth',block:'center'})
+      setNotice('Meta App još čeka OWNER konfiguraciju. Publishing ostaje bezbedno blokiran.')
+      return
+    }
+    await connectMeta()
+  }
+
+  async function queueFirstPublish(){
+    const post=firstFutureApproved
+    if(!post){setNotice('Prva odobrena objava nema budući termin.');return}
+    if(metaState?.connection?.status!=='connected'){setNotice('Prvo poveži Meta nalog.');return}
+    await sendToMeta(post,false)
   }
 
   async function retryMetaJob(job:MetaJob){
@@ -357,6 +442,24 @@ export function PublishCenter({ restaurant, posts, onChanged, setNotice }: {
         <div><p className="eyebrow">PUBLISH CENTER</p><h1>Tačan dan. Tačno vreme. Sve spremno.</h1><p className="muted">Svaka objava ima termin u vremenskoj zoni restorana: <strong>{restaurant.timezone}</strong>.</p></div>
         <div className="publish-actions">{drafts.length>0&&<button className="secondary" onClick={()=>void approveAll()} disabled={workingId==='bulk-approve'}><CheckCircle2 size={16}/>{workingId==='bulk-approve'?'Proveravam…':`Quality + odobri (${drafts.length})`}</button>}<button className="secondary" onClick={()=>void autoScheduleWeek()} disabled={bulkWorking}><Sparkles size={16}/>{bulkWorking?'Raspoređujem…':'Auto rasporedi'}</button><button className="secondary" onClick={exportCalendar}><CalendarClock size={16} /> .ICS kalendar</button><button className="primary" onClick={exportCsv}><Download size={16} /> Export CSV</button></div>
       </header>
+
+      {firstPublishStage!=='hidden'&&<section className={`first-publish-flow ${firstPublishStage==='done'||firstPublishStage==='queued'?'success':firstPublishStage==='meta'||firstPublishStage==='meta_unavailable'?'blocked':'active'}`}>
+        <div className="first-publish-icon">{firstPublishStage==='done'||firstPublishStage==='queued'?<CheckCircle2 size={22}/>:firstPublishStage==='meta'||firstPublishStage==='meta_unavailable'?<AlertTriangle size={22}/>:<Rocket size={22}/>}</div>
+        <div className="first-publish-copy">
+          <span>FIRST PUBLISH</span>
+          <strong>{firstPublishStage==='review'?'Odobri prvu objavu kroz quality gate.':firstPublishStage==='schedule'?'Postavi budući termin za prvu odobrenu objavu.':firstPublishStage==='checking'?'Proveravam Meta publishing…':firstPublishStage==='meta_unavailable'?'Meta status trenutno nije dostupan.':firstPublishStage==='meta'?'Poveži Facebook / Instagram pre prvog queue-a.':firstPublishStage==='queue'?'Sve je spremno — zakaži prvu objavu na Meta.':firstPublishStage==='queued'?'Prva objava je u Meta queue-u.':'Prva objava je uspešno objavljena.'}</strong>
+          <p>{firstPublishStage==='review'?'Restorapp proverava copy, CTA, discovery i tehničke uslove. Samo prva objava se odobrava; ostatak nedelje ostaje netaknut.':firstPublishStage==='schedule'?'Autopilot bira prvi bezbedan termin prema radnom vremenu i tipu sadržaja.':firstPublishStage==='meta'?'Tokeni ostaju server-side; bez zdrave konekcije Restorapp neće slati objavu naslepo.':firstPublishStage==='queue'?`${firstFutureApproved?.title||'Prva objava'} · ${firstFutureApproved?.scheduled_for?formatDateLong(firstFutureApproved.scheduled_for,restaurant.timezone)+' u '+formatTime(firstFutureApproved.scheduled_for,restaurant.timezone):''}`:firstPublishStage==='queued'?'Queue je potvrđen. Restorapp će pratiti status i prikazati grešku ako Meta vrati problem.':firstPublishStage==='done'?'First-success funnel je zatvoren: sadržaj → approval → termin → Meta → publish.':'Publishing vodič čeka sledeći bezbedan korak.'}</p>
+          <div className="first-publish-steps">{firstPublishSteps.map((step,index)=><span className={step.done?'done':''} key={step.label}><b>{step.done?<CheckCircle2 size={11}/>:index+1}</b>{step.label}</span>)}</div>
+        </div>
+        <div className="first-publish-actions">
+          {firstPublishStage==='review'&&<button className="primary" onClick={()=>void approveFirstPost()} disabled={workingId==='first-approve'}><ShieldCheck size={15}/>{workingId==='first-approve'?'Proveravam…':'Quality + odobri prvu'}</button>}
+          {firstPublishStage==='schedule'&&<button className="primary" onClick={()=>void scheduleFirstApproved()} disabled={workingId==='first-schedule'}><CalendarClock size={15}/>{workingId==='first-schedule'?'Zakazujem…':'Autopilot termin'}</button>}
+          {(firstPublishStage==='checking'||firstPublishStage==='meta_unavailable')&&<button className="secondary" onClick={()=>void loadMetaStatus()}><RotateCcw size={14}/> Proveri Meta</button>}
+          {firstPublishStage==='meta'&&<button className="primary" onClick={()=>void handleFirstMeta()} disabled={metaWorking}><Facebook size={15}/>{metaWorking?'Otvaram…':metaState?.connection?.status==='pending_page_selection'?'Izaberi stranicu':'Poveži Meta'}</button>}
+          {firstPublishStage==='queue'&&<button className="primary" onClick={()=>void queueFirstPublish()} disabled={workingId.startsWith('meta-')}><Send size={15}/>{workingId.startsWith('meta-')?'Zakazujem…':'Zakaži prvu objavu'}</button>}
+          {firstPublishStage==='queued'&&<button className="secondary" onClick={()=>void loadMetaJobs()}><RotateCcw size={14}/> Osveži status</button>}
+        </div>
+      </section>}
 
       <section className={`meta-connect-panel ${metaState?.connection?.status==='connected'?'connected':metaState?.connection?.status==='expired'?'expired':''}`}>
         <div className="meta-connect-brand"><div><Facebook size={20}/><Instagram size={20}/></div><span><small>META PUBLISHING</small><strong>{metaState?.connection?.status==='connected'?'Facebook + Instagram povezani':metaState?.connection?.status==='pending_page_selection'?'Izaberi Facebook stranicu':metaState?.provider_configured?'Poveži poslovni nalog':'Meta App čeka OWNER konfiguraciju'}</strong><p>{metaState?.connection?.status==='connected'
