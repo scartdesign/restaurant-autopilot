@@ -1,4 +1,4 @@
-import { AlertTriangle, BarChart3, Bell, CalendarDays, CheckCircle2, ChevronRight, Instagram, Megaphone, Rocket, Search, Sparkles, Star, TrendingUp, Users, UtensilsCrossed, WandSparkles } from 'lucide-react'
+import { Bell, CalendarDays, CheckCircle2, ChevronRight, Instagram, Rocket, Sparkles, Star, UtensilsCrossed } from 'lucide-react'
 import { useState } from 'react'
 import type { MenuItem, Post, Restaurant } from '../types'
 import { RestorappLogo } from './RestorappLogo'
@@ -27,17 +27,24 @@ export function RestorappDashboardV2({
   const[firstWeekWorking,setFirstWeekWorking]=useState(false)
   const activeItems=menuItems.filter(item=>item.is_active)
   const approved=posts.filter(post=>post.status==='approved'||post.status==='published').length
+  const published=posts.filter(post=>post.status==='published').length
   const scheduled=posts.filter(post=>Boolean(post.scheduled_for)&&post.status!=='published').length
-  const averageDiscovery=posts.length?Math.round(posts.reduce((sum,post)=>sum+Number(post.discovery_score||0),0)/posts.length):0
   const sorted=[...posts].sort((a,b)=>Number(b.discovery_score||0)-Number(a.discovery_score||0))
   const topPost=sorted[0]||posts[0]||null
   const topImage=resolveImage(topPost,menuItems)
   const image=heroImage||activeItems.find(item=>item.image_url)?.image_url||topImage||null
   const primaryDish=activeItems[0]||menuItems[0]||null
-  const firstHero=activeItems.find(item=>Number(item.marketing_priority||0)>=3)||null
-  const firstPhotos=activeItems.filter(item=>Boolean(item.image_url)).length
-  const firstWeekEmpty=posts.length===0
-  const firstWeekReview=posts.length>0&&approved===0
+  const nextStep=!activeItems.length
+    ?{title:'Dodaj prvo jelo',text:'To je jedino što Restorappu treba da bi počeo.',label:'Dodaj jelo',kind:'menu' as const}
+    :!posts.length
+      ?{title:'Napravi prvu nedelju',text:'Restorapp će pripremiti sadržaj i termine za tebe.',label:'Napravi nedelju',kind:'week' as const}
+      :approved===0
+        ?{title:'Pregledaj sadržaj',text:`${posts.length} predloga je spremno. Odobri ono što ti se sviđa.`,label:'Pregledaj',kind:'content' as const}
+        :scheduled===0
+          ?{title:'Zakaži objave',text:'Sadržaj je odobren. Sada samo izaberi kada ide napolje.',label:'Zakaži',kind:'publish' as const}
+          :published===0
+            ?{title:'Sve je spremno',text:'Objave imaju termine. Proveri i pusti Autopilot da radi.',label:'Otvori objave',kind:'publish' as const}
+            :{title:'Autopilot radi',text:'Sadržaj je aktivan. Ti samo prati rezultate.',label:'Vidi rezultate',kind:'insights' as const}
 
   async function startFirstWeek(){
     if(!onFirstWeek||firstWeekWorking)return
@@ -46,20 +53,18 @@ export function RestorappDashboardV2({
   }
 
   const stats=demo?[
-    {label:'Novi gosti',value:'+48',detail:'Ove nedelje',delta:'+12%',icon:'users'},
-    {label:'Ukupan reach',value:'12.4K',detail:'Ove nedelje',delta:'+28%',icon:'reach'},
-    {label:'Prosečna ocena',value:'4.8',detail:'Ovog meseca',delta:'+0.3',icon:'rating'},
-    {label:'Online akcije',value:'+32',detail:'Ove nedelje',delta:'+18%',icon:'orders'},
+    {label:'Sadržaj',value:'5',detail:'Spremno ove nedelje',delta:'aktivno',icon:'rating'},
+    {label:'Zakazano',value:'4',detail:'Čeka objavu',delta:'spremno',icon:'users'},
+    {label:'Meni',value:'5',detail:'Aktivnih jela',delta:'uređeno',icon:'orders'},
   ]:[
-    {label:'Planirano',value:String(scheduled),detail:'Objava u rasporedu',delta:posts.length?posts.length+' ukupno':'nov plan',icon:'users'},
-    {label:'Discovery',value:averageDiscovery?String(averageDiscovery):'—',detail:'Prosek sadržaja',delta:averageDiscovery>=80?'odlično':averageDiscovery?'aktivno':'čeka',icon:'reach'},
-    {label:'Spremno',value:String(approved),detail:'Odobreno / objavljeno',delta:posts.length?Math.round(approved/Math.max(1,posts.length)*100)+'%':'0%',icon:'rating'},
-    {label:'Aktivna jela',value:String(activeItems.length),detail:'U meniju',delta:activeItems.length>=3?'spremno':'dodaj još',icon:'orders'},
+    {label:'Sadržaj',value:String(posts.length),detail:'Ove nedelje',delta:posts.length?'spremno':'čeka',icon:'rating'},
+    {label:'Zakazano',value:String(scheduled),detail:'Čeka objavu',delta:scheduled?'aktivno':'—',icon:'users'},
+    {label:'Meni',value:String(activeItems.length),detail:'Aktivnih jela',delta:activeItems.length?'uređeno':'čeka',icon:'orders'},
   ]
 
   return <div className="restorapp-dashboard-v2-root">
     <div className="rd2-topbar">
-      <label className="rd2-search"><Search size={18}/><input aria-label="Pretraga" placeholder="Pretraži sadržaj, ideje, kampanje…" /></label>
+      <div className="rd2-welcome"><span>POČETNA</span><strong>{restaurant.name}</strong><small>{restaurant.neighborhood||restaurant.city||'Tvoj restoran'}</small></div>
       <div className="rd2-top-actions">
         <button className="rd2-bell" onClick={()=>onNavigate?.('notifications')} aria-label="Obaveštenja"><Bell size={19}/><i/></button>
         <button className="rd2-restaurant-pill" onClick={()=>onNavigate?.('settings')}>
@@ -72,31 +77,20 @@ export function RestorappDashboardV2({
 
     <div className="rd2-layout">
       <div className="rd2-main">
-        {(firstWeekEmpty||firstWeekReview)&&<section className={'rd2-first-success '+(firstWeekReview?'success':activeItems.length?'ready':'blocked')}>
-          <div className="rd2-first-success-icon">{firstWeekReview?<CheckCircle2 size={22}/>:activeItems.length?<Rocket size={22}/>:<AlertTriangle size={22}/>}</div>
-          <div className="rd2-first-success-copy">
-            <span>FIRST SUCCESS</span>
-            <strong>{firstWeekReview?'Prva Autopilot nedelja je spremna za pregled.':activeItems.length?'Jedan klik do prve nedelje sadržaja.':'Dodaj prvo jelo da pokrenemo Autopilot.'}</strong>
-            <p>{firstWeekReview?`${posts.length} objava je napravljeno. Pregledaj tekstove i termine, pa odobri prvu objavu.`:activeItems.length?'Restorapp prvo radi server preflight, zatim pravi nedelju, raspored i AI doradu teksta. Ako nešto blokira, vodi te direktno na rešenje.':'Bez aktivnog jela sistem neće izmišljati sadržaj. Dodaj bar jedno jelo u meni — HERO i fotografija daju još bolji prvi rezultat.'}</p>
-            <div className="rd2-first-success-facts">
-              <span className={activeItems.length?'ok':'warn'}>{activeItems.length} aktivnih jela</span>
-              <span className={firstHero?'ok':'warn'}>{firstHero?'HERO: '+firstHero.name:'HERO nije izabran'}</span>
-              <span className={firstPhotos?'ok':'warn'}>{firstPhotos} fotografija</span>
-            </div>
-          </div>
-          <div className="rd2-first-success-actions">
-            {firstWeekReview?<button className="rd2-primary" onClick={()=>onNavigate?.('dashboard')}><CheckCircle2 size={16}/> Pregledaj objave</button>:activeItems.length?<button className="rd2-primary" onClick={()=>void startFirstWeek()} disabled={firstWeekWorking}><Rocket size={16}/>{firstWeekWorking?'Pripremam prvu nedelju…':'Pokreni prvu nedelju'}</button>:<button className="rd2-primary" onClick={()=>onNavigate?.('menu')}><UtensilsCrossed size={16}/> Dodaj prvo jelo</button>}
-            <button className="rd2-first-success-link" onClick={()=>onNavigate?.('menu')}>Meni <ChevronRight size={13}/></button>
-          </div>
-        </section>}
+        <section className="rd2-next-step">
+          <div className="rd2-next-step-icon">{nextStep.kind==='insights'?<CheckCircle2 size={20}/>:<Rocket size={20}/>}</div>
+          <div><span>SLEDEĆI KORAK</span><strong>{nextStep.title}</strong><p>{nextStep.text}</p></div>
+          {nextStep.kind==='week'
+            ?<button className="rd2-primary" onClick={()=>void startFirstWeek()} disabled={firstWeekWorking}>{firstWeekWorking?'Pripremam…':nextStep.label}<ChevronRight size={15}/></button>
+            :<button className="rd2-primary" onClick={()=>onNavigate?.(nextStep.kind==='content'?'dashboard':nextStep.kind)}>{nextStep.label}<ChevronRight size={15}/></button>}
+        </section>
         <section className={'rd2-hero '+(image?'has-image':'')} style={image?{backgroundImage:`linear-gradient(90deg,rgba(8,18,14,.96) 0%,rgba(8,18,14,.78) 39%,rgba(8,18,14,.18) 70%),url(${image})`}:undefined}>
           <div className="rd2-hero-copy">
             <span>GOOD AFTERNOON,</span>
             <h1>Time to make<br/><em>today delicious!</em></h1>
             <p>Restorapp pomaže da privučeš više gostiju, napraviš bolji sadržaj i razvijaš restoran — sve na jednom mestu.</p>
             <div className="rd2-hero-actions">
-              <button className="rd2-primary" onClick={onCreate}><Sparkles size={17}/> Kreiraj novi sadržaj</button>
-              <button className="rd2-secondary" onClick={()=>onNavigate?.('creative')}><WandSparkles size={16}/> Pogledaj predloge</button>
+              <button className="rd2-primary" onClick={onCreate}><Sparkles size={17}/> Napravi sadržaj</button>
             </div>
           </div>
           <div className="rd2-hero-script"><span>Great food</span><strong>brings people</strong><em>together</em></div>
@@ -104,7 +98,7 @@ export function RestorappDashboardV2({
 
         <section className="rd2-stats">
           {stats.map((stat,index)=><article key={stat.label}>
-            <div className={'rd2-stat-icon s'+index}>{stat.icon==='users'?<Users size={20}/>:stat.icon==='reach'?<Instagram size={20}/>:stat.icon==='rating'?<Star size={20}/>:<CalendarDays size={20}/>}</div>
+            <div className={'rd2-stat-icon s'+index}>{stat.icon==='users'?<CalendarDays size={20}/>:stat.icon==='rating'?<Star size={20}/>:<UtensilsCrossed size={20}/>}</div>
             <div><span>{stat.label}</span><strong>{stat.value}</strong><small>{stat.detail}</small></div>
             <b>{stat.delta}</b>
             <div className={'rd2-mini-bars bars-'+index}>{Array.from({length:11}).map((_,i)=><i key={i} style={{height:(7+((i*7+index*5)%19))+'px'}}/>)}</div>
@@ -112,7 +106,7 @@ export function RestorappDashboardV2({
         </section>
 
         <section className="rd2-bottom-grid">
-          <article className="rd2-panel rd2-growth">
+          {demo&&<article className="rd2-panel rd2-growth">
             <header><div><h2>Guest growth</h2><span>Više gostiju, veće prilike.</span></div><button>Ovaj mesec <ChevronRight size={13}/></button></header>
             <div className="rd2-growth-chart">
               <svg viewBox="0 0 520 190" preserveAspectRatio="none" aria-hidden="true">
@@ -124,7 +118,7 @@ export function RestorappDashboardV2({
               <div className="rd2-growth-bubble"><strong>{demo?'124':Math.max(approved+scheduled,posts.length)}</strong><span>{demo?'+28%':'aktivnosti'}</span></div>
               <div className="rd2-growth-axis"><span>1. Mar</span><span>8. Mar</span><span>15. Mar</span><span>22. Mar</span><span>31. Mar</span></div>
             </div>
-          </article>
+          </article>}
 
           <article className="rd2-panel rd2-toppost-card">
             <header><h2>Top performing post</h2><button onClick={()=>onNavigate?.('insights')}>Prikaži sve <ChevronRight size={13}/></button></header>
@@ -138,12 +132,10 @@ export function RestorappDashboardV2({
           </article>
 
           <article className="rd2-panel rd2-quick">
-            <header><h2>Quick actions</h2></header>
-            <button onClick={()=>onNavigate?.('creative')}><Sparkles size={17}/><span>Generiši sadržaj (AI)</span><ChevronRight size={15}/></button>
-            <button onClick={()=>onNavigate?.('promotions')}><Megaphone size={17}/><span>Planiraj kampanju</span><ChevronRight size={15}/></button>
-            <button onClick={()=>onNavigate?.('menu')}><UtensilsCrossed size={17}/><span>Ažuriraj meni</span><ChevronRight size={15}/></button>
-            <button onClick={()=>onNavigate?.('publish')}><CalendarDays size={17}/><span>Upravljaj rasporedom</span><ChevronRight size={15}/></button>
-            <button onClick={()=>onNavigate?.('insights')}><BarChart3 size={17}/><span>Pogledaj analitiku</span><ChevronRight size={15}/></button>
+            <header><h2>Brzo</h2></header>
+            <button onClick={()=>onNavigate?.('dashboard')}><Sparkles size={17}/><span>Sadržaj</span><ChevronRight size={15}/></button>
+            <button onClick={()=>onNavigate?.('publish')}><CalendarDays size={17}/><span>Objave</span><ChevronRight size={15}/></button>
+            <button onClick={()=>onNavigate?.('menu')}><UtensilsCrossed size={17}/><span>Meni</span><ChevronRight size={15}/></button>
           </article>
         </section>
       </div>
