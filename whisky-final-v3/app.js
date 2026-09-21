@@ -198,12 +198,14 @@
 
   function showCustomerView(v){
     state.customerView=v;
+    closeMenu();
     qa(".customer-view").forEach(function(x){x.classList.remove("on");});
     var el=q("#view-"+v); if(el)el.classList.add("on");
     qa('[data-customer-view]').forEach(function(x){x.classList.toggle("on",x.getAttribute("data-customer-view")===v);});
   }
   function showCrmView(v){
     state.crmView=v;
+    closeMenu();
     qa(".crm-view").forEach(function(x){x.classList.remove("on");});
     var el=q("#crm-"+v); if(el)el.classList.add("on");
     qa('[data-crm-view]').forEach(function(x){x.classList.toggle("on",x.getAttribute("data-crm-view")===v);});
@@ -221,6 +223,8 @@
 
   function openCart(){ q("#overlay").classList.add("on"); q("#cartDrawer").classList.add("on"); }
   function closeCart(){ q("#overlay").classList.remove("on"); q("#cartDrawer").classList.remove("on"); }
+  function openMenu(){ var d=q("#mobileDrawer"), b=q("#mobileMenuBackdrop"); if(d)d.classList.add("on"); if(b)b.classList.add("on"); }
+  function closeMenu(){ var d=q("#mobileDrawer"), b=q("#mobileMenuBackdrop"); if(d)d.classList.remove("on"); if(b)b.classList.remove("on"); }
   function toast(msg){ var el=q("#toast"); if(!el)return; el.textContent=msg; el.classList.add("on"); clearTimeout(toast.timer); toast.timer=setTimeout(function(){el.classList.remove("on");},1500); }
 
   document.addEventListener("click",function(e){
@@ -229,10 +233,12 @@
     if(b.hasAttribute("data-customer-view")){ showCustomerView(b.getAttribute("data-customer-view")); return; }
     if(b.hasAttribute("data-crm-view")){ showCrmView(b.getAttribute("data-crm-view")); return; }
     var a=b.getAttribute("data-action"), id=b.getAttribute("data-id");
+    if(a==="menu-open")openMenu();
+    if(a==="menu-close")closeMenu();
     if(a==="lang-de"){state.lang="de";q("#deBtn").classList.add("on");q("#enBtn").classList.remove("on");renderText();}
     if(a==="lang-en"){state.lang="en";q("#enBtn").classList.add("on");q("#deBtn").classList.remove("on");renderText();}
     if(a==="mode-customer")setMode("customer");
-    if(a==="mode-crm")setMode("crm");
+    if(a==="mode-crm"){setMode("crm");closeMenu();}
     if(a==="add-cart")addCart(id);
     if(a==="cart-minus")updateCart(id,-1);
     if(a==="cart-plus")updateCart(id,1);
