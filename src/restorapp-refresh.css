@@ -877,3 +877,16 @@ input:focus,select:focus,textarea:focus{border-color:#c9a255!important;box-shado
   max-width:none!important;
   overflow:visible!important;
 }
+
+/* Simplified customer navigation */
+.sidebar .simple-primary-nav{display:grid!important;gap:6px!important}
+.sidebar .simple-primary-nav button{min-height:45px!important;font-size:12px!important}
+.sidebar .simple-primary-nav .simple-nav-more{margin-top:7px!important;border-top:1px solid rgba(255,255,255,.08)!important;border-radius:0 0 11px 11px!important;padding-top:8px!important;color:#b8c3bd!important}
+.sidebar .simple-primary-nav .simple-nav-more:hover{color:#fff!important}
+.sidebar-plan-mini{margin-bottom:10px!important}
+.sidebar-bottom-actions{margin-top:auto!important}
+@media(max-width:900px){
+  .sidebar .simple-primary-nav{display:flex!important}
+  .sidebar .simple-primary-nav button{min-height:44px!important}
+  .sidebar .simple-primary-nav .simple-nav-more{margin-top:0!important;border-top:0!important;padding-top:0!important;border-radius:11px!important}
+}
