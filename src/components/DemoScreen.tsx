@@ -1,5 +1,5 @@
 import { useState, type CSSProperties } from 'react'
-import { ArrowLeft, BarChart3, CalendarClock, CalendarDays, CheckCircle2, Clock3, Facebook, Hash, Image as ImageIcon, Instagram, LayoutDashboard, MapPin, Megaphone, MousePointerClick, Palette, Pencil, RefreshCw, Save, Search, Send, Settings, ShieldCheck, Sparkles, Target, TrendingUp, UtensilsCrossed, X, Zap } from 'lucide-react'
+import { AlertTriangle, ArrowLeft, BarChart3, CalendarClock, CalendarDays, CheckCircle2, Clock3, Facebook, Hash, Image as ImageIcon, Instagram, LayoutDashboard, MapPin, Megaphone, MousePointerClick, Palette, Pencil, RefreshCw, Save, Search, Send, Settings, ShieldCheck, Sparkles, Target, TrendingUp, UtensilsCrossed, X, Zap } from 'lucide-react'
 import { VisualStudio } from './VisualStudio'
 import { BrandKit } from './BrandKit'
 import { DemoOwner } from './DemoOwner'
@@ -199,15 +199,28 @@ function DemoPromotions({ notify }: { notify: (value: string) => void }) {
 function DemoPublish({ notify }: { notify: (value: string) => void }) {
   type DemoMetaStatus='idle'|'queued'|'published'|'failed'
   type DemoMetaJobs={facebook:DemoMetaStatus;instagram:DemoMetaStatus}
+  type DemoConnectionStatus='connected'|'expiring'|'expired'|'disconnected'
   const [times, setTimes] = useState<Record<string, string>>(() => Object.fromEntries(demoPosts.map((post) => [post.title, post.time])))
   const [editing, setEditing] = useState('')
   const [draft, setDraft] = useState('')
+  const [metaConnection,setMetaConnection]=useState<DemoConnectionStatus>('connected')
   const [metaJobs,setMetaJobs]=useState<Record<string,DemoMetaJobs>>({
     'Pizza Capricciosa':{facebook:'queued',instagram:'queued'},
     'Sveža Carbonara':{facebook:'published',instagram:'published'},
     'Tiramisu':{facebook:'idle',instagram:'failed'},
     'Vikend pasta':{facebook:'idle',instagram:'idle'},
   })
+
+  const metaReady=metaConnection==='connected'||metaConnection==='expiring'
+  const metaWarning=metaConnection==='expiring'
+  const connectionTitle=metaConnection==='connected'?'Facebook + Instagram povezani':metaConnection==='expiring'?'Meta token uskoro ističe':metaConnection==='expired'?'Meta token je istekao':'Meta nalog nije povezan'
+  const connectionDetail=metaConnection==='connected'
+    ?'Bella Napoli Beograd · @bellanapoli · token server-side · queue proverava objave svakih 5 min'
+    :metaConnection==='expiring'
+      ?'META TOKEN WARNING DEMO · token ističe za 3 dana. Objave još rade, ali reconnect treba završiti pre isteka.'
+      :metaConnection==='expired'
+        ?'Direktno objavljivanje je blokirano dok se Facebook / Instagram ponovo ne povežu. Queue se ne šalje naslepo.'
+        :'Nema aktivnog Page tokena. Sadržaj ostaje bezbedno u Restorappu dok se Meta Connect ne završi.'
 
   function begin(title: string) { setEditing(title); setDraft(times[title] || '18:30') }
   function save(title: string) {
@@ -218,29 +231,55 @@ function DemoPublish({ notify }: { notify: (value: string) => void }) {
   function setJob(title:string,platform:'facebook'|'instagram',status:DemoMetaStatus){
     setMetaJobs(current=>({...current,[title]:{...(current[title]||{facebook:'idle',instagram:'idle'}),[platform]:status}}))
   }
+  function requireMetaReady(){
+    if(metaReady)return true
+    notify(metaConnection==='expired'?'Demo: Meta token je istekao. Prvo klikni „Ponovo poveži Meta“.':'Demo: Meta nalog nije povezan. Prvo završi Meta Connect.')
+    return false
+  }
   function queueMeta(title:string){
+    if(!requireMetaReady())return
     setMetaJobs(current=>({...current,[title]:{facebook:'queued',instagram:'queued'}}))
-    notify(`Demo: ${title} je zakazan za Facebook + Instagram.`)
+    notify(`Demo: ${title} je zakazan za Facebook + Instagram.${metaWarning?' Token warning ostaje vidljiv do reconnect-a.':''}`)
   }
   function publishMeta(title:string){
+    if(!requireMetaReady())return
     setMetaJobs(current=>({...current,[title]:{facebook:'published',instagram:'published'}}))
     notify(`Demo: ${title} je objavljen na Facebook + Instagram.`)
+  }
+  function retryMeta(title:string,platform:'facebook'|'instagram'){
+    if(!requireMetaReady())return
+    setJob(title,platform,'published')
+    notify(`Demo: ${platform==='facebook'?'Facebook':'Instagram'} retry je uspeo posle bezbedne provere konekcije.`)
   }
   function cancelMeta(title:string){
     setMetaJobs(current=>({...current,[title]:{facebook:'idle',instagram:'idle'}}))
     notify(`Demo: Meta zakazivanje za ${title} je otkazano.`)
   }
+  function reconnectMeta(){
+    setMetaConnection('connected')
+    notify('Demo: Meta reconnect je završen. Facebook Page + Instagram Business su ponovo validni.')
+  }
+  function disconnectMeta(){
+    setMetaConnection('disconnected')
+    notify('Demo: Meta nalog je odvojen. Postojeći sadržaj ostaje sačuvan, a nove objave su blokirane.')
+  }
 
   return <>
     <header className="page-header wow-simple-header"><div><p className="eyebrow">PUBLISH CENTER</p><h1>Tačan dan. Tačno vreme.</h1><p className="muted">Autopilot predlaže termin, a Meta queue može da objavi i kada aplikacija nije otvorena.</p></div><button className="primary" onClick={() => notify('Demo kalendar je spreman sa datumima i vremenima.')}><CalendarClock size={17} /> Export kalendara</button></header>
 
-    <section className="meta-connect-panel connected demo-meta-connected">
-      <div className="meta-connect-brand"><div><Facebook size={20}/><Instagram size={20}/></div><span><small>META PUBLISHING · DEMO</small><strong>Facebook + Instagram povezani</strong><p>Bella Napoli Beograd · @bellanapoli · token server-side · queue proverava objave svakih 5 min</p></span></div>
-      <div className="meta-connect-actions"><span className="meta-connected-chip"><CheckCircle2 size={14}/> CONNECTED</span><button className="secondary" onClick={()=>notify('Demo: Meta konekcija je proverena. Page i Instagram profesionalni nalog su dostupni.')}><CheckCircle2 size={14}/> Proveri konekciju</button></div>
+    <section className={`meta-connect-panel demo-meta-connected ${metaReady?'connected':'expired'} ${metaWarning?'demo-meta-warning':''}`}>
+      <div className="meta-connect-brand"><div>{metaReady?<><Facebook size={20}/><Instagram size={20}/></>:<AlertTriangle size={22}/>}</div><span><small>META PUBLISHING · DEMO</small><strong>{connectionTitle}</strong><p>{connectionDetail}</p></span></div>
+      <div className="meta-connect-actions">
+        <span className={`meta-connected-chip demo-meta-state-${metaConnection}`}>{metaReady?<CheckCircle2 size={14}/>:<AlertTriangle size={14}/>} {metaConnection==='connected'?'CONNECTED':metaConnection==='expiring'?'TOKEN ISTIČE':metaConnection==='expired'?'EXPIRED':'DISCONNECTED'}</span>
+        {metaConnection==='connected'&&<><button className="secondary" onClick={()=>{setMetaConnection('expiring');notify('Demo: token sada ističe za 3 dana. Publishing i dalje radi, ali sistem traži reconnect.')}}><AlertTriangle size={14}/> Simuliraj token warning</button><button className="meta-disconnect" onClick={disconnectMeta}>Odvoji demo</button></>}
+        {metaConnection==='expiring'&&<><button className="secondary" onClick={reconnectMeta}><RefreshCw size={14}/> Obnovi konekciju</button><button className="meta-disconnect" onClick={()=>{setMetaConnection('expired');notify('Demo: token je istekao. Novi publish i retry su sada blokirani.')}}>Simuliraj istek</button></>}
+        {metaConnection==='expired'&&<button className="primary" onClick={reconnectMeta}><RefreshCw size={14}/> Ponovo poveži Meta</button>}
+        {metaConnection==='disconnected'&&<button className="primary" onClick={reconnectMeta}><Facebook size={14}/> Poveži Meta</button>}
+      </div>
     </section>
 
-    <section className="publish-gate ready"><div className="publish-gate-icon"><CheckCircle2 size={20}/></div><div><span>WEEK GATE</span><strong>Spremno za publishing</strong><small>Nema tehničkih blokera: termini, approval i Meta konekcija su spremni.</small></div><b>1/4</b></section>
-    <div className="demo-next-time"><div><Clock3 size={22} /></div><span>SLEDEĆA OBJAVA<strong>Ponedeljak, 14. septembar · {times['Pizza Capricciosa']}</strong><small>FEED · Pizza Capricciosa · FB + IG queued</small></span></div>
+    <section className={`publish-gate ${metaReady?'ready':'blocked'}`}><div className="publish-gate-icon">{metaReady?<CheckCircle2 size={20}/>:<AlertTriangle size={20}/>}</div><div><span>WEEK GATE</span><strong>{metaReady?(metaWarning?'Spremno, ali token traži pažnju':'Spremno za publishing'):'Publishing je bezbedno blokiran'}</strong><small>{metaReady?(metaWarning?'Termini i approval su spremni; reconnect uradi pre isteka tokena.':'Nema tehničkih blokera: termini, approval i Meta konekcija su spremni.'):'Meta konekcija nije zdrava. Queue, Meta sada i retry čekaju reconnect — ništa se ne šalje naslepo.'}</small></div><b>{metaReady?'1/4':'0/4'}</b></section>
+    <div className="demo-next-time"><div><Clock3 size={22} /></div><span>SLEDEĆA OBJAVA<strong>Ponedeljak, 14. septembar · {times['Pizza Capricciosa']}</strong><small>FEED · Pizza Capricciosa · {metaReady?'FB + IG queued':'Meta queue pauziran'}</small></span></div>
 
     <div className="panel wow-publish-demo demo-publish-pro">{demoPosts.map((post) => {
       const jobs=metaJobs[post.title]||{facebook:'idle',instagram:'idle'}
@@ -256,7 +295,7 @@ function DemoPublish({ notify }: { notify: (value: string) => void }) {
             {(['facebook','instagram'] as const).map(platform=>{
               const status=jobs[platform]
               if(status==='idle')return null
-              return <span className={`meta-job-chip ${status}`} key={platform}><b>{platform==='facebook'?'FB':'IG'}</b> {status}{status==='queued'&&<small>{times[post.title]}</small>}{status==='failed'&&<button onClick={()=>{setJob(post.title,platform,'published');notify(`Demo: ${platform==='facebook'?'Facebook':'Instagram'} retry je uspeo.`)}}>Retry</button>}</span>
+              return <span className={`meta-job-chip ${status}`} key={platform}><b>{platform==='facebook'?'FB':'IG'}</b> {status}{status==='queued'&&<small>{times[post.title]}</small>}{status==='failed'&&<button disabled={!metaReady} title={!metaReady?'Reconnect Meta prvo':'Bezbedan retry'} onClick={()=>retryMeta(post.title,platform)}>Retry</button>}</span>
             })}
           </div>
           {editing === post.title && <div className="demo-time-editor"><label>Vreme objave<input type="time" value={draft} onChange={(event) => setDraft(event.target.value)} /></label><button className="secondary" onClick={() => setDraft(post.type === 'STORY' ? '11:30' : post.type === 'PROMO' ? '17:30' : '18:30')}><Sparkles size={13} /> Autopilot</button><button className="primary" onClick={() => save(post.title)}><Save size={13} /> Sačuvaj</button><button className="icon-button" onClick={() => setEditing('')}><X size={14} /></button></div>}
@@ -267,14 +306,14 @@ function DemoPublish({ notify }: { notify: (value: string) => void }) {
           <span className="generation-source-chip auto">AUTO WEEK</span>
           <span className={`status ${post.status}`}>{post.status}</span>
           <button className="mini-schedule" onClick={() => begin(post.title)}><Pencil size={13} /> Promeni</button>
-          {approved&&<button className="mini-meta-now" onClick={()=>publishMeta(post.title)}><Send size={13}/> Meta sada</button>}
-          {approved&&!hasQueued&&<button className="mini-meta-queue" onClick={()=>queueMeta(post.title)}><CalendarClock size={13}/> Zakaži Meta</button>}
+          {approved&&<button className="mini-meta-now" disabled={!metaReady} onClick={()=>publishMeta(post.title)}><Send size={13}/> Meta sada</button>}
+          {approved&&!hasQueued&&<button className="mini-meta-queue" disabled={!metaReady} onClick={()=>queueMeta(post.title)}><CalendarClock size={13}/> Zakaži Meta</button>}
           {hasQueued&&<button className="meta-disconnect demo-cancel-meta" onClick={()=>cancelMeta(post.title)}>Otkaži Meta</button>}
         </div>
       </div>
     })}</div>
 
-    <div className="meta-roadmap"><div><Send size={18}/><div><strong>Background publishing simulacija je aktivna</strong><span>Demo prikazuje connected nalog, queue, publish, cancel i retry. U produkciji se tokeni čuvaju u Vault-u i queue radi server-side.</span></div></div><span className="roadmap-badge">META CONNECTED</span></div>
+    <div className={`meta-roadmap ${metaReady?'':'demo-meta-roadmap-blocked'}`}><div>{metaReady?<Send size={18}/>:<ShieldCheck size={18}/>}<div><strong>{metaReady?'Background publishing simulacija je aktivna':'Background publishing je pauziran'}</strong><span>{metaReady?'Demo prikazuje connected nalog, queue, publish, cancel, retry i token warning. U produkciji se tokeni čuvaju u Vault-u i queue radi server-side.':'Demo pokazuje zaštitu: kada token istekne ili je nalog odvojen, nove objave i retry se ne šalju dok reconnect nije potvrđen.'}</span></div></div><span className="roadmap-badge">{metaConnection==='connected'?'META CONNECTED':metaConnection==='expiring'?'TOKEN WARNING':metaConnection==='expired'?'RECONNECT REQUIRED':'META DISCONNECTED'}</span></div>
   </>
 }
 
