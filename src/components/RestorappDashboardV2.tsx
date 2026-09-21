@@ -1,8 +1,9 @@
-import { BarChart3, Bell, CalendarDays, ChevronRight, Instagram, Megaphone, Search, Sparkles, Star, TrendingUp, Users, UtensilsCrossed, WandSparkles } from 'lucide-react'
+import { AlertTriangle, BarChart3, Bell, CalendarDays, CheckCircle2, ChevronRight, Instagram, Megaphone, Rocket, Search, Sparkles, Star, TrendingUp, Users, UtensilsCrossed, WandSparkles } from 'lucide-react'
+import { useState } from 'react'
 import type { MenuItem, Post, Restaurant } from '../types'
 import { RestorappLogo } from './RestorappLogo'
 
-type NavTarget='menu'|'publish'|'settings'|'billing'|'creative'|'promotions'|'insights'|'notifications'
+type NavTarget='dashboard'|'menu'|'publish'|'settings'|'billing'|'creative'|'promotions'|'insights'|'notifications'
 
 export function RestorappDashboardV2({
   restaurant,
@@ -12,6 +13,7 @@ export function RestorappDashboardV2({
   heroImage,
   onCreate,
   onNavigate,
+  onFirstWeek,
 }:{
   restaurant:Restaurant
   menuItems:MenuItem[]
@@ -20,7 +22,9 @@ export function RestorappDashboardV2({
   heroImage?:string|null
   onCreate?:()=>void
   onNavigate?:(target:NavTarget)=>void
+  onFirstWeek?:()=>Promise<{ok:boolean;created?:boolean;existing?:boolean;posts?:number;blocked?:boolean}>
 }){
+  const[firstWeekWorking,setFirstWeekWorking]=useState(false)
   const activeItems=menuItems.filter(item=>item.is_active)
   const approved=posts.filter(post=>post.status==='approved'||post.status==='published').length
   const scheduled=posts.filter(post=>Boolean(post.scheduled_for)&&post.status!=='published').length
@@ -30,6 +34,16 @@ export function RestorappDashboardV2({
   const topImage=resolveImage(topPost,menuItems)
   const image=heroImage||activeItems.find(item=>item.image_url)?.image_url||topImage||null
   const primaryDish=activeItems[0]||menuItems[0]||null
+  const firstHero=activeItems.find(item=>Number(item.marketing_priority||0)>=3)||null
+  const firstPhotos=activeItems.filter(item=>Boolean(item.image_url)).length
+  const firstWeekEmpty=posts.length===0
+  const firstWeekReview=posts.length>0&&approved===0
+
+  async function startFirstWeek(){
+    if(!onFirstWeek||firstWeekWorking)return
+    setFirstWeekWorking(true)
+    try{await onFirstWeek()}finally{setFirstWeekWorking(false)}
+  }
 
   const stats=demo?[
     {label:'Novi gosti',value:'+48',detail:'Ove nedelje',delta:'+12%',icon:'users'},
@@ -58,6 +72,23 @@ export function RestorappDashboardV2({
 
     <div className="rd2-layout">
       <div className="rd2-main">
+        {(firstWeekEmpty||firstWeekReview)&&<section className={'rd2-first-success '+(firstWeekReview?'success':activeItems.length?'ready':'blocked')}>
+          <div className="rd2-first-success-icon">{firstWeekReview?<CheckCircle2 size={22}/>:activeItems.length?<Rocket size={22}/>:<AlertTriangle size={22}/>}</div>
+          <div className="rd2-first-success-copy">
+            <span>FIRST SUCCESS</span>
+            <strong>{firstWeekReview?'Prva Autopilot nedelja je spremna za pregled.':activeItems.length?'Jedan klik do prve nedelje sadržaja.':'Dodaj prvo jelo da pokrenemo Autopilot.'}</strong>
+            <p>{firstWeekReview?`${posts.length} objava je napravljeno. Pregledaj tekstove i termine, pa odobri prvu objavu.`:activeItems.length?'Restorapp prvo radi server preflight, zatim pravi nedelju, raspored i AI doradu teksta. Ako nešto blokira, vodi te direktno na rešenje.':'Bez aktivnog jela sistem neće izmišljati sadržaj. Dodaj bar jedno jelo u meni — HERO i fotografija daju još bolji prvi rezultat.'}</p>
+            <div className="rd2-first-success-facts">
+              <span className={activeItems.length?'ok':'warn'}>{activeItems.length} aktivnih jela</span>
+              <span className={firstHero?'ok':'warn'}>{firstHero?'HERO: '+firstHero.name:'HERO nije izabran'}</span>
+              <span className={firstPhotos?'ok':'warn'}>{firstPhotos} fotografija</span>
+            </div>
+          </div>
+          <div className="rd2-first-success-actions">
+            {firstWeekReview?<button className="rd2-primary" onClick={()=>onNavigate?.('dashboard')}><CheckCircle2 size={16}/> Pregledaj objave</button>:activeItems.length?<button className="rd2-primary" onClick={()=>void startFirstWeek()} disabled={firstWeekWorking}><Rocket size={16}/>{firstWeekWorking?'Pripremam prvu nedelju…':'Pokreni prvu nedelju'}</button>:<button className="rd2-primary" onClick={()=>onNavigate?.('menu')}><UtensilsCrossed size={16}/> Dodaj prvo jelo</button>}
+            <button className="rd2-first-success-link" onClick={()=>onNavigate?.('menu')}>Meni <ChevronRight size={13}/></button>
+          </div>
+        </section>}
         <section className={'rd2-hero '+(image?'has-image':'')} style={image?{backgroundImage:`linear-gradient(90deg,rgba(8,18,14,.96) 0%,rgba(8,18,14,.78) 39%,rgba(8,18,14,.18) 70%),url(${image})`}:undefined}>
           <div className="rd2-hero-copy">
             <span>GOOD AFTERNOON,</span>
