@@ -55,6 +55,16 @@ jobs:
           grep -Fq 'META PUBLISH READINESS' "$FILE"
           grep -Fq 'Poveži Meta publishing' "$FILE"
           grep -Fq "metaConnection?.status==='connected'" "$FILE"
+      - name: Onboarding starter menu guard
+        shell: bash
+        run: |
+          set -euo pipefail
+          FILE="src/components/Onboarding.tsx"
+          grep -Fq "Math.min(4,value+1)" "$FILE"
+          grep -Fq "label:'Prva jela'" "$FILE"
+          grep -Fq 'Prva jela za Autopilot' "$FILE"
+          grep -Fq "eventType:'onboarding_menu_seeded'" "$FILE"
+          grep -Fq 'marketing_priority:index===0?3:index===1?2:1' "$FILE"
       - name: Demo Meta connection safety guard
         shell: bash
         run: |
