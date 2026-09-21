@@ -84,6 +84,9 @@ jobs:
           grep -Fq 'Potvrđen Meta manual review' /tmp/app.js
           grep -Fq 'Prva jela za Autopilot' /tmp/app.js
           grep -Fq 'Sa jednim HERO jelom i fotografijom Restorapp odmah ima mnogo bolji start' /tmp/app.js
+          grep -Fq 'FIRST SUCCESS' /tmp/app.js
+          grep -Fq 'Pokreni prvu nedelju' /tmp/app.js
+          grep -Fq 'Prva Autopilot nedelja je spremna' /tmp/app.js
           grep -Fq 'Dodaj fotografiju' /tmp/app.js
           DEMO_CHUNK=$(grep -oE 'DemoScreen-[A-Za-z0-9_-]+\.js' /tmp/app.js | head -1)
           test -n "$DEMO_CHUNK"
@@ -94,6 +97,8 @@ jobs:
           grep -Fq 'META TOKEN WARNING DEMO' /tmp/demo.js
           grep -Fq 'Ponovo poveži Meta' /tmp/demo.js
           grep -Fq 'Publishing je bezbedno blokiran' /tmp/demo.js
+          grep -Fq 'FIRST SUCCESS DEMO' /tmp/demo.js
+          grep -Fq 'Simuliraj prvi uspeh novog restorana' /tmp/demo.js
           PUBLISH_CHUNK=$(grep -oE 'PublishCenter-[A-Za-z0-9_-]+\.js' /tmp/app.js | head -1)
           test -n "$PUBLISH_CHUNK"
           curl --max-time 20 --retry 4 --retry-delay 2 --retry-all-errors -fsSL "$BASE/assets/$PUBLISH_CHUNK" -o /tmp/publish.js
@@ -105,5 +110,5 @@ jobs:
             echo "Legacy AI download filename found in compiled Creative Hub"
             exit 1
           fi
-          echo "Restorapp branding + starter-menu onboarding + Launch Center + interactive Meta safety demo + OWNER ops markers OK"
+          echo "Restorapp branding + starter-menu onboarding + first-success week + Launch Center + Meta safety demo + OWNER ops markers OK"
           echo "Public preview OK: $BASE/index.html"
