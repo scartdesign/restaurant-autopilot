@@ -55,6 +55,19 @@ jobs:
           grep -Fq 'META PUBLISH READINESS' "$FILE"
           grep -Fq 'Poveži Meta publishing' "$FILE"
           grep -Fq "metaConnection?.status==='connected'" "$FILE"
+      - name: First-success week flow guard
+        shell: bash
+        run: |
+          set -euo pipefail
+          APP="src/App.tsx"
+          DASH="src/components/RestorappDashboardV2.tsx"
+          grep -Fq 'async function createFirstWeek()' "$APP"
+          grep -Fq "action:'preflight'" "$APP"
+          grep -Fq "action=preflight?.existing?'week':'ensure_week'" "$APP"
+          grep -Fq 'onFirstWeek={createFirstWeek}' "$APP"
+          grep -Fq 'FIRST SUCCESS' "$DASH"
+          grep -Fq 'Pokreni prvu nedelju' "$DASH"
+          grep -Fq "onNavigate?.('dashboard')" "$DASH"
       - name: Onboarding starter menu guard
         shell: bash
         run: |

@@ -24,3 +24,24 @@
 @media(max-width:1280px){.rd2-layout{grid-template-columns:1fr}.rd2-mobile-preview{display:none}.rd2-bottom-grid{grid-template-columns:1fr 1fr}.rd2-quick{grid-column:1/-1;grid-template-columns:repeat(5,1fr)}.rd2-quick header{grid-column:1/-1}.rd2-quick>button{grid-template-columns:auto 1fr}.rd2-quick>button>svg:last-child{display:none}}
 @media(max-width:900px){.rd2-topbar{display:none}.rd2-stats{grid-template-columns:1fr 1fr}.rd2-bottom-grid{grid-template-columns:1fr}.rd2-quick{grid-column:auto;grid-template-columns:1fr}.rd2-hero{min-height:390px;padding:24px 20px;background-position:65% center!important}.rd2-hero:before{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(8,18,14,.25),rgba(8,18,14,.92) 70%)}.rd2-hero-copy{width:100%;padding-top:120px}.rd2-hero-script{display:none}}
 @media(max-width:560px){.rd2-stats{grid-template-columns:1fr}.rd2-hero h1{font-size:42px}.rd2-hero-actions{display:grid}.rd2-primary,.rd2-secondary{width:100%}}
+
+/* First-success funnel: onboarding -> first generated week -> first approval */
+.rd2-first-success{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:14px;align-items:center;padding:15px 16px;border:1px solid #e2d6bd;border-radius:16px;background:linear-gradient(135deg,#fffaf0,#fffdf8);box-shadow:0 8px 24px rgba(24,35,29,.035)}
+.rd2-first-success.ready{border-color:#d7dfbd;background:linear-gradient(135deg,#f8fced,#fffdf7)}
+.rd2-first-success.success{border-color:#cce2c5;background:linear-gradient(135deg,#f3faee,#fbfff8)}
+.rd2-first-success.blocked{border-color:#ead3ca;background:#fff7f4}
+.rd2-first-success-icon{width:44px;height:44px;display:grid;place-items:center;border-radius:13px;background:#17372d;color:#f0ca79}
+.rd2-first-success.blocked .rd2-first-success-icon{background:#8d5145;color:#fff}
+.rd2-first-success.success .rd2-first-success-icon{background:#e4f1d5;color:#587a31}
+.rd2-first-success-copy>span{display:block;font-size:8px;font-weight:950;letter-spacing:.12em;color:#8a733f}
+.rd2-first-success-copy>strong{display:block;margin:3px 0 4px;font-size:15px;color:#253029}
+.rd2-first-success-copy>p{margin:0;max-width:760px;color:#68726b;font-size:10px;line-height:1.5}
+.rd2-first-success-facts{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.rd2-first-success-facts span{padding:5px 7px;border-radius:999px;background:#f0f2ee;color:#6c756e;font-size:8px;font-weight:850}
+.rd2-first-success-facts span.ok{background:#e9f4dd;color:#55752f}.rd2-first-success-facts span.warn{background:#fff0de;color:#8a662e}
+.rd2-first-success-actions{display:flex;align-items:center;gap:7px;flex-wrap:wrap;justify-content:flex-end}
+.rd2-first-success-actions .rd2-primary{min-height:40px;padding:0 13px;font-size:10px}
+.rd2-first-success-actions .rd2-primary:disabled{opacity:.58;cursor:wait}
+.rd2-first-success-link{min-height:38px;display:inline-flex;align-items:center;gap:3px;padding:0 8px;border:0;background:transparent;color:#7a6942;font-size:9px;font-weight:850}
+@media(max-width:900px){.rd2-first-success{grid-template-columns:auto 1fr}.rd2-first-success-actions{grid-column:1/-1;justify-content:flex-start}}
+@media(max-width:560px){.rd2-first-success{grid-template-columns:1fr;padding:14px}.rd2-first-success-icon{width:40px;height:40px}.rd2-first-success-actions{display:grid}.rd2-first-success-actions .rd2-primary,.rd2-first-success-link{width:100%;justify-content:center}}

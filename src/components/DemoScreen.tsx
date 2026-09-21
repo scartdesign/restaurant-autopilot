@@ -1,5 +1,5 @@
 import { useState, type CSSProperties } from 'react'
-import { AlertTriangle, ArrowLeft, BarChart3, CalendarClock, CalendarDays, CheckCircle2, Clock3, Facebook, Hash, Image as ImageIcon, Instagram, LayoutDashboard, MapPin, Megaphone, MousePointerClick, Palette, Pencil, RefreshCw, Save, Search, Send, Settings, ShieldCheck, Sparkles, Target, TrendingUp, UtensilsCrossed, X, Zap } from 'lucide-react'
+import { AlertTriangle, ArrowLeft, BarChart3, CalendarClock, CalendarDays, CheckCircle2, Clock3, Facebook, Hash, Image as ImageIcon, Instagram, LayoutDashboard, MapPin, Megaphone, MousePointerClick, Palette, Pencil, RefreshCw, Rocket, Save, Search, Send, Settings, ShieldCheck, Sparkles, Target, TrendingUp, UtensilsCrossed, X, Zap } from 'lucide-react'
 import { VisualStudio } from './VisualStudio'
 import { BrandKit } from './BrandKit'
 import { DemoOwner } from './DemoOwner'
@@ -100,6 +100,7 @@ export function DemoScreen({ onExit }: { onExit: () => void }) {
 }
 
 function DemoLaunch({notify,setTab}:{notify:(value:string)=>void;setTab:(tab:DemoTab)=>void}) {
+  const[firstSuccess,setFirstSuccess]=useState<'new'|'ready'>('new')
   const tasks=[
     ['Postavi logo i boje','Brand Kit je spreman.','brand',Palette],
     ['Dopuni restoran','Grad, cilj i kontakt su podešeni.','settings',Settings],
@@ -117,6 +118,12 @@ function DemoLaunch({notify,setTab}:{notify:(value:string)=>void;setTab:(tab:Dem
     <section className="launch-hero restorapp-launch-hero has-image" style={{backgroundImage:`linear-gradient(90deg,rgba(7,20,15,.97),rgba(7,20,15,.76) 52%,rgba(7,20,15,.20)),url(${food.pizza})`}}>
       <div><span className="creative-kicker"><Sparkles size={16}/> LAUNCH CENTER DEMO</span><h1>Restoran je spreman za Autopilot.</h1><p>Sada Launch Center proverava i stvarnu Meta konekciju, ne samo Instagram/Facebook tekst u profilu.</p><div className="launch-actions"><button className="primary" onClick={()=>setTab('publish')}><Send size={16}/> Otvori Publish Center</button><button className="secondary" onClick={()=>setTab('content')}><LayoutDashboard size={16}/> Otvori sadržaj</button></div></div>
       <div className="launch-score"><strong>100<small>%</small></strong><span>11/11 koraka završeno</span><div className="launch-ring"><i style={{'--score':100} as CSSProperties}/></div></div>
+    </section>
+
+    <section className={'rd2-first-success '+(firstSuccess==='ready'?'success':'ready')}>
+      <div className="rd2-first-success-icon">{firstSuccess==='ready'?<CheckCircle2 size={22}/>:<Rocket size={22}/>}</div>
+      <div className="rd2-first-success-copy"><span>FIRST SUCCESS DEMO</span><strong>{firstSuccess==='ready'?'Prva Autopilot nedelja je spremna za pregled.':'Simuliraj prvi uspeh novog restorana.'}</strong><p>{firstSuccess==='ready'?'5 objava je napravljeno bez realnog API poziva ili trošenja kvote. Sledeći korak je pregled i prvo odobravanje.':'U produkciji isti klik prvo radi server preflight, zatim pravi nedelju, raspored i AI polish. Ako postoji blocker, korisnika vodi direktno na rešenje.'}</p><div className="rd2-first-success-facts"><span className="ok">3 aktivna jela</span><span className="ok">HERO: Pizza Capricciosa</span><span className="ok">3 fotografije</span></div></div>
+      <div className="rd2-first-success-actions">{firstSuccess==='ready'?<button className="rd2-primary" onClick={()=>setTab('content')}><CheckCircle2 size={16}/> Pregledaj objave</button>:<button className="rd2-primary" onClick={()=>{setFirstSuccess('ready');notify('Demo: server preflight je prošao i prva nedelja sa 5 objava je spremna.')}}><Rocket size={16}/> Pokreni prvu nedelju</button>}<button className="rd2-first-success-link" onClick={()=>setTab('menu')}>Meni</button></div>
     </section>
 
     <section className="launch-preflight ready">

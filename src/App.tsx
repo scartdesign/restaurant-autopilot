@@ -210,6 +210,54 @@ function App() {
     setActiveTab('launch'); setLoading(false)
   }
 
+  async function createFirstWeek(){
+    if(!restaurant)return {ok:false}
+    const target=restaurant
+    setNotice('Prva nedelja · proveravam paket, meni, radno vreme i kvotu…')
+    const{data:preflight,error:preflightError}=await supabase.functions.invoke('content-engine',{
+      body:{action:'preflight',restaurantId:target.id,recordActivity:true},
+    })
+    if(preflightError||preflight?.error){
+      setNotice(preflight?.error||preflightError?.message||'Ne mogu da proverim spremnost za prvu nedelju.')
+      return {ok:false}
+    }
+
+    const existingPosts=Number(preflight?.plan?.posts||0)
+    if(preflight?.existing&&existingPosts>0){
+      await loadPosts(target.id)
+      setNotice(`Prva nedelja već postoji · ${existingPosts} objava je spremno za pregled.`)
+      return {ok:true,existing:true,posts:existingPosts}
+    }
+
+    if(!preflight?.ready){
+      const blockers=(preflight?.blockers||[]) as {key?:string;label?:string}[]
+      const labels=blockers.map(item=>item.label).filter(Boolean).join(', ')
+      const key=blockers[0]?.key||''
+      const destination:Tab=key==='package'||key==='quota'?'billing':key==='menu'?'menu':'settings'
+      setNotice(`Pre prve nedelje reši: ${labels||'production preflight blocker'}.`)
+      setActiveTab(destination)
+      return {ok:false,blocked:true}
+    }
+
+    setNotice('Prva nedelja · Autopilot pravi plan, tekstove i termine…')
+    const action=preflight?.existing?'week':'ensure_week'
+    const{data,error}=await supabase.functions.invoke('content-engine',{body:{action,restaurantId:target.id}})
+    if(error||data?.error){
+      setNotice(data?.error||error?.message||'Nisam uspeo da napravim prvu nedelju.')
+      return {ok:false}
+    }
+
+    await loadPosts(target.id)
+    const polished=await polishBackgroundDrafts(target)
+    await Promise.all([loadPosts(target.id),loadAccountState(),loadUnreadNotifications()])
+    const count=Number(data?.posts?.length||0)
+    const weekLabel=data?.next_week?'sledeću nedelju':'ovu nedelju'
+    setNotice(polished
+      ? `Prva Autopilot nedelja je spremna · ${count} objava za ${weekLabel} · AI je doradio ${polished} tekstova.`
+      : `Prva Autopilot nedelja je spremna · ${count} objava za ${weekLabel}. Pregledaj ih i odobri prvu objavu.`)
+    return {ok:true,created:Boolean(data?.created||count),existing:Boolean(data?.existing),posts:count}
+  }
+
   async function ensureAutopilotWeek(target: Restaurant) {
     if (!target.weekly_autopilot_enabled) return
     const dateKey = localDateKey(target.timezone || 'Europe/Belgrade')
@@ -431,7 +479,7 @@ function App() {
       {appControls.announcement_enabled&&appControls.announcement_text&&<div className={`global-announcement ${appControls.announcement_tone}`}><Megaphone size={15}/><span>{appControls.announcement_text}</span></div>}
       {notice&&<div className="notice"><span>{notice}</span><button onClick={()=>setNotice('')}><X size={15}/></button></div>}
       <Suspense fallback={<LazyScreenFallback label="Učitavam modul…" />}>
-      {activeTab==='launch'&&<RestorappDashboardV2 restaurant={restaurant} menuItems={menuItems} posts={posts} onCreate={()=>void openTab('creative')} onNavigate={(tab)=>void openTab(tab as Tab)}/>} 
+      {activeTab==='launch'&&<RestorappDashboardV2 restaurant={restaurant} menuItems={menuItems} posts={posts} onCreate={()=>void openTab('creative')} onNavigate={(tab)=>void openTab(tab as Tab)} onFirstWeek={createFirstWeek}/>} 
       {activeTab==='dashboard'&&<Dashboard restaurant={restaurant} menuItems={menuItems} posts={posts} entitlement={isSuperadmin?{active:true,is_superadmin:true,generation_limit:null,generated_this_month:0,features:{}}:entitlement} onChanged={refreshContent} setNotice={setNotice} onNavigate={(tab)=>void openTab(tab)}/>} 
       {activeTab==='creative'&&<CreativeHub restaurant={restaurant} menuItems={menuItems} entitlement={isSuperadmin?{active:true,is_superadmin:true,features:{campaign_pack:true}}:entitlement} onChanged={refreshContent} setNotice={setNotice}/>} 
       {activeTab==='studio'&&<VisualStudio restaurant={restaurant} menuItems={menuItems} posts={posts} setNotice={setNotice} onChanged={()=>loadPosts(restaurant.id)}/>} 
