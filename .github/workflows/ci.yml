@@ -65,6 +65,7 @@ jobs:
           grep -Fq 'Prva jela za Autopilot' "$FILE"
           grep -Fq "eventType:'onboarding_menu_seeded'" "$FILE"
           grep -Fq 'marketing_priority:index===0?3:index===1?2:1' "$FILE"
+          grep -Fq 'invalidStarterPrice' "$FILE"
       - name: Demo Meta connection safety guard
         shell: bash
         run: |
