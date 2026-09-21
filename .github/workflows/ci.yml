@@ -54,7 +54,7 @@ jobs:
           grep -Fq "action:'status'" "$FILE"
           grep -Fq 'META PUBLISH READINESS' "$FILE"
           grep -Fq 'Poveži Meta publishing' "$FILE"
-          grep -Fq "connection?.status==='connected'" "$FILE"
+          grep -Fq "metaConnection?.status==='connected'" "$FILE"
       - name: OWNER audit feed read-only guard
         shell: bash
         run: |
