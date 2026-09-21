@@ -213,12 +213,14 @@
   function setMode(m){
     state.mode=m;
     var customer=q("#customerArea"), crm=q("#crmArea");
+    var isMobile=document.body.classList.contains("mobile");
     if(customer)customer.style.display=m==="customer"?"block":"none";
     if(crm)crm.style.display=m==="crm"?"block":"none";
-    q("#customerMode").classList.toggle("on",m==="customer"); q("#crmMode").classList.toggle("on",m==="crm");
+    q("#customerMode").classList.toggle("on",m==="customer");
+    q("#crmMode").classList.toggle("on",m==="crm");
     var cnav=q("#mobileCustomerNav"), rnav=q("#mobileCrmNav");
-    if(cnav)cnav.style.display=m==="customer"?"grid":"none";
-    if(rnav)rnav.style.display=m==="crm"?"grid":"none";
+    if(cnav)cnav.style.display=m==="customer"?(isMobile?"grid":"flex"):"none";
+    if(rnav)rnav.style.display=m==="crm"?(isMobile?"grid":"flex"):"none";
   }
 
   function openCart(){ q("#overlay").classList.add("on"); q("#cartDrawer").classList.add("on"); }
@@ -230,8 +232,8 @@
   document.addEventListener("click",function(e){
     var b=e.target.closest("[data-action],[data-customer-view],[data-crm-view]");
     if(!b)return;
-    if(b.hasAttribute("data-customer-view")){ showCustomerView(b.getAttribute("data-customer-view")); return; }
-    if(b.hasAttribute("data-crm-view")){ showCrmView(b.getAttribute("data-crm-view")); return; }
+    if(b.hasAttribute("data-customer-view")){ setMode("customer"); showCustomerView(b.getAttribute("data-customer-view")); return; }
+    if(b.hasAttribute("data-crm-view")){ setMode("crm"); showCrmView(b.getAttribute("data-crm-view")); return; }
     var a=b.getAttribute("data-action"), id=b.getAttribute("data-id");
     if(a==="menu-open")openMenu();
     if(a==="menu-close")closeMenu();
