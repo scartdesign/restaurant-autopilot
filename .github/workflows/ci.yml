@@ -65,9 +65,25 @@ jobs:
           grep -Fq "action:'preflight'" "$APP"
           grep -Fq "action=preflight?.existing?'week':'ensure_week'" "$APP"
           grep -Fq 'onFirstWeek={createFirstWeek}' "$APP"
-          grep -Fq 'FIRST SUCCESS' "$DASH"
-          grep -Fq 'Pokreni prvu nedelju' "$DASH"
+          grep -Fq 'SLEDEĆI KORAK' "$DASH"
+          grep -Fq "title:'Napravi prvu nedelju'" "$DASH"
           grep -Fq "onNavigate?.('dashboard')" "$DASH"
+      - name: Simplified customer UX guard
+        shell: bash
+        run: |
+          set -euo pipefail
+          APP="src/App.tsx"
+          PUB="src/components/PublishCenter.tsx"
+          grep -Fq 'className="simple-primary-nav"' "$APP"
+          grep -Fq '> Početna</button>' "$APP"
+          grep -Fq '> Sadržaj</button>' "$APP"
+          grep -Fq '> Objave</button>' "$APP"
+          grep -Fq '> Meni</button>' "$APP"
+          grep -Fq '> Podešavanja</button>' "$APP"
+          grep -Fq 'Još alata' "$APP"
+          grep -Fq 'publish-social-simple' "$PUB"
+          grep -Fq "advancedOpen?'Sakrij napredno':'Napredno'" "$PUB"
+          grep -Fq 'Pregledaj. Zakaži. Gotovo.' "$PUB"
       - name: Onboarding starter menu guard
         shell: bash
         run: |

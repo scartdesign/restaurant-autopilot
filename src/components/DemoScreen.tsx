@@ -1,5 +1,5 @@
 import { useState, type CSSProperties } from 'react'
-import { AlertTriangle, ArrowLeft, BarChart3, CalendarClock, CalendarDays, CheckCircle2, Clock3, Facebook, Hash, Image as ImageIcon, Instagram, LayoutDashboard, MapPin, Megaphone, MousePointerClick, Palette, Pencil, RefreshCw, Rocket, Save, Search, Send, Settings, ShieldCheck, Sparkles, Target, TrendingUp, UtensilsCrossed, X, Zap } from 'lucide-react'
+import { AlertTriangle, ArrowLeft, BarChart3, CalendarClock, CalendarDays, CheckCircle2, Clock3, Facebook, Hash, Image as ImageIcon, Instagram, LayoutDashboard, MapPin, Megaphone, Menu as MenuIcon, MousePointerClick, Palette, Pencil, RefreshCw, Rocket, Save, Search, Send, Settings, ShieldCheck, Sparkles, Target, TrendingUp, UtensilsCrossed, X, Zap } from 'lucide-react'
 import { VisualStudio } from './VisualStudio'
 import { BrandKit } from './BrandKit'
 import { DemoOwner } from './DemoOwner'
@@ -52,6 +52,7 @@ export function DemoScreen({ onExit }: { onExit: () => void }) {
   const [tab, setTab] = useState<DemoTab>(() => { const value = window.location.hash.replace('#','') as DemoTab; return ['content','launch','studio','brand','publish','insights','menu','promotions','settings','owner'].includes(value) ? value : 'content' })
   const [approved, setApproved] = useState<string[]>(['Pizza Capricciosa', 'Sveža Carbonara'])
   const [toast, setToast] = useState('')
+  const [demoMoreOpen,setDemoMoreOpen]=useState(false)
 
   function notify(message: string) {
     setToast(message)
@@ -65,18 +66,21 @@ export function DemoScreen({ onExit }: { onExit: () => void }) {
           <div className="brand-mark brand-mark-restorapp"><RestorappSidebarLogo /></div>
           <div className="restaurant-chip"><img className="sidebar-logo" src={demoLogo} alt="" /><div><strong>Bella Napoli</strong><small>Vračar · Beograd</small></div></div>
           <div className="autopilot-status"><span className="live-dot" /> AUTOPILOT ACTIVE · AUTO WEEK ON</div>
-          <nav>
-            <button className={tab === 'content' ? 'nav-active' : ''} onClick={() => setTab('content')}><CalendarDays size={18} /> Dashboard</button>
-            <button className={tab === 'launch' ? 'nav-active launch-nav' : 'launch-nav'} onClick={() => setTab('launch')}><Target size={18} /> Launch Center <span className="nav-beta">READY</span></button>
-            <button className={tab === 'studio' ? 'nav-active' : ''} onClick={() => setTab('studio')}><ImageIcon size={18} /> Visual Studio</button>
-            <button className={tab === 'brand' ? 'nav-active brand-nav' : 'brand-nav'} onClick={() => setTab('brand')}><Palette size={18} /> Brend <span className="nav-beta">LOGO</span></button>
-            <button className={tab === 'publish' ? 'nav-active' : ''} onClick={() => setTab('publish')}><Send size={18} /> Social Media</button>
-            <button className={tab === 'insights' ? 'nav-active insights-nav' : 'insights-nav'} onClick={() => setTab('insights')}><BarChart3 size={18} /> Analytics <span className="nav-beta">DATA</span></button>
-            <button className={tab === 'menu' ? 'nav-active' : ''} onClick={() => setTab('menu')}><UtensilsCrossed size={18} /> Menu & Offers</button>
-            <button className={tab === 'promotions' ? 'nav-active' : ''} onClick={() => setTab('promotions')}><Megaphone size={18} /> Campaigns</button>
-            <button className={tab === 'settings' ? 'nav-active' : ''} onClick={() => setTab('settings')}><Settings size={18} /> Podešavanja</button>
-            <button className={tab === 'owner' ? 'nav-active admin-nav' : 'admin-nav'} onClick={() => setTab('owner')}><ShieldCheck size={18} /> OWNER demo <span className="nav-beta">OPS</span></button>
+          <nav className="simple-primary-nav demo-simple-nav">
+            <button className={tab === 'content' ? 'nav-active' : ''} onClick={() => {setTab('content');setDemoMoreOpen(false)}}><Rocket size={18} /> Početna</button>
+            <button className={tab === 'launch' ? 'nav-active' : ''} onClick={() => {setTab('launch');setDemoMoreOpen(false)}}><CalendarDays size={18} /> Sadržaj</button>
+            <button className={tab === 'publish' ? 'nav-active' : ''} onClick={() => {setTab('publish');setDemoMoreOpen(false)}}><Send size={18} /> Objave</button>
+            <button className={tab === 'menu' ? 'nav-active' : ''} onClick={() => {setTab('menu');setDemoMoreOpen(false)}}><UtensilsCrossed size={18} /> Meni</button>
+            <button className={tab === 'settings' ? 'nav-active' : ''} onClick={() => {setTab('settings');setDemoMoreOpen(false)}}><Settings size={18} /> Podešavanja</button>
+            <button className="simple-nav-more" onClick={()=>setDemoMoreOpen(value=>!value)}><MenuIcon size={18}/> Više</button>
           </nav>
+          {demoMoreOpen&&<div className="demo-more-menu">
+            <button onClick={()=>{setTab('studio');setDemoMoreOpen(false)}}><ImageIcon size={17}/> Slike</button>
+            <button onClick={()=>{setTab('brand');setDemoMoreOpen(false)}}><Palette size={17}/> Brend</button>
+            <button onClick={()=>{setTab('insights');setDemoMoreOpen(false)}}><BarChart3 size={17}/> Rezultati</button>
+            <button onClick={()=>{setTab('promotions');setDemoMoreOpen(false)}}><Megaphone size={17}/> Kampanje</button>
+            <button onClick={()=>{setTab('owner');setDemoMoreOpen(false)}}><ShieldCheck size={17}/> OWNER demo</button>
+          </div>}
         </div>
         <button className="logout" onClick={onExit}><ArrowLeft size={18} /> Nazad na prijavu</button>
       </aside>
