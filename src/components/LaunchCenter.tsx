@@ -5,16 +5,39 @@ import type { MenuItem, Post, Restaurant } from '../types'
 
 type LaunchTab = 'dashboard'|'creative'|'studio'|'brand'|'publish'|'insights'|'menu'|'promotions'|'settings'|'billing'
 
+type LaunchMetaConnection={
+  status:'pending_oauth'|'pending_page_selection'|'connected'|'expired'|'error'|'disconnected'
+  page_id:string|null
+  page_name:string|null
+  instagram_business_account_id:string|null
+  instagram_username:string|null
+  token_expires_at:string|null
+}
+type LaunchMetaState={provider_configured:boolean;connection:LaunchMetaConnection|null}
+
 export function LaunchCenter({restaurant,menuItems,posts,onNavigate,pwaInstalled=false,onInstall}:{restaurant:Restaurant;menuItems:MenuItem[];posts:Post[];onNavigate:(tab:LaunchTab)=>void;pwaInstalled?:boolean;onInstall?:()=>void}){
   const[performanceCount,setPerformanceCount]=useState(0)
   const[preflight,setPreflight]=useState<any>(null)
   const[preflightLoading,setPreflightLoading]=useState(false)
-  useEffect(()=>{void supabase.from('post_performance').select('id',{count:'exact',head:true}).eq('restaurant_id',restaurant.id).then(({count})=>setPerformanceCount(count||0));void runPreflight(false)},[restaurant.id,posts.length,menuItems.length])
+  const[metaState,setMetaState]=useState<LaunchMetaState|null>(null)
+  const[metaLoading,setMetaLoading]=useState(false)
+  const[metaError,setMetaError]=useState('')
+  useEffect(()=>{void supabase.from('post_performance').select('id',{count:'exact',head:true}).eq('restaurant_id',restaurant.id).then(({count})=>setPerformanceCount(count||0));void runPreflight(false);void loadMetaReadiness()},[restaurant.id,posts.length,menuItems.length])
   async function runPreflight(recordActivity=false){
     setPreflightLoading(true)
     const{data,error}=await supabase.functions.invoke('content-engine',{body:{action:'preflight',restaurantId:restaurant.id,recordActivity}})
     if(!error&&!data?.error)setPreflight(data)
     setPreflightLoading(false)
+  }
+  async function loadMetaReadiness(){
+    setMetaLoading(true)
+    setMetaError('')
+    const{data,error}=await supabase.functions.invoke('meta-publisher',{body:{action:'status',restaurantId:restaurant.id}})
+    if(error||data?.error){
+      setMetaState(null)
+      setMetaError(data?.error||error?.message||'Meta publish status nije dostupan.')
+    }else setMetaState(data as LaunchMetaState)
+    setMetaLoading(false)
   }
   function preflightTarget(){
     const key=preflight?.blockers?.[0]?.key||preflight?.warnings?.[0]?.key
@@ -30,10 +53,16 @@ export function LaunchCenter({restaurant,menuItems,posts,onNavigate,pwaInstalled
   const future=posts.filter(p=>p.scheduled_for&&new Date(p.scheduled_for).getTime()>Date.now()).length
   const approved=posts.filter(p=>p.status==='approved'||p.status==='published').length
   const hoursConfigured=Boolean(restaurant.opening_hours&&Object.keys(restaurant.opening_hours).length>=7)
+  const metaConnection=metaState?.connection||null
+  const metaTokenExpired=Boolean(metaConnection?.token_expires_at&&new Date(metaConnection.token_expires_at).getTime()<=Date.now())
+  const metaTokenExpiringSoon=Boolean(metaConnection?.token_expires_at&&!metaTokenExpired&&new Date(metaConnection.token_expires_at).getTime()<=Date.now()+7*24*60*60*1000)
+  const metaConnected=Boolean(metaState?.provider_configured&&metaConnection?.status==='connected'&&metaConnection.page_id&&!metaTokenExpired)
+  const metaDetail=metaLoading?'Proveravam stvarnu Meta konekciju…':metaError?'Status trenutno nije dostupan. Otvori Publish Center i proveri konekciju.':!metaState?.provider_configured?'Meta provider još nije konfigurisan na Restorapp platformi.':metaConnected?`${metaConnection?.page_name||'Facebook Page'}${metaConnection?.instagram_username?` · @${metaConnection.instagram_username}`:' · Instagram nije povezan'}${metaTokenExpiringSoon?' · token uskoro ističe':''}.`:metaConnection?.status==='pending_page_selection'?'Meta login je završen, ali još treba izabrati Facebook Page.':metaConnection?.status==='expired'?'Meta token je istekao. Poveži nalog ponovo.':metaConnection?.status==='error'?'Meta konekcija ima grešku i traži proveru.':'Poveži Facebook Page u Publish Center-u za direktno objavljivanje.'
   const tasks=[
     {id:'brand',title:'Postavi logo i boje',detail:'Brand Kit definiše izgled svih objava.',done:Boolean(restaurant.logo_url&&restaurant.primary_color&&restaurant.secondary_color),tab:'brand' as LaunchTab,icon:Palette},
     {id:'profile',title:'Dopuni restoran',detail:'Grad, cilj, telefon i društvene mreže daju bolji AI kontekst.',done:Boolean(restaurant.city&&(restaurant.instagram||restaurant.facebook||restaurant.phone||restaurant.reservation_url)),tab:'settings' as LaunchTab,icon:Settings},
     {id:'hours',title:'Podesi radno vreme',detail:'Autopilot tada ne predlaže dolazak kada je restoran zatvoren.',done:hoursConfigured,tab:'settings' as LaunchTab,icon:Clock3},
+    {id:'meta',title:'Poveži Meta publishing',detail:metaDetail,done:metaConnected,tab:'publish' as LaunchTab,icon:Send},
     {id:'autoweek',title:'Uključi Autopilot nedelju',detail:restaurant.weekly_autopilot_enabled?'Nova nedelja se priprema automatski kada plan još ne postoji.':'Uključi automatsku pripremu nove nedelje bez ručnog klika.',done:Boolean(restaurant.weekly_autopilot_enabled),tab:'settings' as LaunchTab,icon:Sparkles},
     {id:'menu',title:'Dodaj najmanje 3 jela',detail:'Više jela daje bolji nedeljni plan i kampanje.',done:activeItems.length>=3,tab:'menu' as LaunchTab,icon:UtensilsCrossed},
     {id:'priority',title:'Izaberi HERO jelo',detail:heroDish?`${heroDish.name} vodi kampanje i premium preview.`:'Označi najvažnije jelo prioritetom HERO da Campaign Builder zna šta je glavni fokus.',done:Boolean(heroDish),tab:'menu' as LaunchTab,icon:Megaphone},
@@ -59,6 +88,12 @@ export function LaunchCenter({restaurant,menuItems,posts,onNavigate,pwaInstalled
       <div className="launch-preflight-actions"><button className="secondary" onClick={()=>void runPreflight(true)} disabled={preflightLoading}><RefreshCw size={14}/>{preflightLoading?'Proveravam':'Ponovo proveri'}</button>{preflight&&!preflight.ready&&!preflight.existing&&<button className="primary" onClick={()=>onNavigate(preflightTarget())}>Sredi blocker</button>}</div>
     </section>
 
+    <section className={'launch-preflight '+(metaLoading&&!metaState?'loading':metaConnected?(metaTokenExpiringSoon?'ready_with_warnings':'ready'):'blocked')}>
+      <div className="launch-preflight-icon">{metaConnected?<ShieldCheck size={22}/>:<AlertTriangle size={22}/>}</div>
+      <div><span>META PUBLISH READINESS</span><strong>{metaLoading&&!metaState?'Proveravam Facebook / Instagram…':metaConnected?'Direktno Meta objavljivanje je povezano':metaState?.provider_configured?'Meta publishing još nije spreman':'Meta provider još nije spreman'}</strong><small>{metaDetail}</small></div>
+      <div className="launch-preflight-actions"><button className="secondary" onClick={()=>void loadMetaReadiness()} disabled={metaLoading}><RefreshCw size={14}/>{metaLoading?'Proveravam':'Ponovo proveri'}</button>{!metaConnected&&<button className="primary" onClick={()=>onNavigate('publish')}>Otvori Publish Center</button>}</div>
+    </section>
+
     <section className="launch-grid">
       {tasks.map(({id,title,detail,done,tab,icon:Icon},index)=><button key={id} className={`launch-task ${done?'done':''}`} onClick={()=>onNavigate(tab)}>
         <div className="launch-task-status">{done?<CheckCircle2 size={21}/>:<Circle size={21}/>}</div>
@@ -70,7 +105,7 @@ export function LaunchCenter({restaurant,menuItems,posts,onNavigate,pwaInstalled
     <section className="launch-bottom-grid">
       <article><span className="eyebrow">BRAND</span><strong>{restaurant.logo_url?'Logo spreman':'Logo nedostaje'}</strong><small>{restaurant.primary_color||'#17211b'} · {restaurant.secondary_color||'#b9df72'}</small><button onClick={()=>onNavigate('brand')}><Palette size={15}/> Otvori Brand Kit</button></article>
       <article><span className="eyebrow">MENI</span><strong>{activeItems.length} aktivnih jela</strong><small>{photos} sa fotografijom · {photoCoverage}% coverage</small><button onClick={()=>onNavigate('menu')}><UtensilsCrossed size={15}/> Uredi meni</button></article>
-      <article><span className="eyebrow">SOCIAL</span><strong>{restaurant.instagram||restaurant.facebook?'Mreže povezane u profilu':'Dodaj mreže'}</strong><small>{restaurant.instagram?'Instagram ':''}{restaurant.facebook?'Facebook':''}</small><button onClick={()=>onNavigate('settings')}><Instagram size={15}/> Podešavanja</button></article>
+      <article className={metaConnected?'pwa-ready-card':''}><span className="eyebrow">META PUBLISH</span><strong>{metaLoading?'Proveravam…':metaConnected?'Direktno objavljivanje povezano':'Poveži Facebook / Instagram'}</strong><small>{metaConnected?`${metaConnection?.page_name||'Facebook Page'}${metaConnection?.instagram_username?` · @${metaConnection.instagram_username}`:''}${metaTokenExpiringSoon?' · token uskoro ističe':''}`:metaError?'Status nije dostupan':metaState?.provider_configured?'Otvori Publish Center i završi Meta Connect':'Provider čeka platformsku konfiguraciju'}</small><button onClick={()=>onNavigate('publish')}><Instagram size={15}/> Publish Center</button></article>
       <article><span className="eyebrow">AUTOPILOT</span><strong>{restaurant.weekly_autopilot_enabled?'Auto week uključen':'Ručna nedelja'}</strong><small>{restaurant.weekly_autopilot_enabled?'Novi plan se priprema automatski':'Uključi u Podešavanjima'}</small><button onClick={()=>onNavigate('settings')}><Sparkles size={15}/> Automatizacija</button></article>
       <article className={pwaInstalled?'pwa-ready-card':''}><span className="eyebrow">MOBILNA APP</span><strong>{pwaInstalled?'Instalirana':'Spremna za instalaciju'}</strong><small>{pwaInstalled?'Otvara se preko svoje ikonice':'Dodaj Restorapp na telefon ili desktop'}</small><button onClick={()=>onInstall?.()} disabled={pwaInstalled}>{pwaInstalled?<><CheckCircle2 size={15}/> Instalirano</>:<><Download size={15}/> Instaliraj app</>}</button></article>
       <article><span className="eyebrow">PUBLISH</span><strong>{future} budućih objava</strong><small>{approved} odobreno / objavljeno</small><button onClick={()=>onNavigate('publish')}><Send size={15}/> Publish Center</button></article>

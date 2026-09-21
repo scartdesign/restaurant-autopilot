@@ -1,5 +1,5 @@
 import { useState, type CSSProperties } from 'react'
-import { ArrowLeft, BarChart3, CalendarClock, CalendarDays, CheckCircle2, Clock3, Facebook, Hash, Image as ImageIcon, Instagram, MapPin, Megaphone, MousePointerClick, Palette, Pencil, Save, Search, Send, Settings, ShieldCheck, Sparkles, Target, TrendingUp, UtensilsCrossed, X, Zap } from 'lucide-react'
+import { ArrowLeft, BarChart3, CalendarClock, CalendarDays, CheckCircle2, Clock3, Facebook, Hash, Image as ImageIcon, Instagram, LayoutDashboard, MapPin, Megaphone, MousePointerClick, Palette, Pencil, RefreshCw, Save, Search, Send, Settings, ShieldCheck, Sparkles, Target, TrendingUp, UtensilsCrossed, X, Zap } from 'lucide-react'
 import { VisualStudio } from './VisualStudio'
 import { BrandKit } from './BrandKit'
 import { DemoOwner } from './DemoOwner'
@@ -7,7 +7,7 @@ import { RestorappDashboardV2 } from './RestorappDashboardV2'
 import { RestorappSidebarLogo } from './RestorappSidebarLogo'
 import type { MenuItem, Post, Restaurant } from '../types'
 
-type DemoTab = 'content' | 'studio' | 'brand' | 'publish' | 'insights' | 'menu' | 'promotions' | 'settings' | 'owner'
+type DemoTab = 'content' | 'launch' | 'studio' | 'brand' | 'publish' | 'insights' | 'menu' | 'promotions' | 'settings' | 'owner'
 
 const food = {
   pizza: 'https://images.unsplash.com/photo-1574071318508-1cdbab80d002?auto=format&fit=crop&w=1500&q=88',
@@ -49,7 +49,7 @@ const demoVisualPosts: Post[] = [
 ]
 
 export function DemoScreen({ onExit }: { onExit: () => void }) {
-  const [tab, setTab] = useState<DemoTab>(() => { const value = window.location.hash.replace('#','') as DemoTab; return ['content','studio','brand','publish','insights','menu','promotions','settings','owner'].includes(value) ? value : 'content' })
+  const [tab, setTab] = useState<DemoTab>(() => { const value = window.location.hash.replace('#','') as DemoTab; return ['content','launch','studio','brand','publish','insights','menu','promotions','settings','owner'].includes(value) ? value : 'content' })
   const [approved, setApproved] = useState<string[]>(['Pizza Capricciosa', 'Sveža Carbonara'])
   const [toast, setToast] = useState('')
 
@@ -67,6 +67,7 @@ export function DemoScreen({ onExit }: { onExit: () => void }) {
           <div className="autopilot-status"><span className="live-dot" /> AUTOPILOT ACTIVE · AUTO WEEK ON</div>
           <nav>
             <button className={tab === 'content' ? 'nav-active' : ''} onClick={() => setTab('content')}><CalendarDays size={18} /> Dashboard</button>
+            <button className={tab === 'launch' ? 'nav-active launch-nav' : 'launch-nav'} onClick={() => setTab('launch')}><Target size={18} /> Launch Center <span className="nav-beta">READY</span></button>
             <button className={tab === 'studio' ? 'nav-active' : ''} onClick={() => setTab('studio')}><ImageIcon size={18} /> Visual Studio</button>
             <button className={tab === 'brand' ? 'nav-active brand-nav' : 'brand-nav'} onClick={() => setTab('brand')}><Palette size={18} /> Brend <span className="nav-beta">LOGO</span></button>
             <button className={tab === 'publish' ? 'nav-active' : ''} onClick={() => setTab('publish')}><Send size={18} /> Social Media</button>
@@ -84,6 +85,7 @@ export function DemoScreen({ onExit }: { onExit: () => void }) {
         <div className="restorapp-topbar demo-restorapp-topbar"><div className="restorapp-topbar-copy"><span>Live product demo</span><strong>Bella Napoli</strong><small>Vračar · Beograd · Premium</small></div><div className="restorapp-topbar-actions"><div className="restorapp-profile-chip demo-profile-chip"><img src={demoLogo} alt="Bella Napoli"/><div><strong>Bella Napoli</strong><small>Demo restoran</small></div></div></div></div>
         
         {tab === 'content' && <DemoContent approved={approved} setApproved={setApproved} notify={notify} />}
+        {tab === 'launch' && <DemoLaunch notify={notify} setTab={setTab} />}
         {tab === 'studio' && <VisualStudio restaurant={demoRestaurant} posts={demoVisualPosts} menuItems={demoMenu} setNotice={notify} onChanged={async()=>{}} />}
         {tab === 'brand' && <BrandKit restaurant={demoRestaurant} menuItems={demoMenu} onSaved={async () => {}} setNotice={notify} demo />}
         {tab === 'publish' && <DemoPublish notify={notify} />}
@@ -95,6 +97,45 @@ export function DemoScreen({ onExit }: { onExit: () => void }) {
       {toast && <div className="app-toast">{toast}</div>}
     </div>
   )
+}
+
+function DemoLaunch({notify,setTab}:{notify:(value:string)=>void;setTab:(tab:DemoTab)=>void}) {
+  const tasks=[
+    ['Postavi logo i boje','Brand Kit je spreman.','brand',Palette],
+    ['Dopuni restoran','Grad, cilj i kontakt su podešeni.','settings',Settings],
+    ['Podesi radno vreme','7/7 dana ima definisano radno vreme.','settings',Clock3],
+    ['Poveži Meta publishing','Bella Napoli Facebook · @bellanapoli.','publish',Send],
+    ['Uključi Autopilot nedelju','Nova nedelja se priprema automatski.','settings',Sparkles],
+    ['Dodaj najmanje 3 jela','5 aktivnih jela u meniju.','menu',UtensilsCrossed],
+    ['Izaberi HERO jelo','Pizza Capricciosa vodi kampanje.','menu',Megaphone],
+    ['Pokrij meni fotografijama','80% menija ima fotografiju.','studio',ImageIcon],
+    ['Napravi prvi sadržaj','4 predloga su spremna.','content',Sparkles],
+    ['Odobri i zakaži objave','2 buduća termina · 2 odobreno.','publish',Send],
+    ['Zatvori performance loop','4 objave imaju stvarne rezultate.','insights',BarChart3],
+  ] as const
+  return <div className="launch-center demo-launch-center">
+    <section className="launch-hero restorapp-launch-hero has-image" style={{backgroundImage:`linear-gradient(90deg,rgba(7,20,15,.97),rgba(7,20,15,.76) 52%,rgba(7,20,15,.20)),url(${food.pizza})`}}>
+      <div><span className="creative-kicker"><Sparkles size={16}/> LAUNCH CENTER DEMO</span><h1>Restoran je spreman za Autopilot.</h1><p>Sada Launch Center proverava i stvarnu Meta konekciju, ne samo Instagram/Facebook tekst u profilu.</p><div className="launch-actions"><button className="primary" onClick={()=>setTab('publish')}><Send size={16}/> Otvori Publish Center</button><button className="secondary" onClick={()=>setTab('content')}><LayoutDashboard size={16}/> Otvori sadržaj</button></div></div>
+      <div className="launch-score"><strong>100<small>%</small></strong><span>11/11 koraka završeno</span><div className="launch-ring"><i style={{'--score':100} as CSSProperties}/></div></div>
+    </section>
+
+    <section className="launch-preflight ready">
+      <div className="launch-preflight-icon"><ShieldCheck size={22}/></div><div><span>AUTO WEEK PREFLIGHT</span><strong>Server potvrđuje da je Autopilot spreman</strong><small>Paket, meni, radno vreme, quota i postojeći plan su provereni.</small></div><div className="launch-preflight-actions"><button className="secondary" onClick={()=>notify('Demo: AUTO WEEK preflight je ponovo proverio sve uslove.')}><RefreshCw size={14}/> Ponovo proveri</button></div>
+    </section>
+
+    <section className="launch-preflight ready">
+      <div className="launch-preflight-icon"><ShieldCheck size={22}/></div><div><span>META PUBLISH READINESS</span><strong>Direktno Meta objavljivanje je povezano</strong><small>Bella Napoli Facebook · @bellanapoli · token važi. Facebook Page i Instagram Business su potvrđeni.</small></div><div className="launch-preflight-actions"><button className="secondary" onClick={()=>notify('Demo: Meta konekcija je validna i spremna za direktno objavljivanje.')}><RefreshCw size={14}/> Ponovo proveri</button><button className="primary" onClick={()=>setTab('publish')}>Publish Center</button></div>
+    </section>
+
+    <section className="launch-grid">{tasks.map(([title,detail,tab,Icon],index)=><button className="launch-task done" key={title} onClick={()=>setTab(tab as DemoTab)}><div className="launch-task-status"><CheckCircle2 size={21}/></div><div className="launch-task-copy"><span>{String(index+1).padStart(2,'0')}</span><strong>{title}</strong><p>{detail}</p></div><Icon size={20}/></button>)}</section>
+
+    <section className="launch-bottom-grid">
+      <article><span className="eyebrow">META PUBLISH</span><strong>Direktno objavljivanje povezano</strong><small>Bella Napoli Facebook · @bellanapoli</small><button onClick={()=>setTab('publish')}><Instagram size={15}/> Publish Center</button></article>
+      <article><span className="eyebrow">AUTOPILOT</span><strong>Auto week uključen</strong><small>Novi plan se priprema automatski</small><button onClick={()=>setTab('settings')}><Sparkles size={15}/> Automatizacija</button></article>
+      <article><span className="eyebrow">MENI</span><strong>5 aktivnih jela</strong><small>4 sa fotografijom · 80% coverage</small><button onClick={()=>setTab('menu')}><UtensilsCrossed size={15}/> Uredi meni</button></article>
+      <article><span className="eyebrow">PUBLISH</span><strong>2 buduće objave</strong><small>2 odobreno / objavljeno</small><button onClick={()=>setTab('publish')}><Send size={15}/> Publish Center</button></article>
+    </section>
+  </div>
 }
 
 function DemoContent({ approved, setApproved, notify }: { approved: string[]; setApproved: (value: string[]) => void; notify: (value: string) => void }) {

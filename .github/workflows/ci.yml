@@ -46,6 +46,15 @@ jobs:
             echo "Production E2E dry-run migration contains a data mutation"
             exit 1
           fi
+      - name: Customer Launch Center Meta readiness guard
+        shell: bash
+        run: |
+          set -euo pipefail
+          FILE="src/components/LaunchCenter.tsx"
+          grep -Fq "action:'status'" "$FILE"
+          grep -Fq 'META PUBLISH READINESS' "$FILE"
+          grep -Fq 'Poveži Meta publishing' "$FILE"
+          grep -Fq "metaConnection?.status==='connected'" "$FILE"
       - name: OWNER audit feed read-only guard
         shell: bash
         run: |
