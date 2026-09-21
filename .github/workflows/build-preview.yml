@@ -88,6 +88,9 @@ jobs:
           grep -Fq 'LAUNCH CENTER DEMO' /tmp/demo.js
           grep -Fq 'META PUBLISH READINESS' /tmp/demo.js
           grep -Fq 'Direktno Meta objavljivanje je povezano' /tmp/demo.js
+          grep -Fq 'META TOKEN WARNING DEMO' /tmp/demo.js
+          grep -Fq 'Ponovo poveži Meta' /tmp/demo.js
+          grep -Fq 'Publishing je bezbedno blokiran' /tmp/demo.js
           PUBLISH_CHUNK=$(grep -oE 'PublishCenter-[A-Za-z0-9_-]+\.js' /tmp/app.js | head -1)
           test -n "$PUBLISH_CHUNK"
           curl --max-time 20 --retry 4 --retry-delay 2 --retry-all-errors -fsSL "$BASE/assets/$PUBLISH_CHUNK" -o /tmp/publish.js
@@ -99,5 +102,5 @@ jobs:
             echo "Legacy AI download filename found in compiled Creative Hub"
             exit 1
           fi
-          echo "Restorapp branding + customer Launch Center Meta readiness + OWNER ops preview markers OK"
+          echo "Restorapp branding + customer Launch Center + interactive Meta safety demo + OWNER ops markers OK"
           echo "Public preview OK: $BASE/index.html"

@@ -94,3 +94,11 @@ body{background:radial-gradient(circle at 70% -10%,#eef6e8 0,transparent 30%),#f
 .wow-post-card.alert-highlight{border-color:#a9d65f!important;box-shadow:0 0 0 4px rgba(169,214,95,.18),0 22px 48px rgba(24,38,29,.12)!important;animation:trendDraftHighlight 1s ease 2}@keyframes trendDraftHighlight{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
 
 .trend-opportunity-meta .trend-learning{font-weight:950;letter-spacing:.04em}.trend-opportunity-meta .trend-learning.positive{background:#e9f6dc;color:#4f7335;border:1px solid #d0e5bb}.trend-opportunity-meta .trend-learning.negative{background:#fff1ed;color:#98584c;border:1px solid #efd8d1}.trend-opportunity-meta .trend-learning.neutral{background:#f0f3ee;color:#6f7972;border:1px solid #e0e5dd}
+
+/* Demo Meta connection-state simulation */
+.demo-meta-connected.demo-meta-warning{border-color:#ead7a6;background:linear-gradient(135deg,#fffaf0,#fff4d9)}
+.demo-meta-state-expiring{background:#fff0c7!important;color:#80651d!important}
+.demo-meta-state-expired,.demo-meta-state-disconnected{background:#f8e4de!important;color:#8b4d40!important}
+.demo-meta-roadmap-blocked{border-color:#ead3ca!important;background:#fff7f4!important}
+.demo-meta-roadmap-blocked .roadmap-badge{background:#f8e4de!important;color:#8b4d40!important}
+.demo-meta-connected .mini-meta-now:disabled,.demo-meta-connected .mini-meta-queue:disabled{opacity:.38!important;cursor:not-allowed!important}

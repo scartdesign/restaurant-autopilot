@@ -55,6 +55,16 @@ jobs:
           grep -Fq 'META PUBLISH READINESS' "$FILE"
           grep -Fq 'Poveži Meta publishing' "$FILE"
           grep -Fq "metaConnection?.status==='connected'" "$FILE"
+      - name: Demo Meta connection safety guard
+        shell: bash
+        run: |
+          set -euo pipefail
+          FILE="src/components/DemoScreen.tsx"
+          grep -Fq "type DemoConnectionStatus='connected'|'expiring'|'expired'|'disconnected'" "$FILE"
+          grep -Fq 'META TOKEN WARNING DEMO' "$FILE"
+          grep -Fq 'Ponovo poveži Meta' "$FILE"
+          grep -Fq 'Publishing je bezbedno blokiran' "$FILE"
+          grep -Fq 'disabled={!metaReady}' "$FILE"
       - name: OWNER audit feed read-only guard
         shell: bash
         run: |
