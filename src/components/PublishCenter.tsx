@@ -29,6 +29,7 @@ export function PublishCenter({ restaurant, posts, onChanged, setNotice }: {
   const [metaWorking,setMetaWorking]=useState(false)
   const [metaPageId,setMetaPageId]=useState('')
   const [metaJobs,setMetaJobs]=useState<MetaJob[]>([])
+  const [advancedOpen,setAdvancedOpen]=useState(false)
 
   const ordered = useMemo(() => [...posts].sort((a, b) => new Date(a.scheduled_for || 0).getTime() - new Date(b.scheduled_for || 0).getTime()), [posts])
   const approved = posts.filter((post) => post.status === 'approved')
@@ -352,13 +353,19 @@ export function PublishCenter({ restaurant, posts, onChanged, setNotice }: {
   }
 
   return (
-    <>
-      <header className="page-header publish-header">
-        <div><p className="eyebrow">PUBLISH CENTER</p><h1>Tačan dan. Tačno vreme. Sve spremno.</h1><p className="muted">Svaka objava ima termin u vremenskoj zoni restorana: <strong>{restaurant.timezone}</strong>.</p></div>
-        <div className="publish-actions">{drafts.length>0&&<button className="secondary" onClick={()=>void approveAll()} disabled={workingId==='bulk-approve'}><CheckCircle2 size={16}/>{workingId==='bulk-approve'?'Proveravam…':`Quality + odobri (${drafts.length})`}</button>}<button className="secondary" onClick={()=>void autoScheduleWeek()} disabled={bulkWorking}><Sparkles size={16}/>{bulkWorking?'Raspoređujem…':'Auto rasporedi'}</button><button className="secondary" onClick={exportCalendar}><CalendarClock size={16} /> .ICS kalendar</button><button className="primary" onClick={exportCsv}><Download size={16} /> Export CSV</button></div>
+    <div className={advancedOpen?'publish-simple-root advanced':'publish-simple-root'}>
+      <header className="page-header publish-header publish-header-simple">
+        <div><p className="eyebrow">OBJAVE</p><h1>Pregledaj. Zakaži. Gotovo.</h1><p className="muted">Restorapp drži raspored urednim, a ti samo potvrđuješ šta ide napolje.</p></div>
+        <div className="publish-actions">{drafts.length>0&&<button className="secondary" onClick={()=>void approveAll()} disabled={workingId==='bulk-approve'}><CheckCircle2 size={16}/>{workingId==='bulk-approve'?'Proveravam…':`Odobri sadržaj (${drafts.length})`}</button>}<button className="primary" onClick={()=>void autoScheduleWeek()} disabled={bulkWorking}><Sparkles size={16}/>{bulkWorking?'Raspoređujem…':'Auto rasporedi'}</button><button className="publish-advanced-toggle" onClick={()=>setAdvancedOpen(value=>!value)}><ShieldCheck size={15}/>{advancedOpen?'Sakrij napredno':'Napredno'}</button></div>
       </header>
 
-      <section className={`meta-connect-panel ${metaState?.connection?.status==='connected'?'connected':metaState?.connection?.status==='expired'?'expired':''}`}>
+      <section className={`publish-social-simple ${metaState?.connection?.status==='connected'?'connected':''}`}>
+        <div className="publish-social-simple-icon">{metaState?.connection?.status==='connected'?<CheckCircle2 size={20}/>:<Instagram size={20}/>}</div>
+        <div><span>DRUŠTVENE MREŽE</span><strong>{metaState?.connection?.status==='connected'?'Instagram + Facebook povezani':'Poveži Instagram + Facebook'}</strong><small>{metaState?.connection?.status==='connected'?(`${metaState.connection.page_name||'Facebook'}${metaState.connection.instagram_username?` · @${metaState.connection.instagram_username}`:''}`):metaState?.provider_configured?'Poveži jednom — Restorapp posle može da zakazuje odobrene objave.':'Objave možeš pripremiti i bez povezivanja mreža.'}</small></div>
+        {metaState?.connection?.status!=='connected'&&metaState?.provider_configured&&<button className="secondary" onClick={()=>void connectMeta()} disabled={metaWorking}><Facebook size={14}/>{metaWorking?'Otvaram…':'Poveži mreže'}</button>}
+      </section>
+
+      <section className={`meta-connect-panel publish-advanced-only ${metaState?.connection?.status==='connected'?'connected':metaState?.connection?.status==='expired'?'expired':''}`}>
         <div className="meta-connect-brand"><div><Facebook size={20}/><Instagram size={20}/></div><span><small>META PUBLISHING</small><strong>{metaState?.connection?.status==='connected'?'Facebook + Instagram povezani':metaState?.connection?.status==='pending_page_selection'?'Izaberi Facebook stranicu':metaState?.provider_configured?'Poveži poslovni nalog':'Meta App čeka OWNER konfiguraciju'}</strong><p>{metaState?.connection?.status==='connected'
           ? `${metaState.connection.page_name||'Facebook Page'}${metaState.connection.instagram_username?` · @${metaState.connection.instagram_username}`:' · Instagram nije povezan'} · ${metaJobs.filter(j=>j.status==='queued').length} queued · ${metaJobs.filter(j=>j.status==='failed').length} failed · ${metaState.insights_ready?'Insights AUTO':'Insights traži obnovu dozvola'}${metaState.connection.last_verified_at?` · provereno ${new Date(metaState.connection.last_verified_at).toLocaleString('sr-RS')}`:''}`
           : metaState?.connection?.status==='expired'
@@ -373,7 +380,7 @@ export function PublishCenter({ restaurant, posts, onChanged, setNotice }: {
         </div>
       </section>
 
-      <section className={`publish-gate ${publishGate.allDone?'done':publishGate.ready?'ready':'blocked'}`}>
+      <section className={`publish-gate publish-advanced-only ${publishGate.allDone?'done':publishGate.ready?'ready':'blocked'}`}>
         <div className="publish-gate-icon">{publishGate.allDone||publishGate.ready?<CheckCircle2 size={20}/>:<ShieldCheck size={20}/>}</div>
         <div><span>WEEK GATE</span><strong>{publishGate.label}</strong><small>{publishGate.reasons.length?publishGate.reasons.join(' · '):publishGate.allDone?'Sve planirane objave su označene kao objavljene.':'Nema tehničkih blokera: termini i approval status su spremni.'}</small></div>
         <b>{published.length}/{posts.length || 0}</b>
@@ -385,16 +392,22 @@ export function PublishCenter({ restaurant, posts, onChanged, setNotice }: {
         <button className="secondary" onClick={() => openSchedule(nextPost)}><Pencil size={14} /> Promeni termin</button>
       </section>}
 
-      <section className="publish-stats">
+      <section className="publish-stats publish-advanced-only">
         <div><span>Spremnost nedelje</span><strong>{readyPercent}%</strong><div className="readiness-track"><i style={{ width: `${readyPercent}%` }} /></div></div>
         <div><span>Odobreno</span><strong>{approved.length}</strong><small>čeka objavu</small></div>
         <div><span>Objavljeno</span><strong>{published.length}</strong><small>završeno</small></div>
         <button className="copy-bundle" onClick={copyReadyBundle}><ClipboardCopy size={18} /><div><strong>Kopiraj odobrene</strong><span>termin + caption + hashtagovi</span></div></button>
       </section>
 
-      {overdue.length>0&&<div className="publish-overdue-note"><Clock3 size={17}/><div><strong>{overdue.length} odobrenih objava ima termin u prošlosti.</strong><span>Promeni termin pre objavljivanja da red za objavu ostane tačan.</span></div></div>}
-      {conflicts>0&&<div className="publish-overdue-note publish-conflict-note"><Clock3 size={17}/><div><strong>{conflicts} objava ima termin koji se preklapa sa drugom objavom.</strong><span>Klikni „Auto rasporedi“ da razdvoji termine uz radno vreme restorana.</span></div></div>}
-      <div className="publishing-note"><Sparkles size={17} /><div><strong>Autopilot raspoređuje, ti kontrolišeš</strong><span>Početni termini se generišu automatski prema tipu sadržaja i radnom vremenu. Svaki datum i vreme možeš ručno da promeniš.</span></div></div>
+      {overdue.length>0&&<div className="publish-overdue-note publish-advanced-only"><Clock3 size={17}/><div><strong>{overdue.length} odobrenih objava ima termin u prošlosti.</strong><span>Promeni termin pre objavljivanja da red za objavu ostane tačan.</span></div></div>}
+      {conflicts>0&&<div className="publish-overdue-note publish-conflict-note publish-advanced-only"><Clock3 size={17}/><div><strong>{conflicts} objava ima termin koji se preklapa sa drugom objavom.</strong><span>Klikni „Auto rasporedi“ da razdvoji termine uz radno vreme restorana.</span></div></div>}
+      <div className="publishing-note publish-advanced-only"><Sparkles size={17} /><div><strong>Autopilot raspoređuje, ti kontrolišeš</strong><span>Početni termini se generišu automatski prema tipu sadržaja i radnom vremenu. Svaki datum i vreme možeš ručno da promeniš.</span></div></div>
+
+      {advancedOpen&&<section className="publish-advanced-tools">
+        <button className="secondary" onClick={exportCalendar}><CalendarClock size={15}/> Kalendar (.ics)</button>
+        <button className="secondary" onClick={exportCsv}><Download size={15}/> CSV export</button>
+        <button className="secondary" onClick={()=>void copyReadyBundle()}><ClipboardCopy size={15}/> Kopiraj odobrene</button>
+      </section>}
 
       <section className="publish-queue panel">
         <div className="panel-heading publish-view-head"><h2>{view==='queue'?<><Send size={18}/> Red za objavu</>:<><CalendarRange size={18}/> Kalendar sadržaja</>}</h2><div className="publish-view-switch"><button className={view==='queue'?'active':''} onClick={()=>setView('queue')}><List size={14}/> Red</button><button className={view==='calendar'?'active':''} onClick={()=>setView('calendar')}><CalendarRange size={14}/> 14 dana</button></div></div>
@@ -418,8 +431,8 @@ export function PublishCenter({ restaurant, posts, onChanged, setNotice }: {
         </div>}
       </section>
 
-      <div className="meta-roadmap"><div><ExternalLink size={18} /><div><strong>{metaState?.connection?.status==='connected'?'Direktan Meta publishing je aktivan':'Ručni workflow ostaje kao fallback'}</strong><span>{metaState?.connection?.status==='connected'?(metaState.insights_ready?'Odobrene objave idu direktno na Meta, a views, reach i interakcije se automatski vraćaju u Rezultate.':'Publishing radi, ali za automatske rezultate jednom obnovi Meta dozvole za Insights.'):'CSV, copy i Meta Business Suite ostaju dostupni dok poslovni nalog nije povezan.'}</span></div></div><span className="roadmap-badge">{metaState?.connection?.status==='connected'?'META CONNECTED':'FALLBACK READY'}</span></div>
-    </>
+      <div className="meta-roadmap publish-advanced-only"><div><ExternalLink size={18} /><div><strong>{metaState?.connection?.status==='connected'?'Direktan Meta publishing je aktivan':'Ručni workflow ostaje kao fallback'}</strong><span>{metaState?.connection?.status==='connected'?(metaState.insights_ready?'Odobrene objave idu direktno na Meta, a views, reach i interakcije se automatski vraćaju u Rezultate.':'Publishing radi, ali za automatske rezultate jednom obnovi Meta dozvole za Insights.'):'CSV, copy i Meta Business Suite ostaju dostupni dok poslovni nalog nije povezan.'}</span></div></div><span className="roadmap-badge">{metaState?.connection?.status==='connected'?'META CONNECTED':'FALLBACK READY'}</span></div>
+    </div>
   )
 }
 
