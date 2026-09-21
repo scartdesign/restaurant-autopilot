@@ -404,7 +404,7 @@ function App() {
   const remainingRestaurants = restaurantLimit === null ? null : Math.max(0, restaurantLimit - restaurants.length)
   const planName = isSuperadmin ? 'OWNER' : entitlement?.plan_name || 'Aktivan paket'
   const generationUsage = useMemo(() => entitlement?.generation_limit == null ? null : `${entitlement.generated_this_month || 0}/${entitlement.generation_limit}`, [entitlement])
-  const activeSectionLabel = ({launch:'Dashboard',dashboard:'Content',creative:'AI Assistant',studio:'Visual Studio',brand:'Brend',publish:'Social Media',insights:'Analytics',menu:'Menu & Offers',promotions:'Campaigns',settings:'Podešavanja',support:'Podrška',notifications:'Obaveštenja',billing:'Paket / licenca',admin:'OWNER Control'} as Record<Tab,string>)[activeTab]
+  const activeSectionLabel = ({launch:'Početna',dashboard:'Sadržaj',creative:'AI alat',studio:'Slike',brand:'Brend',publish:'Objave',insights:'Rezultati',menu:'Meni',promotions:'Kampanje',settings:'Podešavanja',support:'Podrška',notifications:'Obaveštenja',billing:'Paket',admin:'OWNER'} as Record<Tab,string>)[activeTab]
 
   if (legalParam && ['terms','privacy','ai','refund'].includes(legalParam)) return <LegalScreen kind={legalParam} onBack={()=>{window.history.replaceState({},'',window.location.pathname);window.location.reload()}} />
   if (demo) return <Suspense fallback={<LazyScreenFallback label="Učitavam demo…" />}><DemoScreen onExit={() => { const next = new URL(window.location.href); next.searchParams.delete('demo'); window.history.replaceState({}, '', `${next.pathname}${next.search}${next.hash}`); setDemo(false) }} /></Suspense>
@@ -433,36 +433,27 @@ function App() {
       {(restaurants.length > 1 || restaurantLimit === null || (restaurantLimit || 1) > 1) && <div className="location-control"><label><Building2 size={14}/><select value={restaurant.id} onChange={e=>void selectRestaurant(e.target.value)}>{restaurants.map(item=><option key={item.id} value={item.id}>{item.name}{item.city?` · ${item.city}`:''}</option>)}</select></label>{canAddRestaurant?<button onClick={()=>setAddingRestaurant(true)} title="Dodaj restoran"><Plus size={15}/><span>Dodaj lokaciju</span></button>:<small>Limit paketa: {restaurants.length}/{restaurantLimit}</small>}</div>}
       <div className={`autopilot-status ${isSuperadmin?'owner-status':''}`}><span className="live-dot"/> {isSuperadmin?'OWNER · SUPERADMIN':`${planName.toUpperCase()} · AKTIVAN`}</div>
       {!isSuperadmin && <div className="sidebar-plan-mini"><span>{restaurants.length}/{restaurantLimit || '∞'} lokacija</span>{generationUsage&&<span>{generationUsage} objava</span>}{remainingRestaurants===0&&restaurantLimit!==null?<small>Za više lokacija promeni paket.</small>:null}</div>}
-      <nav>
-        <button className={activeTab==='launch'?'nav-active launch-nav':''} onClick={()=>void openTab('launch')}><Rocket size={18}/> Dashboard <span className="nav-beta">100%</span></button>
-        <button className={activeTab==='dashboard'?'nav-active':''} onClick={()=>void openTab('dashboard')}><CalendarDays size={18}/> Content</button>
-        <button className={activeTab==='creative'?'nav-active creative-nav':''} onClick={()=>void openTab('creative')}><Sparkles size={18}/> AI Assistant <span className="nav-beta">AI</span></button>
-        <button className={activeTab==='studio'?'nav-active':''} onClick={()=>void openTab('studio')}><ImageIcon size={18}/> Visual Studio</button>
-        <button className={(activeTab==='brand'?'nav-active brand-nav':'brand-nav')+' mobile-hide'} onClick={()=>void openTab('brand')}><Palette size={18}/> Brend <span className="nav-beta">LOGO</span></button>
-        <button className={activeTab==='publish'?'nav-active':''} onClick={()=>void openTab('publish')}><Send size={18}/> Social Media</button>
-        <button className={(activeTab==='insights'?'nav-active insights-nav':'insights-nav')+' mobile-hide'} onClick={()=>void openTab('insights')}><BarChart3 size={18}/> Analytics <span className="nav-beta">DATA</span></button>
-        <button className={(activeTab==='menu'?'nav-active':'')+' mobile-hide'} onClick={()=>void openTab('menu')}><UtensilsCrossed size={18}/> Menu & Offers</button>
-        <button className={`${activeTab==='promotions'?'nav-active ':''}${canUseCampaigns?'':'locked-nav'} mobile-hide`} onClick={()=>void openTab('promotions')}><Megaphone size={18}/> Campaigns {!canUseCampaigns&&<span className="nav-beta"><LockKeyhole size={9}/> PRO</span>}</button>
-        <button className={(activeTab==='billing'?'nav-active billing-nav':'billing-nav')+' mobile-hide'} onClick={()=>void openTab('billing')}><BadgeEuro size={18}/> Paket / licenca</button>
-        <button className={(activeTab==='settings'?'nav-active':'')+' mobile-hide'} onClick={()=>void openTab('settings')}><Settings size={18}/> Podešavanja</button>
-        <button className={(activeTab==='support'?'nav-active support-nav':'support-nav')+' mobile-hide'} onClick={()=>void openTab('support')}><LifeBuoy size={18}/> Podrška</button>
-        <button className={(activeTab==='notifications'?'nav-active':'')+' mobile-hide'} onClick={()=>void openTab('notifications')}><Bell size={18}/> Obaveštenja {unreadNotifications>0&&<span className="nav-beta">{unreadNotifications>99?'99+':unreadNotifications}</span>}</button>
-        {isSuperadmin&&<button className={(activeTab==='admin'?'nav-active admin-nav':'admin-nav')+' mobile-hide'} onClick={()=>void openTab('admin')}><ShieldCheck size={18}/> Superadmin <span className="nav-beta">OWNER</span></button>}
-        <button className="mobile-nav-more" onClick={()=>setMobileMenuOpen(true)}><MenuIcon size={18}/> Više</button>
+      <nav className="simple-primary-nav">
+        <button className={activeTab==='launch'?'nav-active':''} onClick={()=>void openTab('launch')}><Rocket size={18}/> Početna</button>
+        <button className={activeTab==='dashboard'?'nav-active':''} onClick={()=>void openTab('dashboard')}><CalendarDays size={18}/> Sadržaj</button>
+        <button className={activeTab==='publish'?'nav-active':''} onClick={()=>void openTab('publish')}><Send size={18}/> Objave</button>
+        <button className={activeTab==='menu'?'nav-active':''} onClick={()=>void openTab('menu')}><UtensilsCrossed size={18}/> Meni</button>
+        <button className={activeTab==='settings'?'nav-active':''} onClick={()=>void openTab('settings')}><Settings size={18}/> Podešavanja</button>
+        <button className="simple-nav-more" onClick={()=>setMobileMenuOpen(true)}><MenuIcon size={18}/> Više {unreadNotifications>0&&<span className="nav-beta">{unreadNotifications>99?'99+':unreadNotifications}</span>}</button>
       </nav>
-    </div><div className="sidebar-bottom-actions">{!isSuperadmin&&<button className="restorapp-premium-card" onClick={()=>void openTab('billing')}><span>♛</span><div><strong>Go Premium</strong><small>Otključaj više growth alata za svoj restoran.</small></div><b>Upgrade now →</b></button>}{!pwaInstalled&&<button className="pwa-install-sidebar" onClick={()=>void installPwa()}><Download size={17}/><span><strong>Instaliraj aplikaciju</strong><small>telefon / desktop</small></span></button>}<button className="logout" onClick={signOut}><LogOut size={18}/> Odjavi se</button></div></aside>
+    </div><div className="sidebar-bottom-actions">{!pwaInstalled&&<button className="pwa-install-sidebar" onClick={()=>void installPwa()}><Download size={17}/><span><strong>Instaliraj aplikaciju</strong><small>telefon / desktop</small></span></button>}<button className="logout" onClick={signOut}><LogOut size={18}/> Odjavi se</button></div></aside>
 
-    {mobileMenuOpen&&<div className="mobile-drawer-backdrop" onMouseDown={()=>setMobileMenuOpen(false)}><div className="mobile-drawer" onMouseDown={e=>e.stopPropagation()}><div className="mobile-drawer-head"><div><strong>{restaurant.name}</strong><small>Restorapp</small></div><button className="icon-button" onClick={()=>setMobileMenuOpen(false)}><X size={19}/></button></div><div className="mobile-drawer-grid">
+    {mobileMenuOpen&&<div className="mobile-drawer-backdrop" onMouseDown={()=>setMobileMenuOpen(false)}><div className="mobile-drawer" onMouseDown={e=>e.stopPropagation()}><div className="mobile-drawer-head"><div><strong>Još alata</strong><small>{restaurant.name}</small></div><button className="icon-button" onClick={()=>setMobileMenuOpen(false)}><X size={19}/></button></div><div className="mobile-drawer-grid">
+      <button onClick={()=>mobileGo('creative')}><Sparkles size={19}/><span>AI alat</span><small>ideje i tekstovi</small></button>
+      <button onClick={()=>mobileGo('studio')}><ImageIcon size={19}/><span>Slike</span><small>Visual Studio</small></button>
       <button onClick={()=>mobileGo('brand')}><Palette size={19}/><span>Brend</span><small>logo i boje</small></button>
-      <button onClick={()=>mobileGo('menu')}><UtensilsCrossed size={19}/><span>Meni</span><small>jela i slike</small></button>
-      <button onClick={()=>mobileGo('insights')}><BarChart3 size={19}/><span>Rezultati</span><small>reach i konverzije</small></button>
-      <button onClick={()=>mobileGo('promotions')} className={!canUseCampaigns?'locked':''}><Megaphone size={19}/><span>Akcije</span><small>{canUseCampaigns?'kampanje':'PRO / BUSINESS'}</small></button>
+      <button onClick={()=>mobileGo('insights')}><BarChart3 size={19}/><span>Rezultati</span><small>šta najbolje radi</small></button>
+      <button onClick={()=>mobileGo('promotions')} className={!canUseCampaigns?'locked':''}><Megaphone size={19}/><span>Kampanje</span><small>{canUseCampaigns?'akcije i promocije':'PRO / BUSINESS'}</small></button>
       <button onClick={()=>mobileGo('billing')}><BadgeEuro size={19}/><span>Paket</span><small>licenca i naplata</small></button>
-      <button onClick={()=>mobileGo('settings')}><Settings size={19}/><span>Podešavanja</span><small>restoran i mreže</small></button>
-      <button onClick={()=>mobileGo('support')}><LifeBuoy size={19}/><span>Podrška</span><small>pošalji zahtev</small></button>
+      <button onClick={()=>mobileGo('support')}><LifeBuoy size={19}/><span>Podrška</span><small>treba ti pomoć?</small></button>
       <button onClick={()=>mobileGo('notifications')}><Bell size={19}/><span>Obaveštenja</span><small>{unreadNotifications?unreadNotifications+' novo':'sve pročitano'}</small></button>
-      {!pwaInstalled&&<button onClick={()=>{setMobileMenuOpen(false);void installPwa()}}><Smartphone size={19}/><span>Instaliraj app</span><small>na početni ekran</small></button>}
-      {isSuperadmin&&<button onClick={()=>mobileGo('admin')} className="owner"><ShieldCheck size={19}/><span>Superadmin</span><small>OWNER Control</small></button>}
+      {!pwaInstalled&&<button onClick={()=>{setMobileMenuOpen(false);void installPwa()}}><Smartphone size={19}/><span>Instaliraj app</span><small>telefon / desktop</small></button>}
+      {isSuperadmin&&<button onClick={()=>mobileGo('admin')} className="owner"><ShieldCheck size={19}/><span>OWNER</span><small>napredna kontrola</small></button>}
     </div><button className="mobile-drawer-logout" onClick={signOut}><LogOut size={17}/> Odjavi se</button></div></div>}
 
     {showIosInstall&&<div className="pwa-ios-backdrop" onMouseDown={()=>setShowIosInstall(false)}><div className="pwa-ios-card" onMouseDown={e=>e.stopPropagation()}><div className="pwa-ios-icon"><Smartphone size={26}/></div><button className="icon-button pwa-ios-close" onClick={()=>setShowIosInstall(false)}><X size={16}/></button><span>IPHONE / IPAD</span><h3>Dodaj Restorapp na početni ekran</h3><ol><li>U Safariju dodirni <b>Share</b> <Share2 size={14}/></li><li>Izaberi <b>Add to Home Screen</b></li><li>Potvrdi sa <b>Add</b></li></ol><p>Posle toga aplikacija se otvara preko svoje ikonice, bez browser trake.</p></div></div>}
