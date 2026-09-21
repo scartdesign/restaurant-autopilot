@@ -84,9 +84,10 @@ jobs:
           grep -Fq 'Potvrđen Meta manual review' /tmp/app.js
           grep -Fq 'Prva jela za Autopilot' /tmp/app.js
           grep -Fq 'Sa jednim HERO jelom i fotografijom Restorapp odmah ima mnogo bolji start' /tmp/app.js
-          grep -Fq 'FIRST SUCCESS' /tmp/app.js
-          grep -Fq 'Pokreni prvu nedelju' /tmp/app.js
+          grep -Fq 'SLEDEĆI KORAK' /tmp/app.js
+          grep -Fq 'Napravi prvu nedelju' /tmp/app.js
           grep -Fq 'Prva Autopilot nedelja je spremna' /tmp/app.js
+          grep -Fq 'Još alata' /tmp/app.js
           grep -Fq 'Dodaj fotografiju' /tmp/app.js
           DEMO_CHUNK=$(grep -oE 'DemoScreen-[A-Za-z0-9_-]+\.js' /tmp/app.js | head -1)
           test -n "$DEMO_CHUNK"
@@ -103,6 +104,9 @@ jobs:
           test -n "$PUBLISH_CHUNK"
           curl --max-time 20 --retry 4 --retry-delay 2 --retry-all-errors -fsSL "$BASE/assets/$PUBLISH_CHUNK" -o /tmp/publish.js
           grep -Fq 'OWNER provera' /tmp/publish.js
+          grep -Fq 'Pregledaj. Zakaži. Gotovo.' /tmp/publish.js
+          grep -Fq 'Poveži Instagram + Facebook' /tmp/publish.js
+          grep -Fq 'Sakrij napredno' /tmp/publish.js
           CREATIVE_CHUNK=$(grep -oE 'CreativeHub-[A-Za-z0-9_-]+\.js' /tmp/app.js | head -1)
           test -n "$CREATIVE_CHUNK"
           curl --max-time 20 --retry 4 --retry-delay 2 --retry-all-errors -fsSL "$BASE/assets/$CREATIVE_CHUNK" -o /tmp/creative.js
@@ -110,5 +114,5 @@ jobs:
             echo "Legacy AI download filename found in compiled Creative Hub"
             exit 1
           fi
-          echo "Restorapp branding + starter-menu onboarding + first-success week + Launch Center + Meta safety demo + OWNER ops markers OK"
+          echo "Restorapp simplified customer UX + onboarding + Autopilot safety + OWNER ops markers OK"
           echo "Public preview OK: $BASE/index.html"
