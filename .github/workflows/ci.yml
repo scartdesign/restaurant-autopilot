@@ -87,6 +87,11 @@ jobs:
           grep -Fq "onNavigate('publish')" "$FILE"
           grep -Fq "menuItems={menuItems}" "$APP"
           grep -Fq "userId={session.user.id}" "$APP"
+          grep -Fq 'BOJE ŠABLONA' "$FILE"
+          grep -Fq "name:'Black Gold'" "$FILE"
+          grep -Fq 'type="color"' "$FILE"
+          grep -Fq "primary_color:primaryColor" "$FILE"
+          grep -Fq "accent_color:accentColor" "$FILE"
       - name: Simplified customer UX guard
         shell: bash
         run: |
@@ -131,6 +136,9 @@ jobs:
           grep -Fq 'Zakaži' "$FILE"
           grep -Fq '<Rocket size={18} /> Početna' "$FILE"
           grep -Fq '<CalendarDays size={18} /> Sadržaj' "$FILE"
+          grep -Fq 'BOJE ŠABLONA' "$FILE"
+          grep -Fq "name:'Black Gold'" "$FILE"
+          grep -Fq 'type="color"' "$FILE"
       - name: Demo Meta connection safety guard
         shell: bash
         run: |
