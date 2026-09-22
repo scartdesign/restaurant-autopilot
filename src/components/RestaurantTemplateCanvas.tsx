@@ -16,7 +16,7 @@ type Props={
   primary:string
   accent:string
   logoUrl?:string|null
-  format?:'feed'|'story'
+  format?:'feed'|'square'|'story'
   className?:string
   textSlots?:Record<string,string>
   itemSlots?:Array<{title:string;price:string}>
