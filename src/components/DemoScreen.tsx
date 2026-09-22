@@ -1,5 +1,5 @@
-import { useState, type CSSProperties } from 'react'
-import { AlertTriangle, ArrowLeft, BarChart3, CalendarClock, CalendarDays, Check, CheckCircle2, Clock3, Facebook, Hash, Image as ImageIcon, Instagram, LayoutDashboard, MapPin, Megaphone, Menu as MenuIcon, MousePointerClick, Palette, Pencil, RefreshCw, Rocket, Save, Search, Send, Settings, ShieldCheck, Sparkles, Target, TrendingUp, Upload, UtensilsCrossed, X, Zap } from 'lucide-react'
+import { useState, type CSSProperties, type ChangeEvent, type FormEvent } from 'react'
+import { AlertTriangle, ArrowLeft, BarChart3, CalendarClock, CalendarDays, Check, CheckCircle2, ChevronRight, Clock3, Copy, Facebook, Hash, Image as ImageIcon, Instagram, LayoutDashboard, LayoutTemplate, MapPin, Megaphone, Menu as MenuIcon, MousePointerClick, Palette, Pencil, Plus, RefreshCw, Rocket, Save, Search, Send, Settings, ShieldCheck, Sparkles, Target, Trash2, TrendingUp, Upload, UtensilsCrossed, X, Zap } from 'lucide-react'
 import { VisualStudio } from './VisualStudio'
 import { BrandKit } from './BrandKit'
 import { DemoOwner } from './DemoOwner'
@@ -89,7 +89,7 @@ export function DemoScreen({ onExit }: { onExit: () => void }) {
       <main className="main-area">
         <div className="restorapp-topbar demo-restorapp-topbar"><div className="restorapp-topbar-copy"><span>Live product demo</span><strong>Bella Napoli</strong><small>Vračar · Beograd · Premium</small></div><div className="restorapp-topbar-actions"><div className="restorapp-profile-chip demo-profile-chip"><img src={demoLogo} alt="Bella Napoli"/><div><strong>Bella Napoli</strong><small>Demo restoran</small></div></div></div></div>
         
-        {tab === 'content' && <DemoContent approved={approved} setApproved={setApproved} notify={notify} />}
+        {tab === 'content' && <DemoContent notify={notify} setTab={setTab} />}
         {tab === 'launch' && <DemoLaunch notify={notify} setTab={setTab} />}
         {tab === 'studio' && <VisualStudio restaurant={demoRestaurant} posts={demoVisualPosts} menuItems={demoMenu} setNotice={notify} onChanged={async()=>{}} />}
         {tab === 'brand' && <BrandKit restaurant={demoRestaurant} menuItems={demoMenu} onSaved={async () => {}} setNotice={notify} demo />}
@@ -150,82 +150,131 @@ function DemoLaunch({notify,setTab}:{notify:(value:string)=>void;setTab:(tab:Dem
   </div>
 }
 
-const demoContentTemplates=[
-  {id:'luxe',name:'Midnight Gold',kicker:'PREMIUM',best:'Večera · vino · premium jela'},
-  {id:'editorial',name:'Signature',kicker:"CHEF'S PICK",best:'Elegantno · glavno jelo'},
-  {id:'hero-menu',name:'Hero Dish',kicker:'SIGNATURE DISH',best:'Jedno jelo u prvom planu'},
-  {id:'minimal',name:'Clean Menu',kicker:'FRESH',best:'Čisto · moderno · svetlo'},
-  {id:'bold',name:'Hot Offer',kicker:'SPECIAL OFFER',best:'Akcija · popust · jaka poruka'},
-  {id:'poster',name:'Chef Poster',kicker:'TONIGHT',best:'Story · event · specijalitet'},
-  {id:'split',name:'Split Menu',kicker:'TODAY',best:'Cena · ponuda · meni'},
-  {id:'promo-badge',name:'Special Badge',kicker:'SPECIAL',best:'Promo · vikend · limited'},
+type DemoContentTemplate={id:string;name:string;category:string;kicker:string;note:string;badge?:string}
+const demoContentTemplates:DemoContentTemplate[]=[
+  {id:'luxe',name:'Midnight Menu',category:'Premium',kicker:"TODAY'S MENU",note:'Tamni premium dizajn.',badge:'TOP'},
+  {id:'editorial',name:'Good Morning',category:'Breakfast',kicker:'GOOD MORNING',note:'Elegantni food layout.',badge:'TOP'},
+  {id:'hero-menu',name:'Hero Dish',category:'Signature',kicker:'GRILLED SPECIAL',note:'Jedno jelo u prvom planu.',badge:'TOP'},
+  {id:'minimal',name:'Clean Plate',category:'Modern',kicker:'FRESH TODAY',note:'Čisto i moderno.'},
+  {id:'bold',name:'20% Off',category:'Promo',kicker:'SPECIAL OFFER',note:'Jak promo layout.'},
+  {id:'poster',name:'Chef Poster',category:'Story',kicker:"CHEF'S CHOICE",note:'Poster za story i event.'},
+  {id:'split',name:'Split Menu',category:'Menu',kicker:"TODAY'S MENU",note:'Slika + tekst zona.'},
+  {id:'promo-badge',name:'Weekend Special',category:'Promo',kicker:'WEEKEND SPECIAL',note:'Veliki promo badge.'},
+  {id:'premium-grid',name:'Tasting Grid',category:'Menu',kicker:'FOOD MENU',note:'Setovi i tasting meni.'},
+  {id:'bold-offer',name:'Mega Sale',category:'Campaign',kicker:'LIMITED OFFER',note:'Velika tipografija.'},
+  {id:'lunch-time',name:'Lunch Time',category:'Lunch',kicker:'LUNCH TIME',note:'Dnevni meni i ručak.'},
+  {id:'family',name:'Family Table',category:'Restaurant',kicker:'TODAY SPECIAL',note:'Topao restoran layout.'},
 ] as const
 
-function DemoContent({ notify }: { approved: string[]; setApproved: (value: string[]) => void; notify: (value: string) => void }) {
-  const[photo,setPhoto]=useState(food.pizza)
-  const[template,setTemplate]=useState('luxe')
-  const[format,setFormat]=useState<'feed'|'story'>('feed')
-  const[headline,setHeadline]=useState('Večeras biramo Capricciosu')
-  const[text,setText]=useState('Hrskavo testo, mozzarella i miris peći. Rezerviši svoj sto i svrati večeras.')
-  const selected=demoContentTemplates.find(item=>item.id===template)||demoContentTemplates[0]
+type DemoDish={id:string;name:string;price:string;description:string;category:string;image:string}
+type DemoDesign={id:string;dishId:string;title:string;text:string;template:string;image:string;price:string;badge:string}
 
-  function chooseDemoPhoto(event:React.ChangeEvent<HTMLInputElement>){
+function DemoContent({notify,setTab}:{notify:(value:string)=>void;setTab:(tab:DemoTab)=>void}) {
+  const[studioTab,setStudioTab]=useState<'dishes'|'templates'|'posts'>('dishes')
+  const[dishes,setDishes]=useState<DemoDish[]>([
+    {id:'pizza',name:'Pizza Capricciosa',price:'890 RSD',description:'Pelat, mozzarella, šunka i pečurke.',category:'PIZZA',image:food.pizza},
+    {id:'pasta',name:'Sveža Carbonara',price:'940 RSD',description:'Guanciale, jaje, pecorino i sveža pasta.',category:'PASTA',image:food.pasta},
+    {id:'tiramisu',name:'Tiramisu',price:'520 RSD',description:'Mascarpone, espresso i kakao.',category:'DESERT',image:food.tiramisu},
+    {id:'salad',name:'Garden Special',price:'690 RSD',description:'Sveže povrće, avokado i house dressing.',category:'FRESH',image:food.salad},
+  ])
+  const[dishForm,setDishForm]=useState({name:'',price:'',description:'',category:''})
+  const[editingDishId,setEditingDishId]=useState('')
+  const[dishPhoto,setDishPhoto]=useState(food.lasagna)
+  const[selectedDishId,setSelectedDishId]=useState('pizza')
+  const[template,setTemplate]=useState('luxe')
+  const[headline,setHeadline]=useState('Pizza Capricciosa')
+  const[text,setText]=useState('Hrskavo testo, mozzarella i miris peći. Rezerviši svoj sto večeras.')
+  const[priceText,setPriceText]=useState('890 RSD')
+  const[badge,setBadge]=useState('')
+  const[cta,setCta]=useState('Rezerviši sto')
+  const[format,setFormat]=useState<'feed'|'story'>('feed')
+  const[designs,setDesigns]=useState<DemoDesign[]>(()=>demoPosts.map((post,index)=>({
+    id:'demo-'+index,dishId:index===0?'pizza':index===1?'pasta':index===2?'tiramisu':'salad',
+    title:post.title,text:post.caption,template:['luxe','editorial','minimal','bold'][index],image:post.image,
+    price:index===0?'890 RSD':index===1?'940 RSD':index===2?'520 RSD':'690 RSD',badge:post.type==='PROMO'?'20% OFF':'',
+  })))
+  const[editingDesignId,setEditingDesignId]=useState('')
+  const selectedDish=dishes.find(item=>item.id===selectedDishId)||dishes[0]||{id:'empty',name:'Dodaj jelo',price:'',description:'',category:'JELO',image:food.lasagna}
+  const selectedTemplate=demoContentTemplates.find(item=>item.id===template)||demoContentTemplates[0]
+
+  function chooseDishPhoto(event:ChangeEvent<HTMLInputElement>){
     const file=event.target.files?.[0]
     if(!file)return
     if(!file.type.startsWith('image/')){notify('Izaberi fotografiju.');return}
-    setPhoto(URL.createObjectURL(file))
-    notify('Fotografija je ubačena. Sada izaberi šablon.')
+    setDishPhoto(URL.createObjectURL(file))
+  }
+  function addDish(event:FormEvent){
+    event.preventDefault()
+    if(!dishForm.name.trim()){notify('Upiši naziv jela.');return}
+    const next={id:editingDishId||'dish-'+Date.now(),name:dishForm.name.trim(),price:dishForm.price.trim()||'—',description:dishForm.description.trim(),category:dishForm.category.trim().toUpperCase()||'JELO',image:dishPhoto}
+    if(editingDishId){
+      setDishes(current=>current.map(item=>item.id===editingDishId?next:item))
+      setEditingDishId('')
+      setDishForm({name:'',price:'',description:'',category:''})
+      notify('Demo: izmene jela su sačuvane.')
+    }else{
+      setDishes(current=>[next,...current])
+      setDishForm({name:'',price:'',description:'',category:''})
+      startDish(next)
+      notify('Demo: jelo je dodato. Sada izaberi šablon.')
+    }
+  }
+  function startDish(item:DemoDish){
+    setSelectedDishId(item.id);setHeadline(item.name);setText(item.description);setPriceText(item.price);setBadge('');setTemplate('luxe');setEditingDesignId('');setStudioTab('templates')
+    window.scrollTo({top:0,behavior:'smooth'})
+  }
+  function saveDesign(){
+    if(!headline.trim()){notify('Upiši naslov.');return}
+    const data={id:editingDesignId||'design-'+Date.now(),dishId:selectedDish.id,title:headline.trim(),text:text.trim(),template,image:selectedDish.image,price:priceText,badge}
+    setDesigns(current=>editingDesignId?current.map(item=>item.id===editingDesignId?data:item):[data,...current])
+    setEditingDesignId('');setStudioTab('posts')
+    notify('Demo: objava je sačuvana.')
+  }
+  function editDesign(item:DemoDesign){
+    const dish=dishes.find(entry=>entry.id===item.dishId)||selectedDish
+    setSelectedDishId(dish.id);setHeadline(item.title);setText(item.text);setPriceText(item.price);setBadge(item.badge);setTemplate(item.template);setEditingDesignId(item.id);setStudioTab('templates')
+    window.scrollTo({top:0,behavior:'smooth'})
+  }
+  function duplicateDesign(item:DemoDesign){
+    setDesigns(current=>[{...item,id:'copy-'+Date.now(),title:item.title+' Copy'},...current])
+    notify('Demo: objava je duplirana.')
   }
 
-  return <div className="simple-content-studio demo-simple-content-studio">
-    <header className="scs-header">
-      <div><span>SADRŽAJ</span><h1>Slika. Šablon. Tekst. Gotovo.</h1><p>Ovo je ceo posao vlasnika restorana. Ubaci svoju fotografiju, izaberi dizajn i napiši poruku.</p></div>
-    </header>
+  return <div className="dish-template-studio demo-dish-template-studio">
+    <header className="dts-header"><div><span>RESTORAPP CONTENT</span><h1>Od jela do objave za minut.</h1><p>Dodaj jelo, izaberi gotov restoran dizajn i upiši tekst. Nema crtanja i nema komplikovanog editora.</p></div><div className="dts-mini-flow"><b>1</b> Jelo <ChevronRight size={13}/><b>2</b> Šablon <ChevronRight size={13}/><b>3</b> Objava</div></header>
 
-    <section className="scs-steps">
-      <div className="done active"><b>1</b><span><strong>Fotografija</strong><small>Tvoja slika</small></span><Check size={15}/></div>
-      <div className="done active"><b>2</b><span><strong>Šablon</strong><small>Izaberi izgled</small></span><Check size={15}/></div>
-      <div className={headline.trim()?'done active':''}><b>3</b><span><strong>Tekst</strong><small>Napiši poruku</small></span>{headline.trim()&&<Check size={15}/>}</div>
-    </section>
+    <nav className="dts-tabs">
+      <button className={studioTab==='dishes'?'active':''} onClick={()=>setStudioTab('dishes')}><UtensilsCrossed size={17}/><span>Jela</span><b>{dishes.length}</b></button>
+      <button className={studioTab==='templates'?'active':''} onClick={()=>setStudioTab('templates')}><LayoutTemplate size={17}/><span>Šabloni</span><b>{demoContentTemplates.length}</b></button>
+      <button className={studioTab==='posts'?'active':''} onClick={()=>setStudioTab('posts')}><ImageIcon size={17}/><span>Objave</span><b>{designs.length}</b></button>
+    </nav>
 
-    <div className="scs-builder">
-      <div className="scs-controls">
-        <section className="scs-card scs-upload-card">
-          <div className="scs-section-title"><b>1</b><div><strong>Ubaci fotografiju</strong><small>Restoran, jelo, enterijer ili terasa.</small></div></div>
-          <label className="scs-upload-zone has-image"><img src={photo} alt="Demo fotografija"/><input type="file" accept="image/jpeg,image/png,image/webp" onChange={chooseDemoPhoto}/><em><Upload size={14}/> Izaberi svoju fotografiju</em></label>
-        </section>
+    {studioTab==='dishes'&&<section className="dts-dishes">
+      <form className="dts-dish-form" onSubmit={addDish}>
+        <div className="dts-section-head"><div><span>{editingDishId?'IZMENI JELO':'NOVO JELO'}</span><h2>{editingDishId?'Sačuvaj izmene':'Dodaj jelo'}</h2></div>{editingDishId&&<button type="button" className="dts-icon" onClick={()=>{setEditingDishId('');setDishForm({name:'',price:'',description:'',category:''})}}><X size={17}/></button>}</div>
+        <label className="dts-dish-upload has-image"><img src={dishPhoto} alt=""/><input type="file" accept="image/*" onChange={chooseDishPhoto}/><em><Upload size={13}/> Promeni sliku</em></label>
+        <label>Naziv jela<input value={dishForm.name} onChange={e=>setDishForm({...dishForm,name:e.target.value})} placeholder="Pizza Capricciosa"/></label>
+        <div className="dts-two"><label>Cena<input value={dishForm.price} onChange={e=>setDishForm({...dishForm,price:e.target.value})} placeholder="890 RSD"/></label><label>Kategorija<input value={dishForm.category} onChange={e=>setDishForm({...dishForm,category:e.target.value})} placeholder="Pizza"/></label></div>
+        <label>Kratak opis<textarea rows={3} value={dishForm.description} onChange={e=>setDishForm({...dishForm,description:e.target.value})} placeholder="Pelat, mozzarella, šunka…"/></label>
+        <button className="dts-primary">{editingDishId?<Save size={16}/>:<Plus size={16}/>} {editingDishId?'Sačuvaj jelo':'Dodaj jelo'}</button>
+      </form>
+      <div className="dts-dish-library"><div className="dts-section-head"><div><span>MOJA JELA</span><h2>Izaberi šta reklamiraš</h2></div><small>Klikni Kreiraj objavu.</small></div><div className="dts-dish-grid">{dishes.map(item=><article key={item.id}><div className="dts-dish-photo"><img src={item.image} alt=""/><span>{item.category}</span></div><div className="dts-dish-copy"><div><h3>{item.name}</h3><strong>{item.price}</strong></div><p>{item.description}</p></div><button className="dts-create-post" onClick={()=>startDish(item)}><LayoutTemplate size={15}/> Kreiraj objavu</button><div className="dts-row-actions"><button onClick={()=>{setEditingDishId(item.id);setDishForm({name:item.name,price:item.price,description:item.description,category:item.category});setDishPhoto(item.image);window.scrollTo({top:0,behavior:'smooth'});notify('Demo: izmeni podatke i klikni Sačuvaj jelo.')}}><Pencil size={14}/> Izmeni</button><button className="danger" onClick={()=>{setDishes(current=>current.filter(entry=>entry.id!==item.id));notify('Demo: jelo je obrisano.')}}><Trash2 size={14}/> Obriši</button></div></article>)}</div></div>
+    </section>}
 
-        <section className="scs-card">
-          <div className="scs-section-title"><b>2</b><div><strong>Izaberi šablon</strong><small>Svaki koristi baš tvoju fotografiju.</small></div></div>
-          <div className="scs-template-grid">{demoContentTemplates.map((item,index)=><button type="button" key={item.id} className={`scs-template-card sc-template-${item.id} ${template===item.id?'selected':''}`} onClick={()=>setTemplate(item.id)}>
-            <div className="scs-template-thumb" style={{backgroundImage:`url(${photo})`}}><i/><span>{item.kicker}</span><strong>{headline||'Tvoj naslov'}</strong>{index<3&&<b>TOP</b>}</div>
-            <div><strong>{item.name}</strong><small>{item.best}</small></div>{template===item.id&&<CheckCircle2 size={17}/>}
-          </button>)}</div>
-        </section>
-
-        <section className="scs-card">
-          <div className="scs-section-title"><b>3</b><div><strong>Upiši tekst</strong><small>Promena se odmah vidi desno.</small></div></div>
-          <div className="scs-format-switch"><button className={format==='feed'?'active':''} onClick={()=>setFormat('feed')}>Instagram / Facebook 4:5</button><button className={format==='story'?'active':''} onClick={()=>setFormat('story')}>Story 9:16</button></div>
-          <label>Glavni naslov<input value={headline} onChange={event=>setHeadline(event.target.value)} maxLength={56}/></label>
-          <label>Tekst<textarea rows={4} value={text} onChange={event=>setText(event.target.value)} maxLength={360}/></label>
-        </section>
+    {studioTab==='templates'&&<section className="dts-template-screen">
+      <div className="dts-template-main"><div className="dts-section-head"><div><span>GOTOVI DIZAJNI</span><h2>Izaberi šablon</h2></div><small>Za: <strong>{selectedDish.name}</strong></small></div>
+        <div className="dts-template-gallery">{demoContentTemplates.map((item,index)=><article key={item.id} className={template===item.id?'selected':''}><div className={`dts-template-art tpl-${item.id}`} style={{backgroundImage:`url(${selectedDish.image})`}}><i className="tpl-shade"/><span className="tpl-kicker">{item.kicker}</span>{item.badge&&<b className="tpl-top">{item.badge}</b>}{badge&&<strong className="tpl-badge">{badge}</strong>}<div className="tpl-copy">{priceText&&<em>{priceText}</em>}<h3>{headline}</h3><p>{text}</p><small>{cta} →</small></div></div><div className="dts-template-meta"><div><span>{item.category}</span><strong>{item.name}</strong><small>{item.note}</small></div><button onClick={()=>setTemplate(item.id)}>{template===item.id?<><Check size={14}/> Izabran</>:<>Koristi šablon <ChevronRight size={14}/></>}</button></div></article>)}</div>
       </div>
-
-      <aside className="scs-preview-wrap">
-        <div className="scs-preview-head"><div><span>UŽIVO</span><strong>{selected.name}</strong></div><span>{format==='story'?'1080 × 1920':'1080 × 1350'}</span></div>
-        <div className={`scs-live-preview ${format} sc-template-${template}`} style={{backgroundImage:`url(${photo})`}}>
-          <div className="scs-live-shade"/><div className="scs-live-logo"><img src={demoLogo} alt=""/></div>
-          <div className="scs-live-copy"><span>{selected.kicker}</span><h2>{headline||'Tvoj naslov ovde'}</h2><p>{text||'Kratka poruka o jelu, restoranu ili ponudi.'}</p><b>REZERVIŠI STO</b></div>
-        </div>
-        <button className="scs-save" onClick={()=>notify('Demo: objava je sačuvana kao draft i spremna je za zakazivanje.')}><Save size={18}/> Sačuvaj objavu</button>
-        <small className="scs-save-note">Posle ovoga ideš u <strong>Objave</strong> i biraš datum i vreme.</small>
+      <aside className="dts-composer"><div className="dts-composer-head"><span>OBJAVA</span><strong>{editingDesignId?'Izmeni objavu':'Dovrši objavu'}</strong></div>
+        <label>Naslov<input value={headline} onChange={e=>setHeadline(e.target.value)}/></label><label>Tekst<textarea rows={4} value={text} onChange={e=>setText(e.target.value)}/></label>
+        <div className="dts-two"><label>Cena<input value={priceText} onChange={e=>setPriceText(e.target.value)}/></label><label>Badge<input value={badge} onChange={e=>setBadge(e.target.value)} placeholder="20% OFF"/></label></div><label>CTA<input value={cta} onChange={e=>setCta(e.target.value)}/></label>
+        <div className="dts-format"><button className={format==='feed'?'active':''} onClick={()=>setFormat('feed')}>POST 4:5</button><button className={format==='story'?'active':''} onClick={()=>setFormat('story')}>STORY 9:16</button></div>
+        <div className={`dts-live-preview ${format} tpl-${template}`} style={{backgroundImage:`url(${selectedDish.image})`}}><i className="tpl-shade"/><span className="tpl-kicker">{selectedTemplate.kicker}</span>{badge&&<strong className="tpl-badge">{badge}</strong>}<img className="tpl-logo" src={demoLogo} alt=""/><div className="tpl-copy">{priceText&&<em>{priceText}</em>}<h3>{headline}</h3><p>{text}</p><small>{cta} →</small></div></div>
+        <button className="dts-primary dts-save-post" onClick={saveDesign}><Save size={17}/>{editingDesignId?'Sačuvaj izmene':'Sačuvaj objavu'}</button>
       </aside>
-    </div>
+    </section>}
 
-    <section className="scs-recent">
-      <div className="scs-recent-head"><div><span>MOJE OBJAVE</span><h2>Poslednji dizajni</h2></div><small>Svaku možeš ponovo otvoriti i promeniti.</small></div>
-      <div className="scs-recent-grid">{demoPosts.map((post,index)=><article key={post.title}><div className={`scs-recent-image sc-template-${['luxe','editorial','minimal','bold'][index]}`} style={{backgroundImage:`url(${post.image})`}}><i/><span>{post.type}</span><strong>{post.title}</strong></div><div><span className="status draft">Draft</span><button onClick={()=>{setPhoto(post.image);setHeadline(post.title);setText(post.caption);setTemplate(['luxe','editorial','minimal','bold'][index]);window.scrollTo({top:0,behavior:'smooth'});notify('Objava je otvorena za izmenu.')}}><Pencil size={14}/> Izmeni</button></div></article>)}</div>
-    </section>
+    {studioTab==='posts'&&<section className="dts-posts"><div className="dts-section-head"><div><span>MOJE OBJAVE</span><h2>Sačuvani dizajni</h2></div><button className="dts-primary compact" onClick={()=>setStudioTab('dishes')}><Plus size={15}/> Nova objava</button></div><div className="dts-post-grid">{designs.map(item=><article key={item.id}><div className={`dts-post-art tpl-${item.template}`} style={{backgroundImage:`url(${item.image})`}}><i className="tpl-shade"/><span className="tpl-kicker">{demoContentTemplates.find(t=>t.id===item.template)?.kicker||'TODAY'}</span>{item.badge&&<strong className="tpl-badge">{item.badge}</strong>}<div className="tpl-copy"><em>{item.price}</em><h3>{item.title}</h3><p>{item.text}</p></div></div><div className="dts-post-info"><div><span className="status draft">Draft</span><strong>{item.title}</strong></div><div className="dts-post-actions"><button onClick={()=>editDesign(item)}><Pencil size={14}/> Izmeni</button><button onClick={()=>duplicateDesign(item)}><Copy size={14}/> Dupliraj</button><button className="schedule" onClick={()=>{setTab('publish');notify('Demo: otvoren je ekran Objave za zakazivanje.')}}><CalendarClock size={14}/> Zakaži</button><button className="danger icon-only" onClick={()=>{setDesigns(current=>current.filter(entry=>entry.id!==item.id));notify('Demo: objava je obrisana.')}}><Trash2 size={14}/></button></div></div></article>)}</div></section>}
   </div>
 }
 

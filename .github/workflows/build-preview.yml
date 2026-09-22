@@ -100,17 +100,22 @@ jobs:
           grep -Fq 'Publishing je bezbedno blokiran' /tmp/demo.js
           grep -Fq 'FIRST SUCCESS DEMO' /tmp/demo.js
           grep -Fq 'Simuliraj prvi uspeh novog restorana' /tmp/demo.js
-          grep -Fq 'Slika. Šablon. Tekst. Gotovo.' /tmp/demo.js
-          grep -Fq 'Izaberi svoju fotografiju' /tmp/demo.js
-          grep -Fq 'Sačuvaj objavu' /tmp/demo.js
+          grep -Fq 'Od jela do objave za minut.' /tmp/demo.js
+          grep -Fq 'Dodaj jelo' /tmp/demo.js
+          grep -Fq 'Kreiraj objavu' /tmp/demo.js
+          grep -Fq 'Koristi šablon' /tmp/demo.js
+          grep -Fq 'Dupliraj' /tmp/demo.js
           CONTENT_CHUNK=$(grep -oE 'SimpleContentStudio-[A-Za-z0-9_-]+\.js' /tmp/app.js | head -1)
           test -n "$CONTENT_CHUNK"
           curl --max-time 20 --retry 4 --retry-delay 2 --retry-all-errors -fsSL "$BASE/assets/$CONTENT_CHUNK" -o /tmp/content.js
-          grep -Fq 'Slika. Šablon. Tekst. Gotovo.' /tmp/content.js
-          grep -Fq 'Ubaci fotografiju' /tmp/content.js
-          grep -Fq 'Midnight Gold' /tmp/content.js
+          grep -Fq 'Od jela do objave za minut.' /tmp/content.js
+          grep -Fq 'Dodaj jelo' /tmp/content.js
+          grep -Fq 'Kreiraj objavu' /tmp/content.js
+          grep -Fq 'Koristi šablon' /tmp/content.js
+          grep -Fq 'Midnight Menu' /tmp/content.js
           grep -Fq 'Hero Dish' /tmp/content.js
-          grep -Fq 'Special Badge' /tmp/content.js
+          grep -Fq 'Weekend Special' /tmp/content.js
+          grep -Fq 'Mega Sale' /tmp/content.js
           PUBLISH_CHUNK=$(grep -oE 'PublishCenter-[A-Za-z0-9_-]+\.js' /tmp/app.js | head -1)
           test -n "$PUBLISH_CHUNK"
           curl --max-time 20 --retry 4 --retry-delay 2 --retry-all-errors -fsSL "$BASE/assets/$PUBLISH_CHUNK" -o /tmp/publish.js

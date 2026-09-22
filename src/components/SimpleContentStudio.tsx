@@ -1,29 +1,36 @@
-import { ChangeEvent, useEffect, useMemo, useState } from 'react'
-import { Check, CheckCircle2, Image as ImageIcon, LayoutTemplate, Pencil, Plus, Save, Sparkles, Upload, X } from 'lucide-react'
+import { ChangeEvent, FormEvent, useEffect, useMemo, useState } from 'react'
+import { CalendarClock, Check, CheckCircle2, ChevronRight, Copy, Image as ImageIcon, LayoutTemplate, Pencil, Plus, Save, Send, Trash2, Upload, UtensilsCrossed, X } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { optimizeImage } from '../lib/image'
-import type { Post, Restaurant, VisualDesignMeta } from '../types'
+import type { MenuItem, Post, Restaurant, VisualDesignMeta } from '../types'
 import '../simple-content-studio.css'
 
-type TemplateId = NonNullable<VisualDesignMeta['template']>
-type Format = 'feed' | 'story'
+type StudioTab='dishes'|'templates'|'posts'
+type TemplateId=NonNullable<VisualDesignMeta['template']>
+type Format='feed'|'story'
 
-type TemplateOption = {
-  id: TemplateId
-  name: string
-  kicker: string
-  note: string
+type TemplateOption={
+  id:TemplateId
+  name:string
+  category:string
+  kicker:string
+  note:string
+  badge?:string
 }
 
 const templates:TemplateOption[]=[
-  {id:'luxe',name:'Midnight Gold',kicker:'PREMIUM',note:'Večera · vino · premium jela'},
-  {id:'editorial',name:'Signature',kicker:"CHEF'S PICK",note:'Elegantno · glavno jelo'},
-  {id:'hero-menu',name:'Hero Dish',kicker:'SIGNATURE DISH',note:'Jedno jelo u prvom planu'},
-  {id:'minimal',name:'Clean Menu',kicker:'FRESH',note:'Čisto · moderno · svetlo'},
-  {id:'bold',name:'Hot Offer',kicker:'SPECIAL OFFER',note:'Akcija · popust · jaka poruka'},
-  {id:'poster',name:'Chef Poster',kicker:'TONIGHT',note:'Story · event · specijalitet'},
-  {id:'split',name:'Split Menu',kicker:'TODAY',note:'Cena · ponuda · meni'},
-  {id:'promo-badge',name:'Special Badge',kicker:'SPECIAL',note:'Promo · vikend · limited'},
+  {id:'luxe',name:'Midnight Menu',category:'Premium',kicker:"TODAY'S MENU",note:'Tamni premium dizajn za večeru i fine dining.',badge:'TOP'},
+  {id:'editorial',name:'Good Morning',category:'Breakfast',kicker:'GOOD MORNING',note:'Elegantna fotografija sa potpisnim naslovom.',badge:'TOP'},
+  {id:'hero-menu',name:'Hero Dish',category:'Signature',kicker:'GRILLED SPECIAL',note:'Velika fotografija i jedan jak signature naslov.',badge:'TOP'},
+  {id:'minimal',name:'Clean Plate',category:'Modern',kicker:'FRESH TODAY',note:'Čist i moderan layout za novo jelo.'},
+  {id:'bold',name:'20% Off',category:'Promo',kicker:'SPECIAL OFFER',note:'Jak discount badge i prodajni CTA.'},
+  {id:'poster',name:'Chef Poster',category:'Story',kicker:"CHEF'S CHOICE",note:'Poster stil za događaj, story i večernju ponudu.'},
+  {id:'split',name:'Split Menu',category:'Menu',kicker:"TODAY'S MENU",note:'Fotografija + uredna tekst zona za cenu i opis.'},
+  {id:'promo-badge',name:'Weekend Special',category:'Promo',kicker:'WEEKEND SPECIAL',note:'Veliki promo krug i premium food fotografija.'},
+  {id:'premium-grid',name:'Tasting Grid',category:'Menu',kicker:'FOOD MENU',note:'Meni kartica za više ponuda i setove.'},
+  {id:'bold-offer',name:'Mega Sale',category:'Campaign',kicker:'LIMITED OFFER',note:'Velika tipografija za akcije i popuste.'},
+  {id:'lunch-time',name:'Lunch Time',category:'Lunch',kicker:'LUNCH TIME',note:'Dnevni meni i poslovni ručak.'},
+  {id:'family',name:'Family Table',category:'Restaurant',kicker:'TODAY SPECIAL',note:'Topao layout za porodični restoran i zajednički sto.'},
 ]
 
 function defaultTemplate(restaurant:Restaurant):TemplateId{
@@ -32,178 +39,312 @@ function defaultTemplate(restaurant:Restaurant):TemplateId{
   if(restaurant.brand_style==='modern')return 'minimal'
   return 'editorial'
 }
-
+function money(item:MenuItem|null){
+  if(!item?.price)return ''
+  return `${item.price} ${item.currency||'RSD'}`
+}
 function resolvePostImage(post:Post){
   const visual=post.generation_meta?.visual_design?.image_url
   if(typeof visual==='string'&&visual)return visual
   const direct=post.generation_meta?.image_url
-  return typeof direct==='string'&&direct?direct:null
+  return typeof direct==='string'&&direct?direct:''
 }
-
 function overlayFor(template:TemplateId){
-  if(template==='minimal'||template==='hero-menu')return .42
-  if(template==='luxe'||template==='editorial')return .58
+  if(template==='minimal'||template==='hero-menu'||template==='family')return .42
+  if(template==='luxe'||template==='editorial'||template==='premium-grid')return .58
   return .7
 }
 
-export function SimpleContentStudio({restaurant,posts,onChanged,setNotice}:{restaurant:Restaurant;posts:Post[];onChanged:()=>Promise<void>;setNotice:(value:string)=>void}){
-  const [file,setFile]=useState<File|null>(null)
-  const [preview,setPreview]=useState('')
-  const [editingId,setEditingId]=useState('')
-  const [existingImage,setExistingImage]=useState('')
-  const [template,setTemplate]=useState<TemplateId>(()=>defaultTemplate(restaurant))
-  const [format,setFormat]=useState<Format>('feed')
-  const [headline,setHeadline]=useState('')
-  const [text,setText]=useState('')
-  const [working,setWorking]=useState(false)
+export function SimpleContentStudio({
+  restaurant,userId,menuItems,posts,onChanged,onNavigate,setNotice,
+}:{
+  restaurant:Restaurant
+  userId:string
+  menuItems:MenuItem[]
+  posts:Post[]
+  onChanged:()=>Promise<void>
+  onNavigate:(target:'publish')=>void
+  setNotice:(value:string)=>void
+}){
+  const[tab,setTab]=useState<StudioTab>('dishes')
+  const[dishForm,setDishForm]=useState({name:'',description:'',category:'',price:'',currency:'RSD'})
+  const[dishImage,setDishImage]=useState<File|null>(null)
+  const[dishPreview,setDishPreview]=useState('')
+  const[editingDishId,setEditingDishId]=useState('')
+  const[existingDishImage,setExistingDishImage]=useState('')
+  const[dishWorking,setDishWorking]=useState(false)
 
-  const currentImage=preview||existingImage
-  const recent=useMemo(()=>[...posts].filter(post=>post.status!=='rejected').slice(0,8),[posts])
+  const[selectedDishId,setSelectedDishId]=useState('')
+  const[template,setTemplate]=useState<TemplateId>(()=>defaultTemplate(restaurant))
+  const[format,setFormat]=useState<Format>('feed')
+  const[headline,setHeadline]=useState('')
+  const[text,setText]=useState('')
+  const[priceText,setPriceText]=useState('')
+  const[badgeText,setBadgeText]=useState('')
+  const[cta,setCta]=useState('')
+  const[composerFile,setComposerFile]=useState<File|null>(null)
+  const[composerPreview,setComposerPreview]=useState('')
+  const[composerExistingImage,setComposerExistingImage]=useState('')
+  const[editingPostId,setEditingPostId]=useState('')
+  const[postWorking,setPostWorking]=useState(false)
+
+  const selectedDish=useMemo(()=>menuItems.find(item=>item.id===selectedDishId)||null,[menuItems,selectedDishId])
+  const composerImage=composerPreview||composerExistingImage||selectedDish?.image_url||''
   const selectedTemplate=templates.find(item=>item.id===template)||templates[0]
+  const recentPosts=useMemo(()=>[...posts].filter(post=>post.status!=='rejected').slice(0,20),[posts])
 
-  useEffect(()=>{
-    return()=>{if(preview.startsWith('blob:'))URL.revokeObjectURL(preview)}
-  },[preview])
+  useEffect(()=>()=>{if(dishPreview.startsWith('blob:'))URL.revokeObjectURL(dishPreview)},[dishPreview])
+  useEffect(()=>()=>{if(composerPreview.startsWith('blob:'))URL.revokeObjectURL(composerPreview)},[composerPreview])
 
-  function chooseImage(event:ChangeEvent<HTMLInputElement>){
-    const next=event.target.files?.[0]
-    if(!next)return
-    if(!['image/jpeg','image/png','image/webp'].includes(next.type)){setNotice('Fotografija mora biti JPG, PNG ili WEBP.');return}
-    if(next.size>12*1024*1024){setNotice('Fotografija može imati najviše 12 MB.');return}
-    if(preview.startsWith('blob:'))URL.revokeObjectURL(preview)
-    setFile(next)
-    setPreview(URL.createObjectURL(next))
-  }
-
-  function reset(){
-    if(preview.startsWith('blob:'))URL.revokeObjectURL(preview)
-    setFile(null);setPreview('');setEditingId('');setExistingImage('')
-    setTemplate(defaultTemplate(restaurant));setFormat('feed');setHeadline('');setText('')
-  }
-
-  function editPost(post:Post){
-    if(preview.startsWith('blob:'))URL.revokeObjectURL(preview)
-    setFile(null);setPreview('');setEditingId(post.id);setExistingImage(resolvePostImage(post)||'')
-    setTemplate((post.generation_meta?.visual_design?.template as TemplateId)||defaultTemplate(restaurant))
-    setFormat(post.post_type==='story'?'story':'feed')
-    setHeadline(post.title||post.generation_meta?.visual_design?.headline||'')
-    setText(post.caption||post.generation_meta?.visual_design?.subline||'')
-    window.scrollTo({top:0,behavior:'smooth'})
-  }
-
-  async function uploadImage(next:File){
-    const optimized=await optimizeImage(next,{maxSide:1800,quality:.9})
-    const{data:auth,error:authError}=await supabase.auth.getUser()
-    if(authError||!auth.user)throw new Error('Nalog nije dostupan za upload fotografije.')
+  async function upload(file:File,folder:string){
+    const optimized=await optimizeImage(file,{maxSide:1800,quality:.9})
     const ext=optimized.name.split('.').pop()?.toLowerCase()||'webp'
-    const path=`${auth.user.id}/${restaurant.id}/content/${crypto.randomUUID()}.${ext}`
+    const path=`${userId}/${restaurant.id}/${folder}/${crypto.randomUUID()}.${ext}`
     const{error}=await supabase.storage.from('restaurant-assets').upload(path,optimized,{upsert:false,contentType:optimized.type||undefined})
     if(error)throw error
     return supabase.storage.from('restaurant-assets').getPublicUrl(path).data.publicUrl
   }
 
-  async function save(){
-    if(!currentImage&&!file){setNotice('Prvo ubaci fotografiju restorana ili jela.');return}
-    if(!headline.trim()){setNotice('Upiši glavni naslov.');return}
-    setWorking(true)
+  function chooseDishImage(event:ChangeEvent<HTMLInputElement>){
+    const file=event.target.files?.[0]
+    if(!file)return
+    if(!['image/jpeg','image/png','image/webp'].includes(file.type)){setNotice('Fotografija mora biti JPG, PNG ili WEBP.');return}
+    if(file.size>12*1024*1024){setNotice('Fotografija može imati najviše 12 MB.');return}
+    if(dishPreview.startsWith('blob:'))URL.revokeObjectURL(dishPreview)
+    setDishImage(file);setDishPreview(URL.createObjectURL(file))
+  }
+  function resetDishForm(){
+    if(dishPreview.startsWith('blob:'))URL.revokeObjectURL(dishPreview)
+    setDishForm({name:'',description:'',category:'',price:'',currency:'RSD'})
+    setDishImage(null);setDishPreview('');setEditingDishId('');setExistingDishImage('')
+  }
+  function editDish(item:MenuItem){
+    resetDishForm()
+    setEditingDishId(item.id);setExistingDishImage(item.image_url||'')
+    setDishForm({
+      name:item.name,description:item.description||'',category:item.category||'',
+      price:item.price===null?'':String(item.price),currency:item.currency||'RSD',
+    })
+    window.scrollTo({top:0,behavior:'smooth'})
+  }
+  async function saveDish(event:FormEvent){
+    event.preventDefault()
+    const name=dishForm.name.trim()
+    if(!name){setNotice('Upiši naziv jela.');return}
+    const price=dishForm.price.trim()===''?null:Number(dishForm.price.replace(',','.'))
+    if(price!==null&&Number.isNaN(price)){setNotice('Cena mora biti broj, npr. 890 ili 12,90.');return}
+    setDishWorking(true)
     try{
-      const imageUrl=file?await uploadImage(file):existingImage
-      if(!imageUrl)throw new Error('Fotografija nije dostupna.')
-      const caption=text.trim()||headline.trim()
-      const cta=restaurant.social_goal==='delivery'?'Poruči sada':restaurant.social_goal==='reservations'?'Rezerviši sto':'Svrati danas'
-      const visualDesign:VisualDesignMeta={
-        template,format,headline:headline.trim(),subline:caption,cta,image_url:imageUrl,photo_position:'center',overlay:overlayFor(template),
-        primary_color:restaurant.primary_color||'#17372d',accent_color:restaurant.secondary_color||'#d8b35f',
-        logo_visible:Boolean(restaurant.logo_url&&(restaurant.default_logo_visible??true)),logo_position:restaurant.default_logo_position||'top-right',
-        logo_size:restaurant.default_logo_size||'m',logo_badge:restaurant.default_logo_badge||'white',copy_position:'bottom',
-        font_pair:template==='luxe'||template==='editorial'?'editorial':template==='bold'||template==='poster'||template==='promo-badge'?'impact':'modern',
-        saved_at:new Date().toISOString(),
-      }
-      const generationMeta={image_url:imageUrl,generation_source:'manual_composer',visual_design:visualDesign}
-      if(editingId){
-        const{error}=await supabase.from('posts').update({
-          post_type:format,title:headline.trim(),caption,cta,generation_meta:generationMeta,
-          platform_content:{instagram:{caption,hashtags:[]},facebook:{caption,hashtags:[]}},status:'draft',
-        }).eq('id',editingId).eq('restaurant_id',restaurant.id)
+      const imageUrl=dishImage?await upload(dishImage,'menu'):existingDishImage||null
+      if(editingDishId){
+        const{error}=await supabase.from('menu_items').update({
+          name,description:dishForm.description.trim()||null,category:dishForm.category.trim()||null,
+          price,currency:dishForm.currency,image_url:imageUrl,is_active:true,
+        }).eq('id',editingDishId).eq('restaurant_id',restaurant.id)
         if(error)throw error
-        setNotice('Objava je sačuvana. Fotografija, tekst i šablon su ažurirani.')
+        setNotice(`„${name}“ je sačuvano.`)
+        await onChanged();resetDishForm()
       }else{
-        const{error}=await supabase.from('posts').insert({
-          restaurant_id:restaurant.id,content_plan_id:null,menu_item_id:null,promotion_id:null,post_type:format,
-          scheduled_for:null,title:headline.trim(),caption,cta,hashtags:[],visual_brief:null,status:'draft',
-          generation_meta:generationMeta,platform_content:{instagram:{caption,hashtags:[]},facebook:{caption,hashtags:[]}},
-          discovery_score:0,seo_keywords:[],
-        })
+        const{data,error}=await supabase.from('menu_items').insert({
+          restaurant_id:restaurant.id,name,description:dishForm.description.trim()||null,
+          category:dishForm.category.trim()||null,price,currency:dishForm.currency,
+          image_url:imageUrl,marketing_priority:0,is_active:true,
+        }).select('*').single()
         if(error)throw error
-        setNotice('Nova objava je sačuvana kao draft. Sledeće možeš da je zakažeš u Objavama.')
+        await onChanged()
+        resetDishForm()
+        if(data){
+          startFromDish(data as MenuItem)
+          setNotice(`„${name}“ je dodato. Sada izaberi šablon.`)
+        }
       }
-      await onChanged()
-      reset()
-    }catch(error){
-      setNotice(error instanceof Error?error.message:'Objava nije sačuvana.')
-    }
-    setWorking(false)
+    }catch(error){setNotice(error instanceof Error?error.message:'Jelo nije sačuvano.')}
+    setDishWorking(false)
+  }
+  async function deleteDish(item:MenuItem){
+    if(!window.confirm(`Obriši „${item.name}“?`))return
+    const{error}=await supabase.from('menu_items').delete().eq('id',item.id).eq('restaurant_id',restaurant.id)
+    if(error){setNotice(error.message);return}
+    if(selectedDishId===item.id)setSelectedDishId('')
+    setNotice('Jelo je obrisano.')
+    await onChanged()
   }
 
-  return <div className="simple-content-studio">
-    <header className="scs-header">
-      <div><span>SADRŽAJ</span><h1>Slika. Šablon. Tekst. Gotovo.</h1><p>Ubaci svoju fotografiju restorana ili jela, izaberi dizajn koji ti se sviđa i napiši poruku.</p></div>
-      {editingId&&<button className="secondary" onClick={reset}><Plus size={16}/> Nova objava</button>}
+  function clearComposerPreview(){
+    if(composerPreview.startsWith('blob:'))URL.revokeObjectURL(composerPreview)
+    setComposerFile(null);setComposerPreview('')
+  }
+  function startFromDish(item:MenuItem){
+    clearComposerPreview()
+    setSelectedDishId(item.id);setComposerExistingImage(item.image_url||'')
+    setTemplate(defaultTemplate(restaurant));setFormat('feed');setHeadline(item.name)
+    setText(item.description||'');setPriceText(money(item));setBadgeText('')
+    setCta(restaurant.social_goal==='delivery'?'Poruči sada':restaurant.social_goal==='reservations'?'Rezerviši sto':'Svrati danas')
+    setEditingPostId('');setTab('templates')
+    window.scrollTo({top:0,behavior:'smooth'})
+  }
+  function chooseComposerImage(event:ChangeEvent<HTMLInputElement>){
+    const file=event.target.files?.[0]
+    if(!file)return
+    if(!['image/jpeg','image/png','image/webp'].includes(file.type)){setNotice('Fotografija mora biti JPG, PNG ili WEBP.');return}
+    if(file.size>12*1024*1024){setNotice('Fotografija može imati najviše 12 MB.');return}
+    clearComposerPreview()
+    setComposerFile(file);setComposerPreview(URL.createObjectURL(file))
+  }
+  function editPost(post:Post){
+    clearComposerPreview()
+    setEditingPostId(post.id);setSelectedDishId(post.menu_item_id||'')
+    setComposerExistingImage(resolvePostImage(post))
+    setTemplate((post.generation_meta?.visual_design?.template as TemplateId)||defaultTemplate(restaurant))
+    setFormat(post.post_type==='story'?'story':'feed')
+    setHeadline(post.title||post.generation_meta?.visual_design?.headline||'')
+    setText(post.caption||post.generation_meta?.visual_design?.subline||'')
+    const manual=(post.generation_meta?.manual_fields||{}) as Record<string,unknown>
+    setPriceText(typeof manual.price==='string'?manual.price:'')
+    setBadgeText(typeof manual.badge==='string'?manual.badge:'')
+    setCta(post.cta||'Svrati danas')
+    setTab('templates');window.scrollTo({top:0,behavior:'smooth'})
+  }
+
+  async function savePost(){
+    if(!selectedDishId&&!composerImage){setNotice('Prvo izaberi jelo ili fotografiju.');return}
+    if(!composerImage&&!composerFile){setNotice('Jelo nema fotografiju. Dodaj fotografiju pre čuvanja.');return}
+    if(!headline.trim()){setNotice('Upiši naslov.');return}
+    setPostWorking(true)
+    try{
+      const imageUrl=composerFile?await upload(composerFile,'content'):composerImage
+      const caption=text.trim()||headline.trim()
+      const visualDesign:VisualDesignMeta={
+        template,format,headline:headline.trim(),subline:caption,cta:cta.trim()||'Svrati danas',
+        image_url:imageUrl,photo_position:'center',overlay:overlayFor(template),
+        primary_color:restaurant.primary_color||'#073c38',accent_color:restaurant.secondary_color||'#ef7d3a',
+        logo_visible:Boolean(restaurant.logo_url&&(restaurant.default_logo_visible??true)),
+        logo_position:restaurant.default_logo_position||'top-right',logo_size:restaurant.default_logo_size||'m',
+        logo_badge:restaurant.default_logo_badge||'white',copy_position:'bottom',
+        font_pair:template==='luxe'||template==='editorial'||template==='premium-grid'?'editorial':template==='bold'||template==='poster'||template==='bold-offer'||template==='promo-badge'?'impact':'modern',
+        saved_at:new Date().toISOString(),
+      }
+      const generationMeta={
+        image_url:imageUrl,generation_source:'manual_composer',visual_design:visualDesign,
+        manual_fields:{price:priceText.trim(),badge:badgeText.trim(),template_name:selectedTemplate.name},
+      }
+      const payload={
+        menu_item_id:selectedDishId||null,post_type:format,title:headline.trim(),caption,
+        cta:cta.trim()||'Svrati danas',generation_meta:generationMeta,
+        platform_content:{instagram:{caption,hashtags:[]},facebook:{caption,hashtags:[]}},status:'draft' as const,
+      }
+      if(editingPostId){
+        const{error}=await supabase.from('posts').update(payload).eq('id',editingPostId).eq('restaurant_id',restaurant.id)
+        if(error)throw error
+        setNotice('Objava je sačuvana.')
+      }else{
+        const{error}=await supabase.from('posts').insert({
+          restaurant_id:restaurant.id,content_plan_id:null,promotion_id:null,scheduled_for:null,
+          hashtags:[],visual_brief:null,discovery_score:0,seo_keywords:[],...payload,
+        })
+        if(error)throw error
+        setNotice('Objava je sačuvana. Možeš da je zakažeš u Objavama.')
+      }
+      await onChanged();setEditingPostId('');setTab('posts')
+    }catch(error){setNotice(error instanceof Error?error.message:'Objava nije sačuvana.')}
+    setPostWorking(false)
+  }
+
+  async function duplicatePost(post:Post){
+    const{error}=await supabase.from('posts').insert({
+      restaurant_id:restaurant.id,content_plan_id:null,menu_item_id:post.menu_item_id,promotion_id:null,
+      post_type:post.post_type,scheduled_for:null,title:post.title,caption:post.caption,cta:post.cta,
+      hashtags:post.hashtags||[],visual_brief:post.visual_brief,status:'draft',
+      generation_meta:{...(post.generation_meta||{}),generation_source:'manual_duplicate'},
+      platform_content:post.platform_content||{},discovery_score:post.discovery_score||0,seo_keywords:post.seo_keywords||[],
+    })
+    if(error){setNotice(error.message);return}
+    setNotice('Objava je duplirana.')
+    await onChanged()
+  }
+  async function deletePost(post:Post){
+    if(!window.confirm('Obriši ovu objavu?'))return
+    const{error}=await supabase.from('posts').delete().eq('id',post.id).eq('restaurant_id',restaurant.id)
+    if(error){setNotice(error.message);return}
+    setNotice('Objava je obrisana.')
+    await onChanged()
+  }
+
+  return <div className="dish-template-studio">
+    <header className="dts-header">
+      <div><span>RESTORAPP CONTENT</span><h1>Od jela do objave za minut.</h1><p>Dodaj jelo jednom. Posle samo biraš gotov dizajn, upišeš tekst i sačuvaš.</p></div>
+      <div className="dts-mini-flow"><b>1</b> Jelo <ChevronRight size={13}/><b>2</b> Šablon <ChevronRight size={13}/><b>3</b> Objava</div>
     </header>
 
-    <section className="scs-steps">
-      <div className={currentImage?'done active':'active'}><b>1</b><span><strong>Fotografija</strong><small>Tvoja slika</small></span>{currentImage&&<Check size={15}/>}</div>
-      <div className={template?'done active':''}><b>2</b><span><strong>Šablon</strong><small>Izaberi izgled</small></span>{template&&<Check size={15}/>}</div>
-      <div className={headline.trim()?'done active':''}><b>3</b><span><strong>Tekst</strong><small>Napiši poruku</small></span>{headline.trim()&&<Check size={15}/>}</div>
-    </section>
+    <nav className="dts-tabs">
+      <button className={tab==='dishes'?'active':''} onClick={()=>setTab('dishes')}><UtensilsCrossed size={17}/><span>Jela</span><b>{menuItems.length}</b></button>
+      <button className={tab==='templates'?'active':''} onClick={()=>setTab('templates')}><LayoutTemplate size={17}/><span>Šabloni</span><b>{templates.length}</b></button>
+      <button className={tab==='posts'?'active':''} onClick={()=>setTab('posts')}><ImageIcon size={17}/><span>Objave</span><b>{recentPosts.length}</b></button>
+    </nav>
 
-    <div className="scs-builder">
-      <div className="scs-controls">
-        <section className="scs-card scs-upload-card">
-          <div className="scs-section-title"><b>1</b><div><strong>Ubaci fotografiju</strong><small>Restoran, jelo, enterijer, terasa…</small></div></div>
-          <label className={currentImage?'scs-upload-zone has-image':'scs-upload-zone'}>
-            {currentImage?<img src={currentImage} alt="Preview"/>:<><Upload size={28}/><strong>Izaberi fotografiju</strong><span>JPG, PNG ili WEBP</span></>}
-            <input type="file" accept="image/jpeg,image/png,image/webp" onChange={chooseImage}/>
-            {currentImage&&<em><ImageIcon size={14}/> Promeni fotografiju</em>}
-          </label>
-        </section>
+    {tab==='dishes'&&<section className="dts-dishes">
+      <form className="dts-dish-form" onSubmit={saveDish}>
+        <div className="dts-section-head"><div><span>{editingDishId?'IZMENI JELO':'NOVO JELO'}</span><h2>{editingDishId?'Sačuvaj izmene':'Dodaj jelo'}</h2></div>{editingDishId&&<button type="button" className="dts-icon" onClick={resetDishForm}><X size={17}/></button>}</div>
+        <label className={dishPreview||existingDishImage?'dts-dish-upload has-image':'dts-dish-upload'}>
+          {dishPreview||existingDishImage?<img src={dishPreview||existingDishImage} alt=""/>:<><Upload size={28}/><strong>Dodaj fotografiju jela</strong><small>JPG, PNG ili WEBP</small></>}
+          <input type="file" accept="image/jpeg,image/png,image/webp" onChange={chooseDishImage}/>
+          {(dishPreview||existingDishImage)&&<em><Pencil size={13}/> Promeni sliku</em>}
+        </label>
+        <label>Naziv jela<input value={dishForm.name} onChange={e=>setDishForm({...dishForm,name:e.target.value})} placeholder="Pizza Capricciosa"/></label>
+        <div className="dts-two"><label>Cena<input inputMode="decimal" value={dishForm.price} onChange={e=>setDishForm({...dishForm,price:e.target.value})} placeholder="890"/></label><label>Valuta<select value={dishForm.currency} onChange={e=>setDishForm({...dishForm,currency:e.target.value})}><option>RSD</option><option>EUR</option><option>BAM</option><option>MKD</option><option>BGN</option></select></label></div>
+        <label>Kategorija<input value={dishForm.category} onChange={e=>setDishForm({...dishForm,category:e.target.value})} placeholder="Pizza, pasta, doručak…"/></label>
+        <label>Kratak opis<textarea rows={3} value={dishForm.description} onChange={e=>setDishForm({...dishForm,description:e.target.value})} placeholder="Pelat, mozzarella, šunka, pečurke…"/></label>
+        <button className="dts-primary" disabled={dishWorking}><Save size={16}/>{dishWorking?'Čuvam…':editingDishId?'Sačuvaj jelo':'Dodaj jelo'}</button>
+      </form>
 
-        <section className="scs-card">
-          <div className="scs-section-title"><b>2</b><div><strong>Izaberi šablon</strong><small>Fotografija se odmah prikazuje u svakom stilu.</small></div></div>
-          <div className="scs-template-grid">{templates.map((item,index)=><button type="button" key={item.id} className={`scs-template-card sc-template-${item.id} ${template===item.id?'selected':''}`} onClick={()=>setTemplate(item.id)}>
-            <div className="scs-template-thumb" style={currentImage?{backgroundImage:`url(${currentImage})`}:undefined}><i/><span>{item.kicker}</span><strong>{headline||restaurant.name}</strong>{index<3&&<b>TOP</b>}</div>
-            <div><strong>{item.name}</strong><small>{item.note}</small></div>
-            {template===item.id&&<CheckCircle2 size={17}/>}
-          </button>)}</div>
-        </section>
+      <div className="dts-dish-library">
+        <div className="dts-section-head"><div><span>MOJA JELA</span><h2>Izaberi šta reklamiraš</h2></div><small>Jednom uneseš jelo — koristiš ga u neograničeno objava.</small></div>
+        {menuItems.length?<div className="dts-dish-grid">{menuItems.map(item=><article key={item.id} className={!item.is_active?'muted':''}>
+          <div className="dts-dish-photo">{item.image_url?<img src={item.image_url} alt=""/>:<ImageIcon size={28}/>}<span>{item.category||'JELO'}</span></div>
+          <div className="dts-dish-copy"><div><h3>{item.name}</h3>{item.price!==null&&<strong>{item.price} {item.currency}</strong>}</div><p>{item.description||'Dodaj kratak opis da ga možeš koristiti u objavi.'}</p></div>
+          <button className="dts-create-post" onClick={()=>startFromDish(item)}><LayoutTemplate size={15}/> Kreiraj objavu</button>
+          <div className="dts-row-actions"><button onClick={()=>editDish(item)}><Pencil size={14}/> Izmeni</button><button className="danger" onClick={()=>void deleteDish(item)}><Trash2 size={14}/> Obriši</button></div>
+        </article>)}</div>:<div className="dts-empty"><UtensilsCrossed size={34}/><strong>Dodaj prvo jelo.</strong><span>Fotografija + naziv + cena su dovoljni da počneš.</span></div>}
+      </div>
+    </section>}
 
-        <section className="scs-card">
-          <div className="scs-section-title"><b>3</b><div><strong>Upiši tekst</strong><small>Sve vidiš odmah na preview-u.</small></div></div>
-          <div className="scs-format-switch"><button className={format==='feed'?'active':''} onClick={()=>setFormat('feed')}>Instagram / Facebook 4:5</button><button className={format==='story'?'active':''} onClick={()=>setFormat('story')}>Story 9:16</button></div>
-          <label>Glavni naslov<input value={headline} maxLength={56} onChange={event=>setHeadline(event.target.value)} placeholder="npr. Večeras biramo Capricciosu"/></label>
-          <label>Tekst<textarea rows={4} value={text} maxLength={360} onChange={event=>setText(event.target.value)} placeholder="Napiši kratku poruku gostima…"/></label>
-        </section>
+    {tab==='templates'&&<section className="dts-template-screen">
+      <div className="dts-template-main">
+        <div className="dts-section-head"><div><span>GOTOVI DIZAJNI</span><h2>Izaberi šablon</h2></div><small>{selectedDish?<>Za: <strong>{selectedDish.name}</strong></>:'Prvo izaberi jelo.'}</small></div>
+        {!selectedDish&&<div className="dts-choose-dish">{menuItems.map(item=><button key={item.id} onClick={()=>startFromDish(item)}>{item.image_url?<img src={item.image_url} alt=""/>:<ImageIcon size={20}/>}<span>{item.name}</span><ChevronRight size={14}/></button>)}</div>}
+        {selectedDish&&<div className="dts-template-gallery">{templates.map((item,index)=><article key={item.id} className={template===item.id?'selected':''}>
+          <div className={`dts-template-art tpl-${item.id}`} style={composerImage?{backgroundImage:`url(${composerImage})`}:undefined}>
+            <i className="tpl-shade"/><span className="tpl-kicker">{item.kicker}</span>{item.badge&&<b className="tpl-top">{item.badge}</b>}
+            {badgeText&&<strong className="tpl-badge">{badgeText}</strong>}
+            <div className="tpl-copy">{priceText&&<em>{priceText}</em>}<h3>{headline||selectedDish.name}</h3><p>{text||selectedDish.description||'Tvoj tekst ovde'}</p><small>{cta||'SVRATI DANAS'} →</small></div>
+          </div>
+          <div className="dts-template-meta"><div><span>{item.category}</span><strong>{item.name}</strong><small>{item.note}</small></div><button onClick={()=>setTemplate(item.id)}>{template===item.id?<><Check size={14}/> Izabran</>:<>Koristi šablon <ChevronRight size={14}/></>}</button></div>
+        </article>)}</div>}
       </div>
 
-      <aside className="scs-preview-wrap">
-        <div className="scs-preview-head"><div><span>UŽIVO</span><strong>{selectedTemplate.name}</strong></div><span>{format==='story'?'1080 × 1920':'1080 × 1350'}</span></div>
-        <div className={`scs-live-preview ${format} sc-template-${template}`} style={currentImage?{backgroundImage:`url(${currentImage})`}:undefined}>
-          {!currentImage&&<div className="scs-preview-empty"><ImageIcon size={42}/><span>Ovde će se pojaviti tvoja fotografija</span></div>}
-          <div className="scs-live-shade"/>
-          {restaurant.logo_url&&(restaurant.default_logo_visible??true)&&<div className="scs-live-logo"><img src={restaurant.logo_url} alt=""/></div>}
-          <div className="scs-live-copy"><span>{selectedTemplate.kicker}</span><h2>{headline||'Tvoj naslov ovde'}</h2><p>{text||'Kratka poruka o jelu, restoranu ili ponudi.'}</p><b>{restaurant.social_goal==='delivery'?'PORUČI SADA':restaurant.social_goal==='reservations'?'REZERVIŠI STO':'SVRATI DANAS'}</b></div>
+      {selectedDish&&<aside className="dts-composer">
+        <div className="dts-composer-head"><span>OBJAVA</span><strong>{editingPostId?'Izmeni objavu':'Dovrši objavu'}</strong></div>
+        <label className="dts-composer-photo">{composerImage?<img src={composerImage} alt=""/>:<ImageIcon size={28}/>}<input type="file" accept="image/jpeg,image/png,image/webp" onChange={chooseComposerImage}/><span><Upload size={13}/> Promeni sliku</span></label>
+        <label>Naslov<input maxLength={56} value={headline} onChange={e=>setHeadline(e.target.value)} placeholder="Današnja preporuka"/></label>
+        <label>Tekst<textarea rows={4} maxLength={360} value={text} onChange={e=>setText(e.target.value)} placeholder="Kratka poruka gostima…"/></label>
+        <div className="dts-two"><label>Cena / oznaka<input value={priceText} onChange={e=>setPriceText(e.target.value)} placeholder="890 RSD"/></label><label>Badge<input value={badgeText} onChange={e=>setBadgeText(e.target.value)} placeholder="20% OFF"/></label></div>
+        <label>CTA<input value={cta} onChange={e=>setCta(e.target.value)} placeholder="Rezerviši sto"/></label>
+        <div className="dts-format"><button className={format==='feed'?'active':''} onClick={()=>setFormat('feed')}>POST 4:5</button><button className={format==='story'?'active':''} onClick={()=>setFormat('story')}>STORY 9:16</button></div>
+        <div className={`dts-live-preview ${format} tpl-${template}`} style={composerImage?{backgroundImage:`url(${composerImage})`}:undefined}>
+          <i className="tpl-shade"/><span className="tpl-kicker">{selectedTemplate.kicker}</span>{badgeText&&<strong className="tpl-badge">{badgeText}</strong>}
+          {restaurant.logo_url&&<img className="tpl-logo" src={restaurant.logo_url} alt=""/>}
+          <div className="tpl-copy">{priceText&&<em>{priceText}</em>}<h3>{headline||selectedDish.name}</h3><p>{text||selectedDish.description||'Tvoj tekst ovde'}</p><small>{cta||'SVRATI DANAS'} →</small></div>
         </div>
-        <button className="scs-save" disabled={working} onClick={()=>void save()}><Save size={18}/>{working?'Čuvam…':editingId?'Sačuvaj izmene':'Sačuvaj objavu'}</button>
-        <small className="scs-save-note">Sačuvana objava ide u <strong>Objave</strong>, gde biraš datum i vreme.</small>
-      </aside>
-    </div>
+        <button className="dts-primary dts-save-post" disabled={postWorking} onClick={()=>void savePost()}><Save size={17}/>{postWorking?'Čuvam…':editingPostId?'Sačuvaj izmene':'Sačuvaj objavu'}</button>
+      </aside>}
+    </section>}
 
-    <section className="scs-recent">
-      <div className="scs-recent-head"><div><span>MOJE OBJAVE</span><h2>Poslednji dizajni</h2></div><small>Klikni Izmeni i ponovo promeni fotografiju, šablon ili tekst.</small></div>
-      {recent.length?<div className="scs-recent-grid">{recent.map(post=>{const image=resolvePostImage(post);const tpl=(post.generation_meta?.visual_design?.template as TemplateId)||'editorial';return <article key={post.id}>
-        <div className={`scs-recent-image sc-template-${tpl}`} style={image?{backgroundImage:`url(${image})`}:undefined}><i/><span>{post.post_type==='story'?'STORY':'OBJAVA'}</span><strong>{post.title||'Bez naslova'}</strong></div>
-        <div><span className={`status ${post.status}`}>{post.status==='draft'?'Draft':post.status==='approved'?'Spremno':post.status==='published'?'Objavljeno':'Za doradu'}</span><button onClick={()=>editPost(post)}><Pencil size={14}/> Izmeni</button></div>
-      </article>})}</div>:<div className="scs-empty"><Sparkles size={26}/><strong>Još nema objava.</strong><span>Ubaci prvu fotografiju iznad i napravi dizajn.</span></div>}
-    </section>
+    {tab==='posts'&&<section className="dts-posts">
+      <div className="dts-section-head"><div><span>MOJE OBJAVE</span><h2>Sačuvani dizajni</h2></div><button className="dts-primary compact" onClick={()=>setTab('dishes')}><Plus size={15}/> Nova objava</button></div>
+      {recentPosts.length?<div className="dts-post-grid">{recentPosts.map(post=>{const image=resolvePostImage(post);const tpl=(post.generation_meta?.visual_design?.template as TemplateId)||'editorial';const manual=(post.generation_meta?.manual_fields||{}) as Record<string,unknown>;return <article key={post.id}>
+        <div className={`dts-post-art tpl-${tpl}`} style={image?{backgroundImage:`url(${image})`}:undefined}><i className="tpl-shade"/><span className="tpl-kicker">{templates.find(t=>t.id===tpl)?.kicker||'TODAY'}</span>{typeof manual.badge==='string'&&manual.badge&&<strong className="tpl-badge">{manual.badge}</strong>}<div className="tpl-copy">{typeof manual.price==='string'&&manual.price&&<em>{manual.price}</em>}<h3>{post.title||'Objava'}</h3><p>{post.caption||''}</p></div></div>
+        <div className="dts-post-info"><div><span className={`status ${post.status}`}>{post.status==='draft'?'Draft':post.status==='approved'?'Spremno':post.status==='published'?'Objavljeno':'Za doradu'}</span><strong>{post.title||'Bez naslova'}</strong></div><div className="dts-post-actions"><button onClick={()=>editPost(post)}><Pencil size={14}/> Izmeni</button><button onClick={()=>void duplicatePost(post)}><Copy size={14}/> Dupliraj</button><button className="schedule" onClick={()=>onNavigate('publish')}><CalendarClock size={14}/> Zakaži</button><button className="danger icon-only" onClick={()=>void deletePost(post)} title="Obriši"><Trash2 size={14}/></button></div></div>
+      </article>})}</div>:<div className="dts-empty"><ImageIcon size={34}/><strong>Još nema objava.</strong><span>Dodaj jelo i izaberi prvi šablon.</span><button className="dts-primary compact" onClick={()=>setTab('dishes')}>Kreni od jela</button></div>}
+    </section>}
   </div>
 }
