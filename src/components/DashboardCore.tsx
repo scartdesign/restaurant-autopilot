@@ -1,9 +1,33 @@
 import { FormEvent, useEffect, useMemo, useState, type CSSProperties } from 'react'
-import { Activity, ArrowUpRight, CalendarDays, CheckCircle2, ChefHat, Clock3, Copy, CopyPlus, Facebook, Hash, Instagram, MapPin, Pencil, RefreshCw, Save, Search, ShieldCheck, Sparkles, Trash2, TrendingUp, UtensilsCrossed, WandSparkles, X, Zap } from 'lucide-react'
+import { Activity, ArrowUpRight, CalendarDays, CheckCircle2, ChefHat, Clock3, Copy, CopyPlus, Facebook, Hash, Instagram, MapPin, Palette, Pencil, RefreshCw, Save, Search, ShieldCheck, Sparkles, Trash2, TrendingUp, UtensilsCrossed, WandSparkles, X, Zap } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import type { Entitlement, MenuItem, Post, Restaurant } from '../types'
 
 type TrendOpportunity={id:string;restaurant_id:string;candidate_id:string;menu_item_id:string|null;trend_query:string;seed_query:string;trend_type:'rising'|'top';trend_value:string|null;trend_signal:number;relevance_score:number;opportunity_score:number;performance_boost:number;performance_samples:number;recommended_pillar:string;recommended_action:'post'|'campaign';reason:string;status:'pending'|'created'|'dismissed'|'expired';expires_at:string;created_at:string}
+type VisualTemplateId='editorial'|'bold'|'minimal'|'split'|'poster'|'luxe'
+type VisualTemplateOption={id:VisualTemplateId;name:string;description:string;bestFor:string}
+
+const visualTemplates:VisualTemplateOption[]=[
+  {id:'editorial',name:'Editorial',description:'Elegantna fotografija, čist naslov i premium osećaj.',bestFor:'Feed · signature jelo'},
+  {id:'luxe',name:'Luxe',description:'Tamni premium izgled sa finim zlatnim detaljima.',bestFor:'Večera · premium ponuda'},
+  {id:'minimal',name:'Clean',description:'Svetao, moderan i veoma čist prikaz ponude.',bestFor:'Meni · novo jelo'},
+  {id:'bold',name:'Bold',description:'Jak naslov i prodajni izgled koji odmah privlači pažnju.',bestFor:'Akcija · popust'},
+  {id:'poster',name:'Poster',description:'Veliki naslov preko fotografije, kao pravi promo poster.',bestFor:'Story · događaj'},
+  {id:'split',name:'Split',description:'Fotografija i tekst podeljeni u jasan reklamni layout.',bestFor:'Cena · ponuda · meni'},
+]
+
+function templateOrder(post?:Post|null):VisualTemplateOption[]{
+  if(post?.post_type==='promotion'){
+    const order:VisualTemplateId[]=['bold','poster','split','luxe','editorial','minimal']
+    return order.map(id=>visualTemplates.find(item=>item.id===id)!)
+  }
+  if(post?.post_type==='story'){
+    const order:VisualTemplateId[]=['poster','bold','luxe','editorial','minimal','split']
+    return order.map(id=>visualTemplates.find(item=>item.id===id)!)
+  }
+  const order:VisualTemplateId[]=['editorial','luxe','minimal','split','poster','bold']
+  return order.map(id=>visualTemplates.find(item=>item.id===id)!)
+}
 
 export function Dashboard({ restaurant, menuItems, posts, entitlement, onChanged, setNotice, onNavigate }: {
   restaurant: Restaurant
@@ -18,6 +42,7 @@ export function Dashboard({ restaurant, menuItems, posts, entitlement, onChanged
   const [workingId, setWorkingId] = useState('')
   const [bulkReviewing,setBulkReviewing]=useState(false)
   const [editing, setEditing] = useState<Post | null>(null)
+  const [templating,setTemplating]=useState<Post|null>(null)
   const [contentQuery,setContentQuery]=useState('')
   const [contentStatus,setContentStatus]=useState<'all'|Post['status']>('all')
   const [contentType,setContentType]=useState<'all'|Post['post_type']>('all')
@@ -269,6 +294,31 @@ export function Dashboard({ restaurant, menuItems, posts, entitlement, onChanged
     setWorkingId('')
   }
 
+  async function applyVisualTemplate(post:Post,templateId:VisualTemplateId){
+    setWorkingId(post.id)
+    const current=(post.generation_meta?.visual_design||{}) as Record<string,unknown>
+    const generationMeta={
+      ...(post.generation_meta||{}),
+      visual_design:{
+        ...current,
+        template:templateId,
+        headline:current.headline||post.title||'Nova objava',
+        cta:current.cta||post.cta||'Svrati danas',
+        format:current.format||post.post_type,
+        photo_position:current.photo_position||'center',
+      },
+    }
+    const{error}=await supabase.from('posts').update({generation_meta:generationMeta,status:'draft'}).eq('id',post.id).eq('restaurant_id',restaurant.id)
+    if(error)setNotice(error.message)
+    else{
+      const label=visualTemplates.find(item=>item.id===templateId)?.name||templateId
+      setNotice(`Šablon „${label}“ je primenjen. Objava je vraćena u draft da možeš da proveriš izmene.`)
+      setTemplating(null)
+      await onChanged()
+    }
+    setWorkingId('')
+  }
+
   async function duplicatePost(post: Post) {
     setWorkingId(post.id)
     const scheduled = post.scheduled_for ? new Date(new Date(post.scheduled_for).getTime() + 24 * 60 * 60 * 1000).toISOString() : null
@@ -486,9 +536,13 @@ export function Dashboard({ restaurant, menuItems, posts, entitlement, onChanged
 
       <section className="content-section wow-content-section">
         <div className="section-title">
-          <div><p className="eyebrow">CONTENT LIBRARY</p><h2>Sadržaj ove nedelje</h2></div>
-          <span className="engine-badge"><Sparkles size={14} /> AI Copy + Design + Schedule + Discovery</span>
+          <div><p className="eyebrow">SADRŽAJ</p><h2>Objave ove nedelje</h2></div>
+          <div className="content-primary-actions"><button className="secondary" onClick={()=>posts[0]?setTemplating(posts[0]):setNotice('Prvo napravi bar jednu objavu da bi izabrao šablon.')}><Palette size={15}/> Preporučeni šabloni</button><button className="primary" onClick={generateWeek} disabled={generating}><Sparkles size={15}/>{generating?'Pravim…':'Napravi sadržaj'}</button></div>
         </div>
+        {posts.length>0&&<div className="recommended-template-strip">
+          <div className="recommended-template-intro"><span>PREPORUČENO ZA {posts[0].post_type==='promotion'?'PROMO':posts[0].post_type==='story'?'STORY':'FEED'}</span><strong>Izaberi stil za „{posts[0].title||'prvu objavu'}“</strong><small>Šablon menja samo vizuelni izgled. Tekst, fotografija i termin ostaju tvoji.</small></div>
+          {templateOrder(posts[0]).slice(0,3).map((template,index)=><button key={template.id} className={'recommended-template-card template-'+template.id} onClick={()=>setTemplating(posts[0])}><i/><span>{index===0?'NAJBOLJI IZBOR':'PREPORUKA'}</span><strong>{template.name}</strong><small>{template.bestFor}</small></button>)}
+        </div>}
         {posts.length>0&&<div className="content-filterbar"><label><Search size={15}/><input value={contentQuery} onChange={e=>setContentQuery(e.target.value)} placeholder="Pretraži naslov, tekst, hashtag…"/></label><select value={contentStatus} onChange={e=>setContentStatus(e.target.value as typeof contentStatus)}><option value="all">Svi statusi</option><option value="draft">Draft</option><option value="approved">Odobreno</option><option value="published">Objavljeno</option><option value="rejected">Odbijeno</option></select><select value={contentType} onChange={e=>setContentType(e.target.value as typeof contentType)}><option value="all">Svi formati</option><option value="feed">Feed</option><option value="story">Story</option><option value="promotion">Promo</option></select><span>{filteredPosts.length}/{posts.length}</span></div>}
         {posts.length === 0 ? (
           <div className="empty-state wow-empty"><Sparkles size={30} /><h3>Još nema sadržaja</h3><p>Dodaj kvalitetne fotografije i jela u meni, zatim pokreni nedelju.</p><button className="wow-primary" onClick={generateWeek}><Sparkles size={17} /> Generiši sada</button></div>
@@ -496,12 +550,13 @@ export function Dashboard({ restaurant, menuItems, posts, entitlement, onChanged
           <div className="empty-state wow-empty"><Search size={28}/><h3>Nema rezultata za ovaj filter.</h3><p>Promeni status, format ili pojam za pretragu.</p><button className="secondary" onClick={()=>{setContentQuery('');setContentStatus('all');setContentType('all')}}>Očisti filtere</button></div>
         ) : (
           <div className="post-grid post-grid-pro wow-post-grid">
-            {filteredPosts.map((post) => <PostCard key={post.id} post={post} restaurant={restaurant} menuItems={menuItems} working={workingId === post.id} onEdit={() => setEditing(post)} onAiCopy={() => aiCopy(post)} onOptimize={() => optimizeDiscovery(post)} onDuplicate={() => duplicatePost(post)} onDelete={() => deletePost(post)} onStatus={(status) => changeStatus(post, status)} setNotice={setNotice} />)}
+            {filteredPosts.map((post) => <PostCard key={post.id} post={post} restaurant={restaurant} menuItems={menuItems} working={workingId === post.id} onEdit={() => setEditing(post)} onTemplate={()=>setTemplating(post)} onAiCopy={() => aiCopy(post)} onOptimize={() => optimizeDiscovery(post)} onDuplicate={() => duplicatePost(post)} onDelete={() => deletePost(post)} onStatus={(status) => changeStatus(post, status)} setNotice={setNotice} />)}
           </div>
         )}
       </section>
 
       {editing && <PostEditor post={editing} timezone={restaurant.timezone} onClose={() => setEditing(null)} onSaved={async () => { setEditing(null); await onChanged() }} setNotice={setNotice} />}
+      {templating&&<TemplatePicker post={templating} restaurant={restaurant} menuItems={menuItems} working={workingId===templating.id} onClose={()=>setTemplating(null)} onApply={(template)=>void applyVisualTemplate(templating,template)}/>} 
     </>
   )
 }
@@ -518,12 +573,13 @@ function resolvePostImage(post: Post, menuItems: MenuItem[]) {
   return menuItems.find((item) => item.id === post.menu_item_id)?.image_url || null
 }
 
-function PostCard({ post, restaurant, menuItems, working, onEdit, onAiCopy, onOptimize, onDuplicate, onDelete, onStatus, setNotice }: {
+function PostCard({ post, restaurant, menuItems, working, onEdit, onTemplate, onAiCopy, onOptimize, onDuplicate, onDelete, onStatus, setNotice }: {
   post: Post
   restaurant: Restaurant
   menuItems: MenuItem[]
   working: boolean
   onEdit: () => void
+  onTemplate: () => void
   onAiCopy: () => void
   onOptimize: () => void
   onDuplicate: () => void
@@ -573,10 +629,26 @@ function PostCard({ post, restaurant, menuItems, working, onEdit, onAiCopy, onOp
         {selectionSignals.length > 0 && <div className="ai-selection-signals"><span>AI IZBOR</span>{selectionSignals.map((signal)=><b key={signal}>{signal}</b>)}</div>}
         <p className="caption-preview">{post.caption}</p>
         <div className="platform-discovery"><div className="platform-row"><div className="platform-label ig"><Instagram size={14} /> Instagram</div><div className="tag-cloud">{instagramTags.slice(0, 8).map((tag) => <span key={tag}>{tag}</span>)}</div></div><div className="platform-row"><div className="platform-label fb"><Facebook size={14} /> Facebook</div><div className="tag-cloud fb-tags">{facebookTags.slice(0, 3).map((tag) => <span key={tag}>{tag}</span>)}</div></div>{post.seo_keywords?.length > 0 && <div className="keyword-line"><Search size={13} /><span>{post.seo_keywords.slice(0, 4).join(' · ')}</span></div>}</div>
-        <div className="post-actions post-actions-pro"><button className="icon-button" title="Kopiraj Instagram objavu" onClick={copyInstagram}><Copy size={15} /></button><button className="icon-button" title="Izmeni objavu i termin" onClick={onEdit}><Pencil size={15} /></button><button className="icon-button" title="Dupliraj kao draft" disabled={working} onClick={onDuplicate}><CopyPlus size={15}/></button><button className="icon-button ai-copy-button" title="AI napiši novu verziju teksta" disabled={working} onClick={onAiCopy}><WandSparkles size={16} /></button><button className="icon-button discovery-button" title="Optimizuj discovery" disabled={working} onClick={onOptimize}><Hash size={15} /></button>{post.status !== 'approved' && post.status !== 'published'&&<button className="icon-button danger-icon" title="Obriši draft" disabled={working} onClick={onDelete}><Trash2 size={15}/></button>}{post.status !== 'approved' && post.status !== 'published'? <button className="secondary action-grow" disabled={working} onClick={() => onStatus('approved')}><CheckCircle2 size={16} /> Proveri + odobri</button>: <button className="approved-button action-grow" onClick={() => onStatus('draft')}><CheckCircle2 size={16} /> Spremno</button>}</div>
+        <div className="post-main-actions"><button className="post-edit-button" onClick={onEdit}><Pencil size={15}/> Izmeni</button><button className="post-template-button" onClick={onTemplate}><Palette size={15}/> Šablon</button>{post.status !== 'approved' && post.status !== 'published'?<button className="secondary post-approve-button" disabled={working} onClick={() => onStatus('approved')}><CheckCircle2 size={16}/> Odobri</button>:<span className="post-ready-badge"><CheckCircle2 size={14}/> Spremno</span>}</div>
+        <div className="post-extra-actions"><button className="icon-button" title="Kopiraj Instagram objavu" onClick={copyInstagram}><Copy size={15}/></button><button className="icon-button" title="Dupliraj kao draft" disabled={working} onClick={onDuplicate}><CopyPlus size={15}/></button><button className="icon-button ai-copy-button" title="AI napiši novu verziju teksta" disabled={working} onClick={onAiCopy}><WandSparkles size={16}/></button><button className="icon-button discovery-button" title="Optimizuj discovery" disabled={working} onClick={onOptimize}><Hash size={15}/></button>{post.status !== 'approved' && post.status !== 'published'&&<button className="icon-button danger-icon" title="Obriši draft" disabled={working} onClick={onDelete}><Trash2 size={15}/></button>}</div>
       </div>
     </article>
   )
+}
+
+function TemplatePicker({post,restaurant,menuItems,working,onClose,onApply}:{post:Post;restaurant:Restaurant;menuItems:MenuItem[];working:boolean;onClose:()=>void;onApply:(template:VisualTemplateId)=>void}){
+  const imageUrl=resolvePostImage(post,menuItems)
+  const item=menuItems.find(entry=>entry.id===post.menu_item_id)
+  const price=item?.price?`${item.price} ${item.currency||'RSD'}`:''
+  const current=String(post.generation_meta?.visual_design?.template||(post.post_type==='promotion'?'bold':'editorial')) as VisualTemplateId
+  const options=templateOrder(post)
+  return <div className="modal-backdrop" onMouseDown={onClose}><div className="modal-card template-picker-modal" onMouseDown={event=>event.stopPropagation()}>
+    <div className="modal-head"><div><p className="eyebrow">PREPORUČENI ŠABLONI</p><h2>{post.title||'Objava'}</h2><small>{post.post_type==='promotion'?'Promo šabloni sa jačim CTA-om':post.post_type==='story'?'Šabloni optimizovani za Story':'Šabloni za feed objavu'}</small></div><button type="button" className="icon-button" onClick={onClose}><X size={18}/></button></div>
+    <div className="template-picker-grid">{options.map((template,index)=><article className={'template-picker-card '+(current===template.id?'selected':'')} key={template.id}>
+      <div className={'template-picker-preview card-template-'+template.id+(imageUrl?' has-photo':'')} style={imageUrl?{backgroundImage:`url(${imageUrl})`}:{background:`linear-gradient(145deg,${restaurant.primary_color||'#17211b'},#314137)`}}><div className="wow-preview-shade"/><span className="template-rank">{index===0?'PREPORUČENO':index<3?'DOBAR IZBOR':'STIL'}</span><div className="wow-card-art-copy">{price&&<span className="wow-card-price">{price}</span>}<h3>{post.title||template.name}</h3><span className="wow-card-cta">{post.cta||'Svrati danas'} →</span></div></div>
+      <div className="template-picker-copy"><div><strong>{template.name}</strong>{current===template.id&&<span>Trenutni</span>}</div><p>{template.description}</p><small>{template.bestFor}</small><button className={index===0?'primary':'secondary'} disabled={working||current===template.id} onClick={()=>onApply(template.id)}>{current===template.id?'Izabran':'Primeni šablon'}</button></div>
+    </article>)}</div>
+  </div></div>
 }
 
 function PostEditor({ post, timezone, onClose, onSaved, setNotice }: { post: Post; timezone: string; onClose: () => void; onSaved: () => Promise<void>; setNotice: (value: string) => void }) {

@@ -68,6 +68,17 @@ jobs:
           grep -Fq 'SLEDEĆI KORAK' "$DASH"
           grep -Fq "title:'Napravi prvu nedelju'" "$DASH"
           grep -Fq "onNavigate?.('dashboard')" "$DASH"
+      - name: Content edit and template guard
+        shell: bash
+        run: |
+          set -euo pipefail
+          FILE="src/components/DashboardCore.tsx"
+          grep -Fq 'Preporučeni šabloni' "$FILE"
+          grep -Fq 'Primeni šablon' "$FILE"
+          grep -Fq 'post-edit-button' "$FILE"
+          grep -Fq 'post-template-button' "$FILE"
+          grep -Fq "type VisualTemplateId='editorial'|'bold'|'minimal'|'split'|'poster'|'luxe'" "$FILE"
+          grep -Fq "update({generation_meta:generationMeta,status:'draft'})" "$FILE"
       - name: Simplified customer UX guard
         shell: bash
         run: |
