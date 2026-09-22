@@ -1,9 +1,10 @@
-import { ChangeEvent, FormEvent, useEffect, useMemo, useState, type CSSProperties } from 'react'
+import { ChangeEvent, FormEvent, useEffect, useMemo, useState } from 'react'
 import { CalendarClock, Check, CheckCircle2, ChevronRight, Copy, Image as ImageIcon, LayoutTemplate, Pencil, Plus, Save, Send, Trash2, Upload, UtensilsCrossed, X } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { optimizeImage } from '../lib/image'
 import type { MenuItem, Post, Restaurant, VisualDesignMeta } from '../types'
 import '../simple-content-studio.css'
+import { RestaurantTemplateCanvas } from './RestaurantTemplateCanvas'
 
 type StudioTab='dishes'|'templates'|'posts'
 type TemplateId=NonNullable<VisualDesignMeta['template']>
@@ -40,14 +41,6 @@ const colorPalettes=[
   {name:'Olive',primary:'#455039',accent:'#e7c98a'},
   {name:'Navy',primary:'#16334a',accent:'#ef8169'},
 ]
-
-function templateStyle(image:string,primary:string,accent:string):CSSProperties{
-  return {
-    ...(image?{backgroundImage:`url(${image})`}:{}),
-    '--tpl-primary':primary,
-    '--tpl-accent':accent,
-  } as CSSProperties
-}
 
 function defaultTemplate(restaurant:Restaurant):TemplateId{
   if(restaurant.brand_style==='premium')return 'luxe'
@@ -334,11 +327,7 @@ export function SimpleContentStudio({
         <div className="dts-section-head"><div><span>GOTOVI DIZAJNI</span><h2>Izaberi šablon</h2></div><small>{selectedDish?<>Za: <strong>{selectedDish.name}</strong></>:'Prvo izaberi jelo.'}</small></div>
         {!selectedDish&&<div className="dts-choose-dish">{menuItems.map(item=><button key={item.id} onClick={()=>startFromDish(item)}>{item.image_url?<img src={item.image_url} alt=""/>:<ImageIcon size={20}/>}<span>{item.name}</span><ChevronRight size={14}/></button>)}</div>}
         {selectedDish&&<div className="dts-template-gallery">{templates.map((item,index)=><article key={item.id} className={template===item.id?'selected':''}>
-          <div className={`dts-template-art tpl-${item.id}`} style={templateStyle(composerImage,primaryColor,accentColor)}>
-            <i className="tpl-shade"/><span className="tpl-kicker">{item.kicker}</span>{item.badge&&<b className="tpl-top">{item.badge}</b>}
-            {badgeText&&<strong className="tpl-badge">{badgeText}</strong>}
-            <div className="tpl-copy">{priceText&&<em>{priceText}</em>}<h3>{headline||selectedDish.name}</h3><p>{text||selectedDish.description||'Tvoj tekst ovde'}</p><small>{cta||'SVRATI DANAS'} →</small></div>
-          </div>
+          <div className="dts-template-art"><RestaurantTemplateCanvas template={item.id} image={composerImage} headline={headline||selectedDish.name} text={text||selectedDish.description||'Tvoj tekst ovde'} price={priceText} badge={badgeText} cta={cta||'BUY'} primary={primaryColor} accent={accentColor}/></div>
           <div className="dts-template-meta"><div><span>{item.category}</span><strong>{item.name}</strong><small>{item.note}</small></div><button onClick={()=>setTemplate(item.id)}>{template===item.id?<><Check size={14}/> Izabran</>:<>Koristi šablon <ChevronRight size={14}/></>}</button></div>
         </article>)}</div>}
       </div>
@@ -355,12 +344,8 @@ export function SimpleContentStudio({
           <div className="dts-palette-row">{colorPalettes.map(palette=><button type="button" key={palette.name} className={primaryColor===palette.primary&&accentColor===palette.accent?'active':''} onClick={()=>{setPrimaryColor(palette.primary);setAccentColor(palette.accent)}} title={palette.name}><i style={{background:palette.primary}}/><i style={{background:palette.accent}}/><span>{palette.name}</span></button>)}</div>
           <div className="dts-color-pickers"><label>Glavna<input type="color" value={primaryColor} onChange={e=>setPrimaryColor(e.target.value)}/><span>{primaryColor}</span></label><label>Akcent<input type="color" value={accentColor} onChange={e=>setAccentColor(e.target.value)}/><span>{accentColor}</span></label></div>
         </div>
-        <div className="dts-format"><button className={format==='feed'?'active':''} onClick={()=>setFormat('feed')}>POST 4:5</button><button className={format==='story'?'active':''} onClick={()=>setFormat('story')}>STORY 9:16</button></div>
-        <div className={`dts-live-preview ${format} tpl-${template}`} style={templateStyle(composerImage,primaryColor,accentColor)}>
-          <i className="tpl-shade"/><span className="tpl-kicker">{selectedTemplate.kicker}</span>{badgeText&&<strong className="tpl-badge">{badgeText}</strong>}
-          {restaurant.logo_url&&<img className="tpl-logo" src={restaurant.logo_url} alt=""/>}
-          <div className="tpl-copy">{priceText&&<em>{priceText}</em>}<h3>{headline||selectedDish.name}</h3><p>{text||selectedDish.description||'Tvoj tekst ovde'}</p><small>{cta||'SVRATI DANAS'} →</small></div>
-        </div>
+        <div className="dts-format"><button className={format==='feed'?'active':''} onClick={()=>setFormat('feed')}>POST 1:1</button><button className={format==='story'?'active':''} onClick={()=>setFormat('story')}>STORY 9:16</button></div>
+        <RestaurantTemplateCanvas className="dts-live-preview" template={template} image={composerImage} headline={headline||selectedDish.name} text={text||selectedDish.description||'Tvoj tekst ovde'} price={priceText} badge={badgeText} cta={cta||'BUY'} primary={primaryColor} accent={accentColor} logoUrl={restaurant.logo_url} format={format}/>
         <button className="dts-primary dts-save-post" disabled={postWorking} onClick={()=>void savePost()}><Save size={17}/>{postWorking?'Čuvam…':editingPostId?'Sačuvaj izmene':'Sačuvaj objavu'}</button>
       </aside>}
     </section>}
@@ -368,7 +353,7 @@ export function SimpleContentStudio({
     {tab==='posts'&&<section className="dts-posts">
       <div className="dts-section-head"><div><span>MOJE OBJAVE</span><h2>Sačuvani dizajni</h2></div><button className="dts-primary compact" onClick={()=>setTab('dishes')}><Plus size={15}/> Nova objava</button></div>
       {recentPosts.length?<div className="dts-post-grid">{recentPosts.map(post=>{const image=resolvePostImage(post);const tpl=(post.generation_meta?.visual_design?.template as TemplateId)||'editorial';const manual=(post.generation_meta?.manual_fields||{}) as Record<string,unknown>;const design=post.generation_meta?.visual_design;const postPrimary=design?.primary_color||restaurant.primary_color||'#073c38';const postAccent=design?.accent_color||restaurant.secondary_color||'#ef7d3a';return <article key={post.id}>
-        <div className={`dts-post-art tpl-${tpl}`} style={templateStyle(image,postPrimary,postAccent)}><i className="tpl-shade"/><span className="tpl-kicker">{templates.find(t=>t.id===tpl)?.kicker||'TODAY'}</span>{typeof manual.badge==='string'&&manual.badge&&<strong className="tpl-badge">{manual.badge}</strong>}<div className="tpl-copy">{typeof manual.price==='string'&&manual.price&&<em>{manual.price}</em>}<h3>{post.title||'Objava'}</h3><p>{post.caption||''}</p></div></div>
+        <div className="dts-post-art"><RestaurantTemplateCanvas template={tpl} image={image} headline={post.title||'Objava'} text={post.caption||''} price={typeof manual.price==='string'?manual.price:''} badge={typeof manual.badge==='string'?manual.badge:''} cta={post.cta||'BUY'} primary={postPrimary} accent={postAccent}/></div>
         <div className="dts-post-info"><div><span className={`status ${post.status}`}>{post.status==='draft'?'Draft':post.status==='approved'?'Spremno':post.status==='published'?'Objavljeno':'Za doradu'}</span><strong>{post.title||'Bez naslova'}</strong></div><div className="dts-post-actions"><button onClick={()=>editPost(post)}><Pencil size={14}/> Izmeni</button><button onClick={()=>void duplicatePost(post)}><Copy size={14}/> Dupliraj</button><button className="schedule" onClick={()=>onNavigate('publish')}><CalendarClock size={14}/> Zakaži</button><button className="danger icon-only" onClick={()=>void deletePost(post)} title="Obriši"><Trash2 size={14}/></button></div></div>
       </article>})}</div>:<div className="dts-empty"><ImageIcon size={34}/><strong>Još nema objava.</strong><span>Dodaj jelo i izaberi prvi šablon.</span><button className="dts-primary compact" onClick={()=>setTab('dishes')}>Kreni od jela</button></div>}
     </section>}
