@@ -150,7 +150,8 @@ function DemoLaunch({notify,setTab}:{notify:(value:string)=>void;setTab:(tab:Dem
   </div>
 }
 
-const demoContentTemplates=[
+type DemoContentTemplate={id:string;name:string;category:string;kicker:string;note:string;badge?:string}
+const demoContentTemplates:DemoContentTemplate[]=[
   {id:'luxe',name:'Midnight Menu',category:'Premium',kicker:"TODAY'S MENU",note:'Tamni premium dizajn.',badge:'TOP'},
   {id:'editorial',name:'Good Morning',category:'Breakfast',kicker:'GOOD MORNING',note:'Elegantni food layout.',badge:'TOP'},
   {id:'hero-menu',name:'Hero Dish',category:'Signature',kicker:'GRILLED SPECIAL',note:'Jedno jelo u prvom planu.',badge:'TOP'},
