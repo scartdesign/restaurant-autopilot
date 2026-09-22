@@ -67,8 +67,8 @@ export function DemoScreen({ onExit }: { onExit: () => void }) {
           <div className="restaurant-chip"><img className="sidebar-logo" src={demoLogo} alt="" /><div><strong>Bella Napoli</strong><small>Vračar · Beograd</small></div></div>
           <div className="autopilot-status"><span className="live-dot" /> AUTOPILOT ACTIVE · AUTO WEEK ON</div>
           <nav className="simple-primary-nav demo-simple-nav">
-            <button className={tab === 'content' ? 'nav-active' : ''} onClick={() => {setTab('content');setDemoMoreOpen(false)}}><Rocket size={18} /> Početna</button>
-            <button className={tab === 'launch' ? 'nav-active' : ''} onClick={() => {setTab('launch');setDemoMoreOpen(false)}}><CalendarDays size={18} /> Sadržaj</button>
+            <button className={tab === 'launch' ? 'nav-active' : ''} onClick={() => {setTab('launch');setDemoMoreOpen(false)}}><Rocket size={18} /> Početna</button>
+            <button className={tab === 'content' ? 'nav-active' : ''} onClick={() => {setTab('content');setDemoMoreOpen(false)}}><CalendarDays size={18} /> Sadržaj</button>
             <button className={tab === 'publish' ? 'nav-active' : ''} onClick={() => {setTab('publish');setDemoMoreOpen(false)}}><Send size={18} /> Objave</button>
             <button className={tab === 'menu' ? 'nav-active' : ''} onClick={() => {setTab('menu');setDemoMoreOpen(false)}}><UtensilsCrossed size={18} /> Meni</button>
             <button className={tab === 'settings' ? 'nav-active' : ''} onClick={() => {setTab('settings');setDemoMoreOpen(false)}}><Settings size={18} /> Podešavanja</button>
@@ -149,51 +149,89 @@ function DemoLaunch({notify,setTab}:{notify:(value:string)=>void;setTab:(tab:Dem
   </div>
 }
 
+const demoContentTemplates=[
+  {id:'editorial',name:'Editorial',best:'Feed · signature jelo'},
+  {id:'luxe',name:'Luxe',best:'Premium · večera'},
+  {id:'minimal',name:'Clean',best:'Meni · novo jelo'},
+  {id:'bold',name:'Bold',best:'Akcija · popust'},
+  {id:'poster',name:'Poster',best:'Story · događaj'},
+  {id:'split',name:'Split',best:'Cena · ponuda'},
+] as const
+
 function DemoContent({ approved, setApproved, notify }: { approved: string[]; setApproved: (value: string[]) => void; notify: (value: string) => void }) {
+  const[edited,setEdited]=useState<Record<string,{title:string;caption:string}>>(()=>Object.fromEntries(demoPosts.map(post=>[post.title,{title:post.title,caption:post.caption}])))
+  const[editTarget,setEditTarget]=useState('')
+  const[editDraft,setEditDraft]=useState({title:'',caption:''})
+  const[templateTarget,setTemplateTarget]=useState('')
+  const[templates,setTemplates]=useState<Record<string,string>>(()=>Object.fromEntries(demoPosts.map(post=>[post.title,post.type==='PROMO'?'bold':post.type==='STORY'?'poster':'editorial'])))
+
+  function beginEdit(title:string){
+    const value=edited[title]||{title,caption:''}
+    setEditTarget(title)
+    setEditDraft(value)
+  }
+  function saveEdit(){
+    if(!editTarget)return
+    setEdited(current=>({...current,[editTarget]:{...editDraft}}))
+    notify('Demo: izmene objave su sačuvane.')
+    setEditTarget('')
+  }
+  function applyTemplate(id:string){
+    if(!templateTarget)return
+    setTemplates(current=>({...current,[templateTarget]:id}))
+    notify('Demo: šablon je primenjen. Tekst, fotografija i termin su ostali isti.')
+    setTemplateTarget('')
+  }
+
   return <>
-    <RestorappDashboardV2
-      restaurant={demoRestaurant}
-      menuItems={demoMenu}
-      posts={demoVisualPosts}
-      demo
-      heroImage={food.pizza}
-      onCreate={()=>notify('Demo: Creative AI je spreman za novi sadržaj.')}
-      onNavigate={(target)=>notify(target==='publish'?'Otvaram plan objava.':target==='menu'?'Otvaram meni i ponude.':'Demo akcija je spremna.')}
-    />
-    <section className="wow-hero wow-demo-hero has-image" style={{ backgroundImage: `linear-gradient(90deg, rgba(7,12,9,.97), rgba(7,12,9,.68) 47%, rgba(7,12,9,.10)), url(${food.pizza})` }}>
-      <div className="wow-hero-copy"><div className="hero-kicker"><span className="live-dot" /> AUTOPILOT ACTIVE <b className="auto-week-on">AUTO WEEK ON</b></div><span className="wow-brand-label">BELLA NAPOLI</span><h1>Prava italijanska priča u tvom gradu.</h1><p>Fotografije, sadržaj, termini i lokalni discovery — spremni bez svakodnevnog cimanja.</p><div className="wow-hero-actions"><button className="wow-primary" onClick={() => notify('Nova nedelja je generisana: 5 premium predloga sa terminima.')}><Sparkles size={18} /> Kreiraj novi sadržaj</button><div className="wow-hero-meta"><span><MapPin size={14} /> Vračar, Beograd</span><span><Hash size={14} /> Smart Discovery</span></div></div></div>
-      <div className="wow-score-card"><div><TrendingUp size={19} /><span>Discovery score</span></div><strong>94<small>/100</small></strong><p>plan + vreme + vizual spremni</p></div>
+    <header className="page-header wow-simple-header content-demo-header">
+      <div><p className="eyebrow">SADRŽAJ</p><h1>Tvoje objave. Tvoj izgled.</h1><p className="muted">Izmeni tekst kada želiš, izaberi preporučeni šablon i odobri objavu kada je spremna.</p></div>
+      <button className="primary" onClick={()=>notify('Demo: novi sadržaj bi se napravio iz aktivnih jela u meniju.')}><Sparkles size={17}/> Napravi sadržaj</button>
+    </header>
+
+    <section className="recommended-template-strip demo-template-strip">
+      <div className="recommended-template-intro"><span>PREPORUČENO ZA FEED</span><strong>Šabloni za Pizza Capricciosa</strong><small>Restorapp predlaže izgled prema tipu objave. Možeš ga promeniti u svakom trenutku.</small></div>
+      {demoContentTemplates.slice(0,3).map((template,index)=><button key={template.id} className={'recommended-template-card template-'+template.id} onClick={()=>setTemplateTarget('Pizza Capricciosa')}><i/><span>{index===0?'NAJBOLJI IZBOR':'PREPORUKA'}</span><strong>{template.name}</strong><small>{template.best}</small></button>)}
     </section>
 
-    <section className="wow-kpi-grid"><DemoKpi label="Nedeljni sadržaj" value="5" detail="3 feed · 1 story · 1 promo" /><DemoKpi label="Spremno" value={`${approved.length}/4`} detail="odobreno za objavu" /><DemoKpi label="Sledeća objava" value="18:30" detail="ponedeljak · Feed" /><DemoKpi label="Discovery" value="94" detail="local + niche + search" /></section>
-
-    <section className="wow-week panel wow-demo-week"><div className="wow-panel-head"><div><p className="eyebrow">NEDELJNI PLAN</p><h2>Sadržaj koji već čeka</h2></div><button className="small-ghost" onClick={() => notify('Kompletan raspored je u Publish Centeru.')}>Pogledaj raspored →</button></div><div className="wow-week-strip">{demoPosts.map((post) => <div className="wow-day" key={post.title}><div className="wow-day-image has-photo" style={{ backgroundImage: `url(${post.image})` }}><span>{post.type}</span>{approved.includes(post.title) && <i><CheckCircle2 size={14} /></i>}</div><strong>{post.day}</strong><span className="demo-time-pill"><Clock3 size={11} /> {post.time}</span><p>{post.title}</p></div>)}</div></section>
-
-    <section className="autopilot-preflight panel ready">
-      <div className="preflight-head"><div className="preflight-icon"><CheckCircle2 size={20}/></div><div><p className="eyebrow">AUTO WEEK PREFLIGHT</p><h2>Spreman za generisanje</h2><span>Ciljna nedelja: 14.09.2026. · paket, meni, radno vreme i kvota su provereni.</span></div><button className="secondary preflight-refresh" onClick={()=>notify('Demo preflight: svi blocker uslovi su prošli.')}><CheckCircle2 size={13}/> Proveri sada</button></div>
-      <div className="preflight-checks"><span className="ok"><CheckCircle2 size={11}/> Aktivan paket</span><span className="ok"><CheckCircle2 size={11}/> Aktivna jela</span><span className="ok"><CheckCircle2 size={11}/> HERO jelo</span><span className="ok"><CheckCircle2 size={11}/> 75% fotografija</span><span className="ok"><CheckCircle2 size={11}/> Radno vreme</span><span className="ok"><CheckCircle2 size={11}/> Generation quota</span></div>
+    <section className="content-section wow-content-section">
+      <div className="section-title"><div><p className="eyebrow">OVE NEDELJE</p><h2>{demoPosts.length} objave</h2></div><span className="engine-badge"><Palette size={14}/> Edit + Templates</span></div>
+      <div className="post-grid post-grid-pro wow-post-grid">
+        {demoPosts.map(post=>{const value=edited[post.title]||{title:post.title,caption:post.caption};const template=templates[post.title]||'editorial';return <article className="post-card post-card-pro wow-post-card" key={post.title}>
+          <div className={`post-preview post-preview-pro wow-post-preview has-photo card-template-${template}`} style={{backgroundImage:`url(${post.image})`}}>
+            <div className="wow-preview-shade"/>
+            <div className="preview-top"><span className="format-badge">{post.type}</span><span className="score-pill">{post.score}<small>/100</small></span></div>
+            <div className="wow-card-art-copy"><span className="wow-card-price">{post.type==='PROMO'?'-20%':post.title==='Pizza Capricciosa'?'890 RSD':'CHEF PICK'}</span><h3>{value.title}</h3><span className="wow-card-cta">Rezerviši sto →</span></div>
+            <div className="preview-brand"><img className="wow-card-logo" src={demoLogo} alt=""/><div><strong>Bella Napoli</strong><small>Vračar · Beograd</small></div></div>
+          </div>
+          <div className="post-body post-body-pro">
+            <div className="post-meta"><span>{post.day} · <b className="post-time-strong"><Clock3 size={11}/> {post.time}</b></span><span className={`status ${approved.includes(post.title)?'approved':'draft'}`}>{approved.includes(post.title)?'Spremno':'Čeka odobrenje'}</span></div>
+            <div className="post-title-line"><h3>{value.title}</h3><span className="visual-template-chip">{template}</span></div>
+            <p className="caption-preview">{value.caption}</p>
+            <div className="post-main-actions">
+              <button className="post-edit-button" onClick={()=>beginEdit(post.title)}><Pencil size={15}/> Izmeni</button>
+              <button className="post-template-button" onClick={()=>setTemplateTarget(post.title)}><Palette size={15}/> Šablon</button>
+              {approved.includes(post.title)?<span className="post-ready-badge"><CheckCircle2 size={14}/> Spremno</span>:<button className="secondary post-approve-button" onClick={()=>{setApproved([...approved,post.title]);notify('Objava je odobrena.')}}><CheckCircle2 size={15}/> Odobri</button>}
+            </div>
+          </div>
+        </article>})}
+      </div>
     </section>
 
-    <section className="autopilot-health panel">
-      <div className="autopilot-health-score"><span>100<small>%</small></span><div><p className="eyebrow">AUTOPILOT HEALTH</p><h2>Spreman za automatizaciju</h2><p>Svi ključni uslovi za automatsku nedelju su spremni.</p></div></div>
-      <div className="autopilot-health-checks"><span className="ok"><CheckCircle2 size={12}/> Auto week</span><span className="ok"><CheckCircle2 size={12}/> Quota OK</span><span className="ok"><CheckCircle2 size={12}/> 3+ jela</span><span className="ok"><CheckCircle2 size={12}/> HERO</span><span className="ok"><CheckCircle2 size={12}/> 70% fotografija</span><span className="ok"><CheckCircle2 size={12}/> Radno vreme</span></div>
-    </section>
+    {editTarget&&<div className="modal-backdrop" onMouseDown={()=>setEditTarget('')}><div className="modal-card" onMouseDown={event=>event.stopPropagation()}>
+      <div className="modal-head"><div><p className="eyebrow">IZMENI OBJAVU</p><h2>{editDraft.title}</h2></div><button className="icon-button" onClick={()=>setEditTarget('')}><X size={18}/></button></div>
+      <label>Naslov<input value={editDraft.title} onChange={e=>setEditDraft({...editDraft,title:e.target.value})}/></label>
+      <label>Tekst<textarea rows={5} value={editDraft.caption} onChange={e=>setEditDraft({...editDraft,caption:e.target.value})}/></label>
+      <div className="modal-actions"><button className="secondary" onClick={()=>setEditTarget('')}>Otkaži</button><button className="primary" onClick={saveEdit}><Save size={16}/> Sačuvaj izmene</button></div>
+    </div></div>}
 
-    {approved.length<demoPosts.length&&<section className="review-queue-bar panel"><div><span><CheckCircle2 size={16}/> REVIEW QUEUE</span><strong>{demoPosts.length-approved.length} drafta čekaju proveru</strong><small>Quality gate proverava copy, CTA, discovery, fotografiju i platform verzije.</small></div><button className="primary" onClick={()=>{setApproved(demoPosts.map(post=>post.title));notify('Demo review: svi draftovi su prošli quality gate i odobreni su.')}}><CheckCircle2 size={15}/> Proveri + odobri sve</button></section>}
-
-    <section className="autopilot-activity panel">
-      <div className="activity-head"><div><p className="eyebrow">AUTOPILOT ACTIVITY</p><h2>Šta je sistem uradio</h2></div><Clock3 size={19}/></div>
-      <div className="activity-list"><article><span className="activity-dot"/><div><strong>AUTO WEEK je napravio plan</strong><p>4 objave · HERO fokus · learned time aktivan.</p><small>pre 8 min</small></div></article><article><span className="activity-dot"/><div><strong>Nedeljni review je završen</strong><p>2 odobreno · 2 ostavljeno za proveru.</p><small>pre 5 min</small></div></article><article><span className="activity-dot"/><div><strong>AI slike su generisane</strong><p>3/3 fotografije uspešno napravljene.</p><small>pre 2 dana</small></div></article><article><span className="activity-dot"/><div><strong>Performance rezultati su uvezeni</strong><p>4 reda su osvežila learning signal.</p><small>pre 3 dana</small></div></article></div>
-    </section>
-
-    <section className="week-quality-panel panel demo-week-quality">
-      <div className="week-quality-score"><span className="week-quality-ring" style={{ '--quality': 94 } as CSSProperties}><strong>94</strong><small>/100</small></span><div><p className="eyebrow">WEEK QUALITY</p><h2>Odličan plan</h2><span>4 različita jela, HERO prisutan bez preteranog ponavljanja i svaki post ima termin.</span></div></div>
-      <div className="week-quality-metrics"><div><strong>4</strong><span>različita jela</span></div><div><strong>1</strong><span>HERO objava</span></div><div><strong>4/4</strong><span>sa terminom</span></div><div><strong>3</strong><span>formata</span></div></div>
-    </section>
-
-    <section className="discovery-ribbon discovery-ribbon-wow"><div className="discovery-ribbon-icon"><Zap size={20} /></div><div><strong>Smart Discovery</strong><span>Instagram dobija fokusiran set, Facebook čist lokalni set, a search keywords prate konkretno jelo i lokaciju.</span></div><div className="platform-mini"><span><Instagram size={15} /> IG optimized</span><span><Facebook size={15} /> FB clean</span><span><Search size={15} /> Search ready</span></div></section>
-
-    <section className="content-section wow-content-section"><div className="section-title"><div><p className="eyebrow">CONTENT LIBRARY</p><h2>Spremne objave</h2></div><span className="engine-badge"><Sparkles size={14} /> Design + Schedule + Discovery</span></div><div className="post-grid post-grid-pro wow-post-grid">{demoPosts.map((post) => <article className="post-card post-card-pro wow-post-card" key={post.title}><div className="post-preview post-preview-pro wow-post-preview has-photo" style={{ backgroundImage: `linear-gradient(180deg, rgba(7,12,9,.03), rgba(7,12,9,.76)), url(${post.image})` }}><div className="preview-top"><span className="format-badge">{post.type}</span><span className="score-pill">{post.score}<small>/100</small></span></div><div className="preview-brand"><img className="wow-card-logo" src={demoLogo} alt="" /><div><strong>Bella Napoli</strong><small>{post.title}</small></div></div><div className="wow-card-art-copy"><span className="wow-card-price">{post.type === 'PROMO' ? '-20%' : post.title === 'Pizza Capricciosa' ? '890 RSD' : 'CHEF PICK'}</span><h3>{post.title}</h3><span className="wow-card-cta">Rezerviši sto →</span></div></div><div className="post-body post-body-pro"><div className="post-meta"><span>{post.day} · <b className="post-time-strong"><Clock3 size={11} /> {post.time}</b></span><span className={`status ${approved.includes(post.title) ? 'approved' : 'draft'}`}>{approved.includes(post.title) ? 'approved' : 'draft'}</span></div><h3>{post.title}</h3><p className="caption-preview">{post.caption}</p><div className="platform-discovery"><div className="platform-row"><div className="platform-label ig"><Instagram size={14} /> Instagram</div><div className="tag-cloud">{post.ig.map(tag => <span key={tag}>{tag}</span>)}</div></div><div className="platform-row"><div className="platform-label fb"><Facebook size={14} /> Facebook</div><div className="tag-cloud fb-tags">{post.fb.map(tag => <span key={tag}>{tag}</span>)}</div></div><div className="keyword-line"><Search size={13} /><span>{post.keywords.join(' · ')}</span></div></div>{approved.includes(post.title) ? <button className="approved-button full" onClick={() => setApproved(approved.filter(x => x !== post.title))}><CheckCircle2 size={16} /> Spremno</button> : <button className="secondary full" onClick={() => { setApproved([...approved, post.title]); notify('Objava je odobrena.') }}><CheckCircle2 size={16} /> Odobri objavu</button>}</div></article>)}</div></section>
+    {templateTarget&&<div className="modal-backdrop" onMouseDown={()=>setTemplateTarget('')}><div className="modal-card template-picker-modal" onMouseDown={event=>event.stopPropagation()}>
+      <div className="modal-head"><div><p className="eyebrow">PREPORUČENI ŠABLONI</p><h2>{edited[templateTarget]?.title||templateTarget}</h2><small>Izaberi izgled — sadržaj, fotografija i termin ostaju isti.</small></div><button className="icon-button" onClick={()=>setTemplateTarget('')}><X size={18}/></button></div>
+      <div className="template-picker-grid">{demoContentTemplates.map((template,index)=>{const post=demoPosts.find(item=>item.title===templateTarget)||demoPosts[0];return <article className={'template-picker-card '+(templates[templateTarget]===template.id?'selected':'')} key={template.id}>
+        <div className={'template-picker-preview card-template-'+template.id} style={{backgroundImage:`url(${post.image})`}}><div className="wow-preview-shade"/><span className="template-rank">{index===0?'PREPORUČENO':index<3?'DOBAR IZBOR':'STIL'}</span><div className="wow-card-art-copy"><h3>{edited[templateTarget]?.title||templateTarget}</h3><span className="wow-card-cta">Rezerviši sto →</span></div></div>
+        <div className="template-picker-copy"><div><strong>{template.name}</strong>{templates[templateTarget]===template.id&&<span>Trenutni</span>}</div><small>{template.best}</small><button className={index===0?'primary':'secondary'} disabled={templates[templateTarget]===template.id} onClick={()=>applyTemplate(template.id)}>{templates[templateTarget]===template.id?'Izabran':'Primeni šablon'}</button></div>
+      </article>})}</div>
+    </div></div>}
   </>
 }
 
