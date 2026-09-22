@@ -1,11 +1,12 @@
 import { useState, type CSSProperties } from 'react'
-import { AlertTriangle, ArrowLeft, BarChart3, CalendarClock, CalendarDays, CheckCircle2, Clock3, Facebook, Hash, Image as ImageIcon, Instagram, LayoutDashboard, MapPin, Megaphone, Menu as MenuIcon, MousePointerClick, Palette, Pencil, RefreshCw, Rocket, Save, Search, Send, Settings, ShieldCheck, Sparkles, Target, TrendingUp, UtensilsCrossed, X, Zap } from 'lucide-react'
+import { AlertTriangle, ArrowLeft, BarChart3, CalendarClock, CalendarDays, Check, CheckCircle2, Clock3, Facebook, Hash, Image as ImageIcon, Instagram, LayoutDashboard, MapPin, Megaphone, Menu as MenuIcon, MousePointerClick, Palette, Pencil, RefreshCw, Rocket, Save, Search, Send, Settings, ShieldCheck, Sparkles, Target, TrendingUp, Upload, UtensilsCrossed, X, Zap } from 'lucide-react'
 import { VisualStudio } from './VisualStudio'
 import { BrandKit } from './BrandKit'
 import { DemoOwner } from './DemoOwner'
 import { RestorappDashboardV2 } from './RestorappDashboardV2'
 import { RestorappSidebarLogo } from './RestorappSidebarLogo'
 import type { MenuItem, Post, Restaurant } from '../types'
+import '../simple-content-studio.css'
 
 type DemoTab = 'content' | 'launch' | 'studio' | 'brand' | 'publish' | 'insights' | 'menu' | 'promotions' | 'settings' | 'owner'
 
@@ -150,89 +151,82 @@ function DemoLaunch({notify,setTab}:{notify:(value:string)=>void;setTab:(tab:Dem
 }
 
 const demoContentTemplates=[
-  {id:'editorial',name:'Editorial',best:'Feed · signature jelo'},
-  {id:'luxe',name:'Luxe',best:'Premium · večera'},
-  {id:'minimal',name:'Clean',best:'Meni · novo jelo'},
-  {id:'bold',name:'Bold',best:'Akcija · popust'},
-  {id:'poster',name:'Poster',best:'Story · događaj'},
-  {id:'split',name:'Split',best:'Cena · ponuda'},
+  {id:'luxe',name:'Midnight Gold',kicker:'PREMIUM',best:'Večera · vino · premium jela'},
+  {id:'editorial',name:'Signature',kicker:"CHEF'S PICK",best:'Elegantno · glavno jelo'},
+  {id:'hero-menu',name:'Hero Dish',kicker:'SIGNATURE DISH',best:'Jedno jelo u prvom planu'},
+  {id:'minimal',name:'Clean Menu',kicker:'FRESH',best:'Čisto · moderno · svetlo'},
+  {id:'bold',name:'Hot Offer',kicker:'SPECIAL OFFER',best:'Akcija · popust · jaka poruka'},
+  {id:'poster',name:'Chef Poster',kicker:'TONIGHT',best:'Story · event · specijalitet'},
+  {id:'split',name:'Split Menu',kicker:'TODAY',best:'Cena · ponuda · meni'},
+  {id:'promo-badge',name:'Special Badge',kicker:'SPECIAL',best:'Promo · vikend · limited'},
 ] as const
 
-function DemoContent({ approved, setApproved, notify }: { approved: string[]; setApproved: (value: string[]) => void; notify: (value: string) => void }) {
-  const[edited,setEdited]=useState<Record<string,{title:string;caption:string}>>(()=>Object.fromEntries(demoPosts.map(post=>[post.title,{title:post.title,caption:post.caption}])))
-  const[editTarget,setEditTarget]=useState('')
-  const[editDraft,setEditDraft]=useState({title:'',caption:''})
-  const[templateTarget,setTemplateTarget]=useState('')
-  const[templates,setTemplates]=useState<Record<string,string>>(()=>Object.fromEntries(demoPosts.map(post=>[post.title,post.type==='PROMO'?'bold':post.type==='STORY'?'poster':'editorial'])))
+function DemoContent({ notify }: { approved: string[]; setApproved: (value: string[]) => void; notify: (value: string) => void }) {
+  const[photo,setPhoto]=useState(food.pizza)
+  const[template,setTemplate]=useState('luxe')
+  const[format,setFormat]=useState<'feed'|'story'>('feed')
+  const[headline,setHeadline]=useState('Večeras biramo Capricciosu')
+  const[text,setText]=useState('Hrskavo testo, mozzarella i miris peći. Rezerviši svoj sto i svrati večeras.')
+  const selected=demoContentTemplates.find(item=>item.id===template)||demoContentTemplates[0]
 
-  function beginEdit(title:string){
-    const value=edited[title]||{title,caption:''}
-    setEditTarget(title)
-    setEditDraft(value)
-  }
-  function saveEdit(){
-    if(!editTarget)return
-    setEdited(current=>({...current,[editTarget]:{...editDraft}}))
-    notify('Demo: izmene objave su sačuvane.')
-    setEditTarget('')
-  }
-  function applyTemplate(id:string){
-    if(!templateTarget)return
-    setTemplates(current=>({...current,[templateTarget]:id}))
-    notify('Demo: šablon je primenjen. Tekst, fotografija i termin su ostali isti.')
-    setTemplateTarget('')
+  function chooseDemoPhoto(event:React.ChangeEvent<HTMLInputElement>){
+    const file=event.target.files?.[0]
+    if(!file)return
+    if(!file.type.startsWith('image/')){notify('Izaberi fotografiju.');return}
+    setPhoto(URL.createObjectURL(file))
+    notify('Fotografija je ubačena. Sada izaberi šablon.')
   }
 
-  return <>
-    <header className="page-header wow-simple-header content-demo-header">
-      <div><p className="eyebrow">SADRŽAJ</p><h1>Tvoje objave. Tvoj izgled.</h1><p className="muted">Izmeni tekst kada želiš, izaberi preporučeni šablon i odobri objavu kada je spremna.</p></div>
-      <button className="primary" onClick={()=>notify('Demo: novi sadržaj bi se napravio iz aktivnih jela u meniju.')}><Sparkles size={17}/> Napravi sadržaj</button>
+  return <div className="simple-content-studio demo-simple-content-studio">
+    <header className="scs-header">
+      <div><span>SADRŽAJ</span><h1>Slika. Šablon. Tekst. Gotovo.</h1><p>Ovo je ceo posao vlasnika restorana. Ubaci svoju fotografiju, izaberi dizajn i napiši poruku.</p></div>
     </header>
 
-    <section className="recommended-template-strip demo-template-strip">
-      <div className="recommended-template-intro"><span>PREPORUČENO ZA FEED</span><strong>Šabloni za Pizza Capricciosa</strong><small>Restorapp predlaže izgled prema tipu objave. Možeš ga promeniti u svakom trenutku.</small></div>
-      {demoContentTemplates.slice(0,3).map((template,index)=><button key={template.id} className={'recommended-template-card template-'+template.id} onClick={()=>setTemplateTarget('Pizza Capricciosa')}><i/><span>{index===0?'NAJBOLJI IZBOR':'PREPORUKA'}</span><strong>{template.name}</strong><small>{template.best}</small></button>)}
+    <section className="scs-steps">
+      <div className="done active"><b>1</b><span><strong>Fotografija</strong><small>Tvoja slika</small></span><Check size={15}/></div>
+      <div className="done active"><b>2</b><span><strong>Šablon</strong><small>Izaberi izgled</small></span><Check size={15}/></div>
+      <div className={headline.trim()?'done active':''}><b>3</b><span><strong>Tekst</strong><small>Napiši poruku</small></span>{headline.trim()&&<Check size={15}/>}</div>
     </section>
 
-    <section className="content-section wow-content-section">
-      <div className="section-title"><div><p className="eyebrow">OVE NEDELJE</p><h2>{demoPosts.length} objave</h2></div><span className="engine-badge"><Palette size={14}/> Edit + Templates</span></div>
-      <div className="post-grid post-grid-pro wow-post-grid">
-        {demoPosts.map(post=>{const value=edited[post.title]||{title:post.title,caption:post.caption};const template=templates[post.title]||'editorial';return <article className="post-card post-card-pro wow-post-card" key={post.title}>
-          <div className={`post-preview post-preview-pro wow-post-preview has-photo card-template-${template}`} style={{backgroundImage:`url(${post.image})`}}>
-            <div className="wow-preview-shade"/>
-            <div className="preview-top"><span className="format-badge">{post.type}</span><span className="score-pill">{post.score}<small>/100</small></span></div>
-            <div className="wow-card-art-copy"><span className="wow-card-price">{post.type==='PROMO'?'-20%':post.title==='Pizza Capricciosa'?'890 RSD':'CHEF PICK'}</span><h3>{value.title}</h3><span className="wow-card-cta">Rezerviši sto →</span></div>
-            <div className="preview-brand"><img className="wow-card-logo" src={demoLogo} alt=""/><div><strong>Bella Napoli</strong><small>Vračar · Beograd</small></div></div>
-          </div>
-          <div className="post-body post-body-pro">
-            <div className="post-meta"><span>{post.day} · <b className="post-time-strong"><Clock3 size={11}/> {post.time}</b></span><span className={`status ${approved.includes(post.title)?'approved':'draft'}`}>{approved.includes(post.title)?'Spremno':'Čeka odobrenje'}</span></div>
-            <div className="post-title-line"><h3>{value.title}</h3><span className="visual-template-chip">{template}</span></div>
-            <p className="caption-preview">{value.caption}</p>
-            <div className="post-main-actions">
-              <button className="post-edit-button" onClick={()=>beginEdit(post.title)}><Pencil size={15}/> Izmeni</button>
-              <button className="post-template-button" onClick={()=>setTemplateTarget(post.title)}><Palette size={15}/> Šablon</button>
-              {approved.includes(post.title)?<span className="post-ready-badge"><CheckCircle2 size={14}/> Spremno</span>:<button className="secondary post-approve-button" onClick={()=>{setApproved([...approved,post.title]);notify('Objava je odobrena.')}}><CheckCircle2 size={15}/> Odobri</button>}
-            </div>
-          </div>
-        </article>})}
+    <div className="scs-builder">
+      <div className="scs-controls">
+        <section className="scs-card scs-upload-card">
+          <div className="scs-section-title"><b>1</b><div><strong>Ubaci fotografiju</strong><small>Restoran, jelo, enterijer ili terasa.</small></div></div>
+          <label className="scs-upload-zone has-image"><img src={photo} alt="Demo fotografija"/><input type="file" accept="image/jpeg,image/png,image/webp" onChange={chooseDemoPhoto}/><em><Upload size={14}/> Izaberi svoju fotografiju</em></label>
+        </section>
+
+        <section className="scs-card">
+          <div className="scs-section-title"><b>2</b><div><strong>Izaberi šablon</strong><small>Svaki koristi baš tvoju fotografiju.</small></div></div>
+          <div className="scs-template-grid">{demoContentTemplates.map((item,index)=><button type="button" key={item.id} className={`scs-template-card sc-template-${item.id} ${template===item.id?'selected':''}`} onClick={()=>setTemplate(item.id)}>
+            <div className="scs-template-thumb" style={{backgroundImage:`url(${photo})`}}><i/><span>{item.kicker}</span><strong>{headline||'Tvoj naslov'}</strong>{index<3&&<b>TOP</b>}</div>
+            <div><strong>{item.name}</strong><small>{item.best}</small></div>{template===item.id&&<CheckCircle2 size={17}/>}
+          </button>)}</div>
+        </section>
+
+        <section className="scs-card">
+          <div className="scs-section-title"><b>3</b><div><strong>Upiši tekst</strong><small>Promena se odmah vidi desno.</small></div></div>
+          <div className="scs-format-switch"><button className={format==='feed'?'active':''} onClick={()=>setFormat('feed')}>Instagram / Facebook 4:5</button><button className={format==='story'?'active':''} onClick={()=>setFormat('story')}>Story 9:16</button></div>
+          <label>Glavni naslov<input value={headline} onChange={event=>setHeadline(event.target.value)} maxLength={56}/></label>
+          <label>Tekst<textarea rows={4} value={text} onChange={event=>setText(event.target.value)} maxLength={360}/></label>
+        </section>
       </div>
+
+      <aside className="scs-preview-wrap">
+        <div className="scs-preview-head"><div><span>UŽIVO</span><strong>{selected.name}</strong></div><span>{format==='story'?'1080 × 1920':'1080 × 1350'}</span></div>
+        <div className={`scs-live-preview ${format} sc-template-${template}`} style={{backgroundImage:`url(${photo})`}}>
+          <div className="scs-live-shade"/><div className="scs-live-logo"><img src={demoLogo} alt=""/></div>
+          <div className="scs-live-copy"><span>{selected.kicker}</span><h2>{headline||'Tvoj naslov ovde'}</h2><p>{text||'Kratka poruka o jelu, restoranu ili ponudi.'}</p><b>REZERVIŠI STO</b></div>
+        </div>
+        <button className="scs-save" onClick={()=>notify('Demo: objava je sačuvana kao draft i spremna je za zakazivanje.')}><Save size={18}/> Sačuvaj objavu</button>
+        <small className="scs-save-note">Posle ovoga ideš u <strong>Objave</strong> i biraš datum i vreme.</small>
+      </aside>
+    </div>
+
+    <section className="scs-recent">
+      <div className="scs-recent-head"><div><span>MOJE OBJAVE</span><h2>Poslednji dizajni</h2></div><small>Svaku možeš ponovo otvoriti i promeniti.</small></div>
+      <div className="scs-recent-grid">{demoPosts.map((post,index)=><article key={post.title}><div className={`scs-recent-image sc-template-${['luxe','editorial','minimal','bold'][index]}`} style={{backgroundImage:`url(${post.image})`}}><i/><span>{post.type}</span><strong>{post.title}</strong></div><div><span className="status draft">Draft</span><button onClick={()=>{setPhoto(post.image);setHeadline(post.title);setText(post.caption);setTemplate(['luxe','editorial','minimal','bold'][index]);window.scrollTo({top:0,behavior:'smooth'});notify('Objava je otvorena za izmenu.')}}><Pencil size={14}/> Izmeni</button></div></article>)}</div>
     </section>
-
-    {editTarget&&<div className="modal-backdrop" onMouseDown={()=>setEditTarget('')}><div className="modal-card" onMouseDown={event=>event.stopPropagation()}>
-      <div className="modal-head"><div><p className="eyebrow">IZMENI OBJAVU</p><h2>{editDraft.title}</h2></div><button className="icon-button" onClick={()=>setEditTarget('')}><X size={18}/></button></div>
-      <label>Naslov<input value={editDraft.title} onChange={e=>setEditDraft({...editDraft,title:e.target.value})}/></label>
-      <label>Tekst<textarea rows={5} value={editDraft.caption} onChange={e=>setEditDraft({...editDraft,caption:e.target.value})}/></label>
-      <div className="modal-actions"><button className="secondary" onClick={()=>setEditTarget('')}>Otkaži</button><button className="primary" onClick={saveEdit}><Save size={16}/> Sačuvaj izmene</button></div>
-    </div></div>}
-
-    {templateTarget&&<div className="modal-backdrop" onMouseDown={()=>setTemplateTarget('')}><div className="modal-card template-picker-modal" onMouseDown={event=>event.stopPropagation()}>
-      <div className="modal-head"><div><p className="eyebrow">PREPORUČENI ŠABLONI</p><h2>{edited[templateTarget]?.title||templateTarget}</h2><small>Izaberi izgled — sadržaj, fotografija i termin ostaju isti.</small></div><button className="icon-button" onClick={()=>setTemplateTarget('')}><X size={18}/></button></div>
-      <div className="template-picker-grid">{demoContentTemplates.map((template,index)=>{const post=demoPosts.find(item=>item.title===templateTarget)||demoPosts[0];return <article className={'template-picker-card '+(templates[templateTarget]===template.id?'selected':'')} key={template.id}>
-        <div className={'template-picker-preview card-template-'+template.id} style={{backgroundImage:`url(${post.image})`}}><div className="wow-preview-shade"/><span className="template-rank">{index===0?'PREPORUČENO':index<3?'DOBAR IZBOR':'STIL'}</span><div className="wow-card-art-copy"><h3>{edited[templateTarget]?.title||templateTarget}</h3><span className="wow-card-cta">Rezerviši sto →</span></div></div>
-        <div className="template-picker-copy"><div><strong>{template.name}</strong>{templates[templateTarget]===template.id&&<span>Trenutni</span>}</div><small>{template.best}</small><button className={index===0?'primary':'secondary'} disabled={templates[templateTarget]===template.id} onClick={()=>applyTemplate(template.id)}>{templates[templateTarget]===template.id?'Izabran':'Primeni šablon'}</button></div>
-      </article>})}</div>
-    </div></div>}
-  </>
+  </div>
 }
 
 function DemoKpi({ label, value, detail }: { label: string; value: string; detail: string }) { return <div className="wow-kpi"><div className="wow-kpi-icon"><TrendingUp size={18} /></div><div><span>{label}</span><strong>{value}</strong><small>{detail}</small></div></div> }

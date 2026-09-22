@@ -21,7 +21,7 @@ const BillingPage = lazy(() => import('./components/BillingPage').then((m) => ({
 const OwnerControlPlus = lazy(() => import('./components/OwnerControlPlus').then((m) => ({ default: m.OwnerControlPlus })))
 const CreativeHub = lazy(() => import('./components/CreativeHub').then((m) => ({ default: m.CreativeHub })))
 const InsightsCenter = lazy(() => import('./components/InsightsCenter').then((m) => ({ default: m.InsightsCenter })))
-const Dashboard = lazy(() => import('./components/Dashboard').then((m) => ({ default: m.Dashboard })))
+const SimpleContentStudio = lazy(() => import('./components/SimpleContentStudio').then((m) => ({ default: m.SimpleContentStudio })))
 const MenuManager = lazy(() => import('./components/MenuManager').then((m) => ({ default: m.MenuManager })))
 const Promotions = lazy(() => import('./components/Promotions').then((m) => ({ default: m.Promotions })))
 const SettingsPanel = lazy(() => import('./components/SettingsPanel').then((m) => ({ default: m.SettingsPanel })))
@@ -471,7 +471,7 @@ function App() {
       {notice&&<div className="notice"><span>{notice}</span><button onClick={()=>setNotice('')}><X size={15}/></button></div>}
       <Suspense fallback={<LazyScreenFallback label="Učitavam modul…" />}>
       {activeTab==='launch'&&<RestorappDashboardV2 restaurant={restaurant} menuItems={menuItems} posts={posts} onCreate={()=>void openTab('creative')} onNavigate={(tab)=>void openTab(tab as Tab)} onFirstWeek={createFirstWeek}/>} 
-      {activeTab==='dashboard'&&<Dashboard restaurant={restaurant} menuItems={menuItems} posts={posts} entitlement={isSuperadmin?{active:true,is_superadmin:true,generation_limit:null,generated_this_month:0,features:{}}:entitlement} onChanged={refreshContent} setNotice={setNotice} onNavigate={(tab)=>void openTab(tab)}/>} 
+      {activeTab==='dashboard'&&<SimpleContentStudio restaurant={restaurant} posts={posts} onChanged={refreshContent} setNotice={setNotice}/>} 
       {activeTab==='creative'&&<CreativeHub restaurant={restaurant} menuItems={menuItems} entitlement={isSuperadmin?{active:true,is_superadmin:true,features:{campaign_pack:true}}:entitlement} onChanged={refreshContent} setNotice={setNotice}/>} 
       {activeTab==='studio'&&<VisualStudio restaurant={restaurant} menuItems={menuItems} posts={posts} setNotice={setNotice} onChanged={()=>loadPosts(restaurant.id)}/>} 
       {activeTab==='brand'&&<BrandKit restaurant={restaurant} menuItems={menuItems} onSaved={refreshRestaurant} setNotice={setNotice}/>} 
