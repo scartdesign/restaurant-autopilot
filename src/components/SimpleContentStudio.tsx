@@ -1,4 +1,4 @@
-import { ChangeEvent, FormEvent, useEffect, useMemo, useState } from 'react'
+import { ChangeEvent, FormEvent, useEffect, useMemo, useState, type CSSProperties } from 'react'
 import { CalendarClock, Check, CheckCircle2, ChevronRight, Copy, Image as ImageIcon, LayoutTemplate, Pencil, Plus, Save, Send, Trash2, Upload, UtensilsCrossed, X } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { optimizeImage } from '../lib/image'
@@ -32,6 +32,22 @@ const templates:TemplateOption[]=[
   {id:'lunch-time',name:'Lunch Time',category:'Lunch',kicker:'LUNCH TIME',note:'Dnevni meni i poslovni ručak.'},
   {id:'family',name:'Family Table',category:'Restaurant',kicker:'TODAY SPECIAL',note:'Topao layout za porodični restoran i zajednički sto.'},
 ]
+
+const colorPalettes=[
+  {name:'Teal',primary:'#073c38',accent:'#ef7d3a'},
+  {name:'Black Gold',primary:'#171411',accent:'#d4ad63'},
+  {name:'Burgundy',primary:'#561f2b',accent:'#f0d1b1'},
+  {name:'Olive',primary:'#455039',accent:'#e7c98a'},
+  {name:'Navy',primary:'#16334a',accent:'#ef8169'},
+]
+
+function templateStyle(image:string,primary:string,accent:string):CSSProperties{
+  return {
+    ...(image?{backgroundImage:`url(${image})`}:{}),
+    '--tpl-primary':primary,
+    '--tpl-accent':accent,
+  } as CSSProperties
+}
 
 function defaultTemplate(restaurant:Restaurant):TemplateId{
   if(restaurant.brand_style==='premium')return 'luxe'
@@ -82,6 +98,8 @@ export function SimpleContentStudio({
   const[priceText,setPriceText]=useState('')
   const[badgeText,setBadgeText]=useState('')
   const[cta,setCta]=useState('')
+  const[primaryColor,setPrimaryColor]=useState(restaurant.primary_color||'#073c38')
+  const[accentColor,setAccentColor]=useState(restaurant.secondary_color||'#ef7d3a')
   const[composerFile,setComposerFile]=useState<File|null>(null)
   const[composerPreview,setComposerPreview]=useState('')
   const[composerExistingImage,setComposerExistingImage]=useState('')
@@ -180,6 +198,7 @@ export function SimpleContentStudio({
     setTemplate(defaultTemplate(restaurant));setFormat('feed');setHeadline(item.name)
     setText(item.description||'');setPriceText(money(item));setBadgeText('')
     setCta(restaurant.social_goal==='delivery'?'Poruči sada':restaurant.social_goal==='reservations'?'Rezerviši sto':'Svrati danas')
+    setPrimaryColor(restaurant.primary_color||'#073c38');setAccentColor(restaurant.secondary_color||'#ef7d3a')
     setEditingPostId('');setTab('templates')
     window.scrollTo({top:0,behavior:'smooth'})
   }
@@ -203,6 +222,8 @@ export function SimpleContentStudio({
     setPriceText(typeof manual.price==='string'?manual.price:'')
     setBadgeText(typeof manual.badge==='string'?manual.badge:'')
     setCta(post.cta||'Svrati danas')
+    setPrimaryColor(post.generation_meta?.visual_design?.primary_color||restaurant.primary_color||'#073c38')
+    setAccentColor(post.generation_meta?.visual_design?.accent_color||restaurant.secondary_color||'#ef7d3a')
     setTab('templates');window.scrollTo({top:0,behavior:'smooth'})
   }
 
@@ -217,7 +238,7 @@ export function SimpleContentStudio({
       const visualDesign:VisualDesignMeta={
         template,format,headline:headline.trim(),subline:caption,cta:cta.trim()||'Svrati danas',
         image_url:imageUrl,photo_position:'center',overlay:overlayFor(template),
-        primary_color:restaurant.primary_color||'#073c38',accent_color:restaurant.secondary_color||'#ef7d3a',
+        primary_color:primaryColor,accent_color:accentColor,
         logo_visible:Boolean(restaurant.logo_url&&(restaurant.default_logo_visible??true)),
         logo_position:restaurant.default_logo_position||'top-right',logo_size:restaurant.default_logo_size||'m',
         logo_badge:restaurant.default_logo_badge||'white',copy_position:'bottom',
@@ -226,7 +247,7 @@ export function SimpleContentStudio({
       }
       const generationMeta={
         image_url:imageUrl,generation_source:'manual_composer',visual_design:visualDesign,
-        manual_fields:{price:priceText.trim(),badge:badgeText.trim(),template_name:selectedTemplate.name},
+        manual_fields:{price:priceText.trim(),badge:badgeText.trim(),template_name:selectedTemplate.name,primary_color:primaryColor,accent_color:accentColor},
       }
       const payload={
         menu_item_id:selectedDishId||null,post_type:format,title:headline.trim(),caption,
@@ -313,7 +334,7 @@ export function SimpleContentStudio({
         <div className="dts-section-head"><div><span>GOTOVI DIZAJNI</span><h2>Izaberi šablon</h2></div><small>{selectedDish?<>Za: <strong>{selectedDish.name}</strong></>:'Prvo izaberi jelo.'}</small></div>
         {!selectedDish&&<div className="dts-choose-dish">{menuItems.map(item=><button key={item.id} onClick={()=>startFromDish(item)}>{item.image_url?<img src={item.image_url} alt=""/>:<ImageIcon size={20}/>}<span>{item.name}</span><ChevronRight size={14}/></button>)}</div>}
         {selectedDish&&<div className="dts-template-gallery">{templates.map((item,index)=><article key={item.id} className={template===item.id?'selected':''}>
-          <div className={`dts-template-art tpl-${item.id}`} style={composerImage?{backgroundImage:`url(${composerImage})`}:undefined}>
+          <div className={`dts-template-art tpl-${item.id}`} style={templateStyle(composerImage,primaryColor,accentColor)}>
             <i className="tpl-shade"/><span className="tpl-kicker">{item.kicker}</span>{item.badge&&<b className="tpl-top">{item.badge}</b>}
             {badgeText&&<strong className="tpl-badge">{badgeText}</strong>}
             <div className="tpl-copy">{priceText&&<em>{priceText}</em>}<h3>{headline||selectedDish.name}</h3><p>{text||selectedDish.description||'Tvoj tekst ovde'}</p><small>{cta||'SVRATI DANAS'} →</small></div>
@@ -329,8 +350,13 @@ export function SimpleContentStudio({
         <label>Tekst<textarea rows={4} maxLength={360} value={text} onChange={e=>setText(e.target.value)} placeholder="Kratka poruka gostima…"/></label>
         <div className="dts-two"><label>Cena / oznaka<input value={priceText} onChange={e=>setPriceText(e.target.value)} placeholder="890 RSD"/></label><label>Badge<input value={badgeText} onChange={e=>setBadgeText(e.target.value)} placeholder="20% OFF"/></label></div>
         <label>CTA<input value={cta} onChange={e=>setCta(e.target.value)} placeholder="Rezerviši sto"/></label>
+        <div className="dts-color-editor">
+          <div className="dts-color-title"><span>BOJE ŠABLONA</span><small>Klikni paletu ili izaberi svoje boje.</small></div>
+          <div className="dts-palette-row">{colorPalettes.map(palette=><button type="button" key={palette.name} className={primaryColor===palette.primary&&accentColor===palette.accent?'active':''} onClick={()=>{setPrimaryColor(palette.primary);setAccentColor(palette.accent)}} title={palette.name}><i style={{background:palette.primary}}/><i style={{background:palette.accent}}/><span>{palette.name}</span></button>)}</div>
+          <div className="dts-color-pickers"><label>Glavna<input type="color" value={primaryColor} onChange={e=>setPrimaryColor(e.target.value)}/><span>{primaryColor}</span></label><label>Akcent<input type="color" value={accentColor} onChange={e=>setAccentColor(e.target.value)}/><span>{accentColor}</span></label></div>
+        </div>
         <div className="dts-format"><button className={format==='feed'?'active':''} onClick={()=>setFormat('feed')}>POST 4:5</button><button className={format==='story'?'active':''} onClick={()=>setFormat('story')}>STORY 9:16</button></div>
-        <div className={`dts-live-preview ${format} tpl-${template}`} style={composerImage?{backgroundImage:`url(${composerImage})`}:undefined}>
+        <div className={`dts-live-preview ${format} tpl-${template}`} style={templateStyle(composerImage,primaryColor,accentColor)}>
           <i className="tpl-shade"/><span className="tpl-kicker">{selectedTemplate.kicker}</span>{badgeText&&<strong className="tpl-badge">{badgeText}</strong>}
           {restaurant.logo_url&&<img className="tpl-logo" src={restaurant.logo_url} alt=""/>}
           <div className="tpl-copy">{priceText&&<em>{priceText}</em>}<h3>{headline||selectedDish.name}</h3><p>{text||selectedDish.description||'Tvoj tekst ovde'}</p><small>{cta||'SVRATI DANAS'} →</small></div>
@@ -341,8 +367,8 @@ export function SimpleContentStudio({
 
     {tab==='posts'&&<section className="dts-posts">
       <div className="dts-section-head"><div><span>MOJE OBJAVE</span><h2>Sačuvani dizajni</h2></div><button className="dts-primary compact" onClick={()=>setTab('dishes')}><Plus size={15}/> Nova objava</button></div>
-      {recentPosts.length?<div className="dts-post-grid">{recentPosts.map(post=>{const image=resolvePostImage(post);const tpl=(post.generation_meta?.visual_design?.template as TemplateId)||'editorial';const manual=(post.generation_meta?.manual_fields||{}) as Record<string,unknown>;return <article key={post.id}>
-        <div className={`dts-post-art tpl-${tpl}`} style={image?{backgroundImage:`url(${image})`}:undefined}><i className="tpl-shade"/><span className="tpl-kicker">{templates.find(t=>t.id===tpl)?.kicker||'TODAY'}</span>{typeof manual.badge==='string'&&manual.badge&&<strong className="tpl-badge">{manual.badge}</strong>}<div className="tpl-copy">{typeof manual.price==='string'&&manual.price&&<em>{manual.price}</em>}<h3>{post.title||'Objava'}</h3><p>{post.caption||''}</p></div></div>
+      {recentPosts.length?<div className="dts-post-grid">{recentPosts.map(post=>{const image=resolvePostImage(post);const tpl=(post.generation_meta?.visual_design?.template as TemplateId)||'editorial';const manual=(post.generation_meta?.manual_fields||{}) as Record<string,unknown>;const design=post.generation_meta?.visual_design;const postPrimary=design?.primary_color||restaurant.primary_color||'#073c38';const postAccent=design?.accent_color||restaurant.secondary_color||'#ef7d3a';return <article key={post.id}>
+        <div className={`dts-post-art tpl-${tpl}`} style={templateStyle(image,postPrimary,postAccent)}><i className="tpl-shade"/><span className="tpl-kicker">{templates.find(t=>t.id===tpl)?.kicker||'TODAY'}</span>{typeof manual.badge==='string'&&manual.badge&&<strong className="tpl-badge">{manual.badge}</strong>}<div className="tpl-copy">{typeof manual.price==='string'&&manual.price&&<em>{manual.price}</em>}<h3>{post.title||'Objava'}</h3><p>{post.caption||''}</p></div></div>
         <div className="dts-post-info"><div><span className={`status ${post.status}`}>{post.status==='draft'?'Draft':post.status==='approved'?'Spremno':post.status==='published'?'Objavljeno':'Za doradu'}</span><strong>{post.title||'Bez naslova'}</strong></div><div className="dts-post-actions"><button onClick={()=>editPost(post)}><Pencil size={14}/> Izmeni</button><button onClick={()=>void duplicatePost(post)}><Copy size={14}/> Dupliraj</button><button className="schedule" onClick={()=>onNavigate('publish')}><CalendarClock size={14}/> Zakaži</button><button className="danger icon-only" onClick={()=>void deletePost(post)} title="Obriši"><Trash2 size={14}/></button></div></div>
       </article>})}</div>:<div className="dts-empty"><ImageIcon size={34}/><strong>Još nema objava.</strong><span>Dodaj jelo i izaberi prvi šablon.</span><button className="dts-primary compact" onClick={()=>setTab('dishes')}>Kreni od jela</button></div>}
     </section>}
