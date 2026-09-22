@@ -107,6 +107,8 @@ jobs:
           grep -Fq 'Dupliraj' /tmp/demo.js
           grep -Fq 'BOJE ŠABLONA' /tmp/demo.js
           grep -Fq 'Black Gold' /tmp/demo.js
+          grep -Fq 'TEKSTOVI NA DIZAJNU' /tmp/demo.js
+          grep -Fq 'STAVKE U MENIJU' /tmp/demo.js
           CONTENT_CHUNK=$(grep -oE 'SimpleContentStudio-[A-Za-z0-9_-]+\.js' /tmp/app.js | head -1)
           test -n "$CONTENT_CHUNK"
           curl --max-time 20 --retry 4 --retry-delay 2 --retry-all-errors -fsSL "$BASE/assets/$CONTENT_CHUNK" -o /tmp/content.js
@@ -133,6 +135,9 @@ jobs:
           grep -Fq 'Burgundy' /tmp/content.js
           grep -Fq 'Olive' /tmp/content.js
           grep -Fq 'Navy' /tmp/content.js
+          grep -Fq 'TEKSTOVI NA DIZAJNU' /tmp/content.js
+          grep -Fq 'STAVKE U MENIJU' /tmp/content.js
+          grep -Fq 'Vrati tekstove' /tmp/content.js
           PUBLISH_CHUNK=$(grep -oE 'PublishCenter-[A-Za-z0-9_-]+\.js' /tmp/app.js | head -1)
           test -n "$PUBLISH_CHUNK"
           curl --max-time 20 --retry 4 --retry-delay 2 --retry-all-errors -fsSL "$BASE/assets/$PUBLISH_CHUNK" -o /tmp/publish.js
