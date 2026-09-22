@@ -160,24 +160,28 @@ jobs:
           grep -Fq "id:'bold-display'" "$FONTS"
           grep -Fq 'var(--rt-script-font' "$PACK"
           grep -Fq 'var(--rt-base-font' "$PACK"
-      - name: Template auto text fit guard
+      - name: Template text safety guard
         shell: bash
         run: |
           set -euo pipefail
           RENDERER="src/components/RestaurantTemplateCanvas.tsx"
           PACK="src/restaurant-template-pack.css"
+          CONFIG="src/template-slot-config.ts"
           STUDIO="src/components/SimpleContentStudio.tsx"
           DEMO="src/components/DemoScreen.tsx"
-          grep -Fq 'function fitClass(value:string)' "$RENDERER"
-          grep -Fq 'rtpl-fit-xlong' "$RENDERER"
           grep -Fq 'rtpl-safe-copy' "$RENDERER"
-          grep -Fq 'fitValue=' "$RENDERER"
-          grep -Fq '.rtpl-script.rtpl-fit-long' "$PACK"
-          grep -Fq '.rtpl-script.rtpl-fit-xlong' "$PACK"
+          grep -Fq 'rtpl-safe-cta' "$RENDERER"
           grep -Fq -- '-webkit-line-clamp:4' "$PACK"
-          grep -Fq 'rtpl-safe-cta' "$PACK"
-          grep -Fq 'Dug tekst se automatski uklapa.' "$STUDIO"
-          grep -Fq 'Dug tekst se automatski uklapa.' "$DEMO"
+          grep -Fq 'maxLength?:number' "$CONFIG"
+          grep -Fq "defaultValue:'ANNUAL MEGA\\nSALE',maxLength:26" "$CONFIG"
+          grep -Fq 'maxLength={slot.maxLength}' "$STUDIO"
+          grep -Fq 'maxLength={slot.maxLength}' "$DEMO"
+          grep -Fq 'Naslovi imaju bezbedan limit da dizajn ostane uredan.' "$STUDIO"
+          grep -Fq 'Naslovi imaju bezbedan limit da dizajn ostane uredan.' "$DEMO"
+          if grep -Fq '.rtpl-script.rtpl-fit-medium' "$PACK"; then
+            echo "Script font must not be auto-shrunk with em overrides"
+            exit 1
+          fi
       - name: Script clipping regression guard
         shell: bash
         run: |
@@ -189,8 +193,6 @@ jobs:
           grep -Fq '.rtpl-luxe .rtpl-bottom-band .rtpl-script' "$PACK"
           grep -Fq '.rtpl-bold-offer .rtpl-side-panel .rtpl-script' "$PACK"
           grep -Fq '.rtpl-lunch-time .rtpl-sale-left .rtpl-script' "$PACK"
-          grep -Fq 'const longest=Math.max' "$RENDERER"
-          grep -Fq 'const lineCount=lines.length' "$RENDERER"
           if grep -Fq '.rtpl-bottom-band,.rtpl-mini-copy,.rtpl-right-copy,.rtpl-left-copy,.rtpl-steak-panel,.rtpl-white-card,.rtpl-menu-copy,.rtpl-side-panel,.rtpl-sale-left,.rtpl-special-copy{overflow:hidden}' "$PACK"; then
             echo "Script containers are clipped again"
             exit 1

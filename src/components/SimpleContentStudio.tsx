@@ -393,10 +393,10 @@ export function SimpleContentStudio({
         <div className="dts-two"><label>Cena / oznaka<input value={priceText} onChange={e=>setPriceText(e.target.value)} placeholder="890 RSD"/></label><label>Badge<input value={badgeText} onChange={e=>setBadgeText(e.target.value)} placeholder="20% OFF"/></label></div>
         <label>CTA<input value={cta} onChange={e=>setCta(e.target.value)} placeholder="Rezerviši sto"/></label>
         <div className="dts-template-text-editor">
-          <div className="dts-template-text-head"><div><span>TEKSTOVI NA DIZAJNU</span><strong>{selectedTemplate.name}</strong><small>Dug tekst se automatski uklapa.</small></div><button type="button" onClick={resetTemplateTexts}>Vrati tekstove</button></div>
+          <div className="dts-template-text-head"><div><span>TEKSTOVI NA DIZAJNU</span><strong>{selectedTemplate.name}</strong><small>Naslovi imaju bezbedan limit da dizajn ostane uredan.</small></div><button type="button" onClick={resetTemplateTexts}>Vrati tekstove</button></div>
           <div className="dts-template-text-fields">{selectedTemplateConfig.textSlots.map(slot=><label key={slot.key}>{slot.label}{slot.multiline
-            ?<textarea rows={2} value={textSlots[slot.key]??slot.defaultValue} onChange={e=>setTextSlots(current=>({...current,[slot.key]:e.target.value}))}/>
-            :<input value={textSlots[slot.key]??slot.defaultValue} onChange={e=>setTextSlots(current=>({...current,[slot.key]:e.target.value}))}/>}</label>)}</div>
+            ?<textarea rows={2} maxLength={slot.maxLength} value={textSlots[slot.key]??slot.defaultValue} onChange={e=>setTextSlots(current=>({...current,[slot.key]:e.target.value}))}/>
+            :<input maxLength={slot.maxLength} value={textSlots[slot.key]??slot.defaultValue} onChange={e=>setTextSlots(current=>({...current,[slot.key]:e.target.value}))}/>}</label>)}</div>
           {selectedTemplateConfig.itemSlots?.length?<div className="dts-item-slot-editor"><div className="dts-item-slot-title"><span>STAVKE U MENIJU</span><small>Svaki naziv i cena se menjaju posebno.</small></div>{itemSlots.map((item,index)=><div className="dts-item-slot-row" key={index}><b>{index+1}</b><input aria-label={`Naziv stavke ${index+1}`} value={item.title} onChange={e=>setItemSlots(current=>current.map((entry,i)=>i===index?{...entry,title:e.target.value}:entry))}/><input aria-label={`Cena stavke ${index+1}`} value={item.price} onChange={e=>setItemSlots(current=>current.map((entry,i)=>i===index?{...entry,price:e.target.value}:entry))}/></div>)}</div>:null}
         </div>
         <div className="dts-color-editor">
