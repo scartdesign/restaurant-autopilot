@@ -153,8 +153,8 @@ function DemoLaunch({notify,setTab}:{notify:(value:string)=>void;setTab:(tab:Dem
 
 type DemoContentTemplate={id:RestaurantTemplateId;name:string;category:string;kicker:string;note:string;badge?:string}
 const demoContentTemplates:DemoContentTemplate[]=[
-  {id:'luxe',name:'Today’s Menu Curve',category:'Premium',kicker:"TODAY'S MENU",note:'Tamni premium dizajn.',badge:'TOP'},
-  {id:'editorial',name:'Good Morning',category:'Breakfast',kicker:'GOOD MORNING',note:'Elegantni food layout.',badge:'TOP'},
+  {id:'luxe',name:'Good Morning',category:'Premium',kicker:"TODAY'S MENU",note:'Tamni premium dizajn.',badge:'TOP'},
+  {id:'editorial',name:'Today’s Menu Curve',category:'Breakfast',kicker:'GOOD MORNING',note:'Elegantni food layout.',badge:'TOP'},
   {id:'hero-menu',name:'Today’s Menu Circle',category:'Signature',kicker:'GRILLED SPECIAL',note:'Jedno jelo u prvom planu.',badge:'TOP'},
   {id:'minimal',name:'Breakfast Special',category:'Modern',kicker:'FRESH TODAY',note:'Čisto i moderno.'},
   {id:'bold',name:'Today’s Menu Discount',category:'Promo',kicker:'SPECIAL OFFER',note:'Jak promo layout.'},
