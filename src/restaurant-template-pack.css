@@ -3,9 +3,6 @@
 .restaurant-template-canvas *{box-sizing:border-box}
 .rtpl-photo{position:absolute;background-size:cover;background-position:center}
 .rtpl-script{font-family:var(--rt-script-font,"Brush Script MT","Segoe Script","URW Chancery L",cursive);font-weight:400;color:#fff;line-height:1.02;letter-spacing:-.03em;text-shadow:0 1px 1px rgba(0,0,0,.18);display:block;max-width:100%;padding:.10em .06em .16em;overflow:visible;box-sizing:border-box}
-.rtpl-script.rtpl-fit-medium{font-size:calc(1em * .84)!important;line-height:1.02}
-.rtpl-script.rtpl-fit-long{font-size:calc(1em * .70)!important;line-height:1.04}
-.rtpl-script.rtpl-fit-xlong{font-size:calc(1em * .56)!important;line-height:1.06;letter-spacing:-.035em}
 .rtpl-fit-medium:not(.rtpl-script){font-size:88%!important}
 .rtpl-fit-long:not(.rtpl-script){font-size:76%!important;line-height:1.05}
 .rtpl-fit-xlong:not(.rtpl-script){font-size:66%!important;line-height:1.08}
@@ -24,7 +21,7 @@
 .rtpl-luxe .photo-main{left:7%;right:7%;top:7%;height:59%;z-index:1}
 .rtpl-luxe .rtpl-bottom-band{position:absolute;z-index:6;left:7%;right:7%;bottom:7%;height:31%;padding:3% 6%;background:var(--rt-primary);text-align:center}
 .rtpl-luxe .rtpl-bottom-band:before{content:"";position:absolute;left:-7%;right:-7%;top:0;height:2px;background:var(--rt-accent)}
-.rtpl-luxe .rtpl-bottom-band .rtpl-script{margin-top:-10%;font-size:clamp(20px,4.6vw,42px);line-height:1.04;position:relative;z-index:8}
+.rtpl-luxe .rtpl-bottom-band .rtpl-script{margin-top:-10%;font-size:clamp(25px,5.2vw,48px);line-height:1;position:relative;z-index:8}
 .rtpl-luxe .rtpl-bottom-band p{margin:4% 0 3%;font-size:clamp(6px,.85vw,10px);opacity:.85}
 .rtpl-luxe .rtpl-bottom-band button{border:0;background:#fff;color:#11231e;padding:3% 9%;font-size:clamp(7px,1vw,11px);font-weight:900}
 
@@ -99,14 +96,14 @@
 .rtpl-bold-offer .rtpl-photo-strip{left:3%;width:36%;height:13%;z-index:2;background-size:cover;background-position:center}.rtpl-bold-offer .rtpl-photo-strip.top{top:3%}.rtpl-bold-offer .rtpl-photo-strip.bottom{bottom:3%}
 .rtpl-bold-offer .photo-box{z-index:2;left:8%;top:23%;width:60%;height:64%;border:5px solid #fff}
 .rtpl-bold-offer .rtpl-side-panel{position:absolute;z-index:6;right:4%;top:15%;bottom:8%;width:38%;padding:10% 4% 5%;background:var(--rt-primary)}
-.rtpl-bold-offer .rtpl-side-panel .rtpl-script{font-size:clamp(20px,3.8vw,38px);line-height:1.02;max-width:92%;margin-left:auto;margin-right:auto;text-align:center}.rtpl-bold-offer .rtpl-side-panel p{position:absolute;bottom:6%;left:8%;right:8%;margin:0;font-size:clamp(5px,.68vw,8px)}
+.rtpl-bold-offer .rtpl-side-panel .rtpl-script{font-size:clamp(27px,4.7vw,46px);line-height:.96;max-width:100%;margin:0;text-align:left}.rtpl-bold-offer .rtpl-side-panel p{position:absolute;bottom:6%;left:8%;right:8%;margin:0;font-size:clamp(5px,.68vw,8px)}
 .rtpl-bold-offer .rtpl-discount{right:5%;top:44%}
 
 /* 11 — annual mega sale */
 .rtpl-lunch-time{background:var(--rt-primary)}
 .rtpl-lunch-time .photo-right{z-index:1;right:0;top:0;width:66%;height:100%}
 .rtpl-lunch-time .rtpl-sale-left{position:absolute;z-index:5;left:0;top:0;bottom:0;width:58%;padding:13% 7% 7%;background:linear-gradient(110deg,var(--rt-primary) 0 73%,transparent 73%)}
-.rtpl-lunch-time .rtpl-sale-left .rtpl-script{font-size:clamp(22px,4.4vw,44px);font-family:var(--rt-script-font,"Brush Script MT","Segoe Script",cursive);font-weight:700;line-height:.95;max-width:78%;padding-top:.14em;padding-bottom:.18em}
+.rtpl-lunch-time .rtpl-sale-left .rtpl-script{font-size:clamp(28px,5.2vw,52px);font-family:var(--rt-script-font,"Brush Script MT","Segoe Script",cursive);font-weight:700;line-height:.9;max-width:88%;padding-top:.14em;padding-bottom:.18em}
 .rtpl-lunch-time .rtpl-sale-left .rtpl-discount{position:absolute;left:12%;bottom:20%}.rtpl-lunch-time .rtpl-sale-left p{position:absolute;left:8%;bottom:6%;width:54%;margin:0;font-size:clamp(5px,.62vw,7px)}
 .rtpl-lunch-time .rtpl-sale-slash{position:absolute;z-index:7;left:44%;top:0;width:2px;height:100%;background:var(--rt-accent);transform:rotate(13deg);transform-origin:top}
 
