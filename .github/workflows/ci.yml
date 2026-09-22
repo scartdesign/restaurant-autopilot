@@ -109,6 +109,28 @@ jobs:
           grep -Fq '.rtpl-luxe' "$PACK"
           grep -Fq '.rtpl-editorial' "$PACK"
           grep -Fq '.rtpl-family' "$PACK"
+      - name: Editable template text slots guard
+        shell: bash
+        run: |
+          set -euo pipefail
+          STUDIO="src/components/SimpleContentStudio.tsx"
+          RENDERER="src/components/RestaurantTemplateCanvas.tsx"
+          CONFIG="src/template-slot-config.ts"
+          TYPES="src/types.ts"
+          grep -Fq 'TEKSTOVI NA DIZAJNU' "$STUDIO"
+          grep -Fq 'STAVKE U MENIJU' "$STUDIO"
+          grep -Fq 'selectedTemplateConfig.textSlots.map' "$STUDIO"
+          grep -Fq 'text_slots:{...textSlots}' "$STUDIO"
+          grep -Fq 'item_slots:itemSlots.map' "$STUDIO"
+          grep -Fq 'textSlots?:Record<string,string>' "$RENDERER"
+          grep -Fq 'itemSlots?:Array' "$RENDERER"
+          grep -Fq "slot('verticalText'" "$RENDERER"
+          grep -Fq "slot('footerText'" "$RENDERER"
+          grep -Fq "slot('scriptMain'" "$RENDERER"
+          grep -Fq "promo-badge" "$CONFIG"
+          grep -Fq "itemSlots" "$CONFIG"
+          grep -Fq 'text_slots?: Record<string, string>' "$TYPES"
+          grep -Fq 'item_slots?: Array' "$TYPES"
       - name: Simplified customer UX guard
         shell: bash
         run: |
