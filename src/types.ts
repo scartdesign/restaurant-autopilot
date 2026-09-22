@@ -77,6 +77,8 @@ export type VisualDesignMeta = {
   logo_badge?: LogoBadge
   copy_position?: 'top' | 'center' | 'bottom'
   font_pair?: 'modern' | 'editorial' | 'impact'
+  base_font?: string
+  script_font?: string
   price_visible?: boolean
   headline_scale?: number
   subline_scale?: number

@@ -131,6 +131,35 @@ jobs:
           grep -Fq "itemSlots" "$CONFIG"
           grep -Fq 'text_slots?: Record<string, string>' "$TYPES"
           grep -Fq 'item_slots?: Array' "$TYPES"
+      - name: Template font picker guard
+        shell: bash
+        run: |
+          set -euo pipefail
+          STUDIO="src/components/SimpleContentStudio.tsx"
+          DEMO="src/components/DemoScreen.tsx"
+          RENDERER="src/components/RestaurantTemplateCanvas.tsx"
+          FONTS="src/template-fonts.ts"
+          TYPES="src/types.ts"
+          PACK="src/restaurant-template-pack.css"
+          grep -Fq 'FONTOVI' "$STUDIO"
+          grep -Fq 'Osnovni font' "$STUDIO"
+          grep -Fq 'Pisani font' "$STUDIO"
+          grep -Fq 'base_font:baseFont' "$STUDIO"
+          grep -Fq 'script_font:scriptFont' "$STUDIO"
+          grep -Fq 'baseFont={baseFont}' "$STUDIO"
+          grep -Fq 'scriptFont={scriptFont}' "$STUDIO"
+          grep -Fq 'FONTOVI' "$DEMO"
+          grep -Fq 'Pisani font' "$DEMO"
+          grep -Fq -- '--rt-base-font' "$RENDERER"
+          grep -Fq -- '--rt-script-font' "$RENDERER"
+          grep -Fq 'base_font?: string' "$TYPES"
+          grep -Fq 'script_font?: string' "$TYPES"
+          grep -Fq "id:'signature'" "$FONTS"
+          grep -Fq "id:'handwritten'" "$FONTS"
+          grep -Fq "id:'elegant-script'" "$FONTS"
+          grep -Fq "id:'bold-display'" "$FONTS"
+          grep -Fq 'var(--rt-script-font' "$PACK"
+          grep -Fq 'var(--rt-base-font' "$PACK"
       - name: Simplified customer UX guard
         shell: bash
         run: |

@@ -1,5 +1,6 @@
 import type { CSSProperties, ReactNode } from 'react'
 import type { VisualDesignMeta } from '../types'
+import { baseFontStack, scriptFontStack } from '../template-fonts'
 import '../restaurant-template-pack.css'
 
 export type RestaurantTemplateId=NonNullable<VisualDesignMeta['template']>
@@ -19,6 +20,8 @@ type Props={
   className?:string
   textSlots?:Record<string,string>
   itemSlots?:Array<{title:string;price:string}>
+  baseFont?:string
+  scriptFont?:string
 }
 
 function photoStyle(image:string):CSSProperties{
@@ -36,11 +39,13 @@ function Script({children,className=''}:{children:ReactNode;className?:string}){
 }
 
 export function RestaurantTemplateCanvas({
-  template,image,headline,text,price='',badge='',cta='BUY',primary,accent,logoUrl,format='feed',className='',textSlots={},itemSlots=[],
+  template,image,headline,text,price='',badge='',cta='BUY',primary,accent,logoUrl,format='feed',className='',textSlots={},itemSlots=[],baseFont='modern-sans',scriptFont='signature',
 }:Props){
   const rootStyle={
     '--rt-primary':primary,
     '--rt-accent':accent,
+    '--rt-base-font':baseFontStack(baseFont),
+    '--rt-script-font':scriptFontStack(scriptFont),
   } as CSSProperties
   const discount=badge||'20% OFF'
   const slot=(key:string,fallback:string)=>textSlots[key]??fallback
