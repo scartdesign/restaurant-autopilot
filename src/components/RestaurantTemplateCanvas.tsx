@@ -1,4 +1,4 @@
-import type { CSSProperties } from 'react'
+import type { CSSProperties, ReactNode } from 'react'
 import type { VisualDesignMeta } from '../types'
 import '../restaurant-template-pack.css'
 
@@ -29,7 +29,7 @@ function Discount({value}:{value:string}){
   return <span className="rtpl-discount"><strong>{parts[0]}</strong><small>{parts.slice(1).join(' ')||'OFF'}</small></span>
 }
 
-function Script({children,className=''}:{children:string;className?:string}){
+function Script({children,className=''}:{children:ReactNode;className?:string}){
   return <span className={`rtpl-script ${className}`}>{children}</span>
 }
 
