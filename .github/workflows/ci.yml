@@ -68,23 +68,25 @@ jobs:
           grep -Fq 'SLEDEĆI KORAK' "$DASH"
           grep -Fq "title:'Napravi prvu nedelju'" "$DASH"
           grep -Fq "onNavigate?.('dashboard')" "$DASH"
-      - name: Three-step content studio guard
+      - name: Dish template post flow guard
         shell: bash
         run: |
           set -euo pipefail
           FILE="src/components/SimpleContentStudio.tsx"
           APP="src/App.tsx"
-          grep -Fq 'Slika. Šablon. Tekst. Gotovo.' "$FILE"
-          grep -Fq 'Ubaci fotografiju' "$FILE"
-          grep -Fq 'Izaberi šablon' "$FILE"
-          grep -Fq 'Upiši tekst' "$FILE"
+          grep -Fq 'Od jela do objave za minut.' "$FILE"
+          grep -Fq 'Dodaj jelo' "$FILE"
+          grep -Fq 'Kreiraj objavu' "$FILE"
+          grep -Fq 'Koristi šablon' "$FILE"
+          grep -Fq 'Sačuvaj objavu' "$FILE"
+          grep -Fq 'Dupliraj' "$FILE"
+          grep -Fq 'Zakaži' "$FILE"
+          grep -Fq "from('menu_items').insert" "$FILE"
           grep -Fq "from('restaurant-assets').upload" "$FILE"
           grep -Fq "generation_source:'manual_composer'" "$FILE"
-          grep -Fq "status:'draft'" "$FILE"
-          grep -Fq "id:'luxe'" "$FILE"
-          grep -Fq "id:'hero-menu'" "$FILE"
-          grep -Fq "id:'promo-badge'" "$FILE"
-          grep -Fq "SimpleContentStudio" "$APP"
+          grep -Fq "onNavigate('publish')" "$FILE"
+          grep -Fq "menuItems={menuItems}" "$APP"
+          grep -Fq "userId={session.user.id}" "$APP"
       - name: Simplified customer UX guard
         shell: bash
         run: |
@@ -115,15 +117,18 @@ jobs:
           grep -Fq 'chooseStarterDishPhoto' "$FILE"
           grep -Fq "maxSide:1800,quality:.88" "$FILE"
           grep -Fq "update({image_url:imageUrl})" "$FILE"
-      - name: Demo three-step content studio guard
+      - name: Demo dish template flow guard
         shell: bash
         run: |
           set -euo pipefail
           FILE="src/components/DemoScreen.tsx"
-          grep -Fq 'Slika. Šablon. Tekst. Gotovo.' "$FILE"
-          grep -Fq 'Izaberi svoju fotografiju' "$FILE"
-          grep -Fq 'Svaki koristi baš tvoju fotografiju.' "$FILE"
+          grep -Fq 'Od jela do objave za minut.' "$FILE"
+          grep -Fq 'Dodaj jelo' "$FILE"
+          grep -Fq 'Kreiraj objavu' "$FILE"
+          grep -Fq 'Koristi šablon' "$FILE"
           grep -Fq 'Sačuvaj objavu' "$FILE"
+          grep -Fq 'Dupliraj' "$FILE"
+          grep -Fq 'Zakaži' "$FILE"
           grep -Fq '<Rocket size={18} /> Početna' "$FILE"
           grep -Fq '<CalendarDays size={18} /> Sadržaj' "$FILE"
       - name: Demo Meta connection safety guard
