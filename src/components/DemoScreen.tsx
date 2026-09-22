@@ -191,6 +191,7 @@ function DemoContent({notify,setTab}:{notify:(value:string)=>void;setTab:(tab:De
   const[dishForm,setDishForm]=useState({name:'',price:'',description:'',category:''})
   const[editingDishId,setEditingDishId]=useState('')
   const[dishPhoto,setDishPhoto]=useState(food.lasagna)
+  const[composerImage,setComposerImage]=useState(food.pizza)
   const[selectedDishId,setSelectedDishId]=useState('pizza')
   const[template,setTemplate]=useState<RestaurantTemplateId>('luxe')
   const[headline,setHeadline]=useState('Pizza Capricciosa')
@@ -221,6 +222,13 @@ function DemoContent({notify,setTab}:{notify:(value:string)=>void;setTab:(tab:De
     if(!file.type.startsWith('image/')){notify('Izaberi fotografiju.');return}
     setDishPhoto(URL.createObjectURL(file))
   }
+  function chooseComposerPhoto(event:ChangeEvent<HTMLInputElement>){
+    const file=event.target.files?.[0]
+    if(!file)return
+    if(!file.type.startsWith('image/')){notify('Izaberi fotografiju.');return}
+    setComposerImage(URL.createObjectURL(file))
+    notify('Demo: fotografija objave je promenjena.')
+  }
   function addDish(event:FormEvent){
     event.preventDefault()
     if(!dishForm.name.trim()){notify('Upiši naziv jela.');return}
@@ -238,7 +246,7 @@ function DemoContent({notify,setTab}:{notify:(value:string)=>void;setTab:(tab:De
     }
   }
   function startDish(item:DemoDish){
-    setSelectedDishId(item.id);setHeadline(item.name);setText(item.description);setPriceText(item.price);setBadge('');setTemplate('luxe');setPrimaryColor('#073c38');setAccentColor('#ef7d3a');setBaseFont(defaultBaseFont('luxe'));setScriptFont('signature');setTextSlots({...defaultTextSlots('luxe'),smallDesc:item.description,buttonText:'Rezerviši sto'});setItemSlots(defaultItemSlots('luxe'));setEditingDesignId('');setEditorPanel('text');setStudioTab('templates')
+    setSelectedDishId(item.id);setComposerImage(item.image);setHeadline(item.name);setText(item.description);setPriceText(item.price);setBadge('');setTemplate('luxe');setPrimaryColor('#073c38');setAccentColor('#ef7d3a');setBaseFont(defaultBaseFont('luxe'));setScriptFont('signature');setTextSlots({...defaultTextSlots('luxe'),smallDesc:item.description,buttonText:'Rezerviši sto'});setItemSlots(defaultItemSlots('luxe'));setEditingDesignId('');setEditorPanel('text');setStudioTab('templates')
     window.scrollTo({top:0,behavior:'smooth'})
   }
   function chooseDemoTemplate(next:RestaurantTemplateId){
@@ -255,14 +263,14 @@ function DemoContent({notify,setTab}:{notify:(value:string)=>void;setTab:(tab:De
   }
   function saveDesign(){
     if(!headline.trim()){notify('Upiši naslov.');return}
-    const data={id:editingDesignId||'design-'+Date.now(),dishId:selectedDish.id,title:headline.trim(),text:text.trim(),template,image:selectedDish.image,price:priceText,badge,primary:primaryColor,accent:accentColor,baseFont,scriptFont,textSlots:{...textSlots},itemSlots:itemSlots.map(item=>({...item}))}
+    const data={id:editingDesignId||'design-'+Date.now(),dishId:selectedDish.id,title:headline.trim(),text:text.trim(),template,image:composerImage,price:priceText,badge,primary:primaryColor,accent:accentColor,baseFont,scriptFont,textSlots:{...textSlots},itemSlots:itemSlots.map(item=>({...item}))}
     setDesigns(current=>editingDesignId?current.map(item=>item.id===editingDesignId?data:item):[data,...current])
     setEditingDesignId('');setStudioTab('posts')
     notify('Demo: objava je sačuvana.')
   }
   function editDesign(item:DemoDesign){
     const dish=dishes.find(entry=>entry.id===item.dishId)||selectedDish
-    setSelectedDishId(dish.id);setHeadline(item.title);setText(item.text);setPriceText(item.price);setBadge(item.badge);setTemplate(item.template);setPrimaryColor(item.primary);setAccentColor(item.accent);setBaseFont(item.baseFont);setScriptFont(item.scriptFont);setTextSlots({...item.textSlots});setItemSlots(item.itemSlots.map(entry=>({...entry})));setEditingDesignId(item.id);setEditorPanel('text');setStudioTab('templates')
+    setSelectedDishId(dish.id);setComposerImage(item.image);setHeadline(item.title);setText(item.text);setPriceText(item.price);setBadge(item.badge);setTemplate(item.template);setPrimaryColor(item.primary);setAccentColor(item.accent);setBaseFont(item.baseFont);setScriptFont(item.scriptFont);setTextSlots({...item.textSlots});setItemSlots(item.itemSlots.map(entry=>({...entry})));setEditingDesignId(item.id);setEditorPanel('text');setStudioTab('templates')
     window.scrollTo({top:0,behavior:'smooth'})
   }
   function duplicateDesign(item:DemoDesign){
@@ -293,19 +301,19 @@ function DemoContent({notify,setTab}:{notify:(value:string)=>void;setTab:(tab:De
 
     {studioTab==='templates'&&<section className="dts-template-screen">
       <div className="dts-template-main"><div className="dts-section-head"><div><span>GOTOVI DIZAJNI</span><h2>Izaberi šablon</h2></div><small>Za: <strong>{selectedDish.name}</strong></small></div>
-        <div className="dts-template-gallery">{demoContentTemplates.map((item,index)=><article key={item.id} className={template===item.id?'selected':''}><div className="dts-template-art"><RestaurantTemplateCanvas template={item.id} image={selectedDish.image} headline={headline} text={text} price={priceText} badge={badge} cta={cta||'BUY'} primary={primaryColor} accent={accentColor} textSlots={item.id===template?textSlots:defaultTextSlots(item.id)} itemSlots={item.id===template?itemSlots:defaultItemSlots(item.id)} baseFont={item.id===template?baseFont:defaultBaseFont(item.id)} scriptFont={item.id===template?scriptFont:'signature'}/></div><div className="dts-template-meta"><div><span>{item.category}</span><strong>{item.name}</strong><small>{item.note}</small></div><button onClick={()=>chooseDemoTemplate(item.id)}>{template===item.id?<><Check size={14}/> Izabran</>:<>Koristi šablon <ChevronRight size={14}/></>}</button></div></article>)}</div>
+        <div className="dts-template-gallery">{demoContentTemplates.map((item,index)=><article key={item.id} className={template===item.id?'selected':''}><div className="dts-template-art"><RestaurantTemplateCanvas template={item.id} image={composerImage} headline={headline} text={text} price={priceText} badge={badge} cta={cta||'BUY'} primary={primaryColor} accent={accentColor} textSlots={item.id===template?textSlots:defaultTextSlots(item.id)} itemSlots={item.id===template?itemSlots:defaultItemSlots(item.id)} baseFont={item.id===template?baseFont:defaultBaseFont(item.id)} scriptFont={item.id===template?scriptFont:'signature'}/></div><div className="dts-template-meta"><div><span>{item.category}</span><strong>{item.name}</strong><small>{item.note}</small></div><button onClick={()=>chooseDemoTemplate(item.id)}>{template===item.id?<><Check size={14}/> Izabran</>:<>Koristi šablon <ChevronRight size={14}/></>}</button></div></article>)}</div>
       </div>
       <aside className="dts-composer dts-composer-premium">
         <div className="dts-composer-head"><div><span>LIVE STUDIO</span><strong>{demoContentTemplates.find(item=>item.id===template)?.name}</strong></div><span className="dts-live-dot">UŽIVO</span></div>
         <div className="dts-preview-shell">
           <div className="dts-preview-topbar"><div><small>FINALNI PREVIEW</small><strong>{format==='feed'?'Instagram post · 1:1':'Story · 9:16'}</strong></div><div className="dts-format compact"><button className={format==='feed'?'active':''} onClick={()=>setFormat('feed')}>1:1</button><button className={format==='story'?'active':''} onClick={()=>setFormat('story')}>9:16</button></div></div>
-          <RestaurantTemplateCanvas className="dts-live-preview" template={template} image={selectedDish.image} headline={headline} text={text} price={priceText} badge={badge} cta={cta||'BUY'} primary={primaryColor} accent={accentColor} logoUrl={demoLogo} format={format} textSlots={textSlots} itemSlots={itemSlots} baseFont={baseFont} scriptFont={scriptFont}/>
+          <RestaurantTemplateCanvas className="dts-live-preview" template={template} image={composerImage} headline={headline} text={text} price={priceText} badge={badge} cta={cta||'BUY'} primary={primaryColor} accent={accentColor} logoUrl={demoLogo} format={format} textSlots={textSlots} itemSlots={itemSlots} baseFont={baseFont} scriptFont={scriptFont}/>
         </div>
 
         <div className="dts-editor-tabs"><button className={editorPanel==='text'?'active':''} onClick={()=>setEditorPanel('text')}>Tekst</button><button className={editorPanel==='style'?'active':''} onClick={()=>setEditorPanel('style')}>Stil</button><button className={editorPanel==='fonts'?'active':''} onClick={()=>setEditorPanel('fonts')}>Fontovi</button></div>
 
         {editorPanel==='text'&&<div className="dts-editor-panel">
-          <label className="dts-composer-photo compact-photo"><img src={selectedDish.image} alt=""/><input type="file" accept="image/*" onChange={chooseDishPhoto}/><span><Upload size={13}/> Promeni fotografiju</span></label>
+          <label className="dts-composer-photo compact-photo"><img src={composerImage} alt=""/><input type="file" accept="image/*" onChange={chooseComposerPhoto}/><span><Upload size={13}/> Promeni fotografiju</span></label>
           <label>Naslov<input value={headline} onChange={e=>setHeadline(e.target.value)}/></label>
           <label>Opis<textarea rows={3} value={text} onChange={e=>setText(e.target.value)}/></label>
           <div className="dts-two"><label>Cena<input value={priceText} onChange={e=>setPriceText(e.target.value)}/></label><label>Popust / badge<input value={badge} onChange={e=>setBadge(e.target.value)} placeholder="20% OFF"/></label></div>
