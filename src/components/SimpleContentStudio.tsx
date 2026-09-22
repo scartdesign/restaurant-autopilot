@@ -5,6 +5,7 @@ import { optimizeImage } from '../lib/image'
 import type { MenuItem, Post, Restaurant, VisualDesignMeta } from '../types'
 import '../simple-content-studio.css'
 import { RestaurantTemplateCanvas } from './RestaurantTemplateCanvas'
+import { defaultItemSlots, defaultTextSlots, templateSlotConfig, type TemplateItemSlot } from '../template-slot-config'
 
 type StudioTab='dishes'|'templates'|'posts'
 type TemplateId=NonNullable<VisualDesignMeta['template']>
@@ -64,6 +65,27 @@ function overlayFor(template:TemplateId){
   return .7
 }
 
+function seedTextSlots(template:TemplateId,headline:string,description:string,cta:string){
+  const slots=defaultTextSlots(template)
+  if('overlayTitle' in slots)slots.overlayTitle=headline||slots.overlayTitle
+  if('smallDesc' in slots)slots.smallDesc=description||slots.smallDesc
+  if('whiteCardText' in slots)slots.whiteCardText=description||slots.whiteCardText
+  if('footerText' in slots)slots.footerText=description||slots.footerText
+  if('smallCta' in slots)slots.smallCta=cta||slots.smallCta
+  if('buttonText' in slots)slots.buttonText=cta||slots.buttonText
+  return slots
+}
+
+function seedItemSlots(template:TemplateId,items:MenuItem[],primary:MenuItem|null){
+  const defaults=defaultItemSlots(template)
+  if(!defaults.length)return defaults
+  const ordered=[primary,...items.filter(item=>item.id!==primary?.id)].filter(Boolean) as MenuItem[]
+  return defaults.map((fallback,index)=>{
+    const item=ordered[index]
+    return item?{title:item.name,price:money(item)||fallback.price}:fallback
+  })
+}
+
 export function SimpleContentStudio({
   restaurant,userId,menuItems,posts,onChanged,onNavigate,setNotice,
 }:{
@@ -93,6 +115,8 @@ export function SimpleContentStudio({
   const[cta,setCta]=useState('')
   const[primaryColor,setPrimaryColor]=useState(restaurant.primary_color||'#073c38')
   const[accentColor,setAccentColor]=useState(restaurant.secondary_color||'#ef7d3a')
+  const[textSlots,setTextSlots]=useState<Record<string,string>>(()=>defaultTextSlots(defaultTemplate(restaurant)))
+  const[itemSlots,setItemSlots]=useState<TemplateItemSlot[]>(()=>defaultItemSlots(defaultTemplate(restaurant)))
   const[composerFile,setComposerFile]=useState<File|null>(null)
   const[composerPreview,setComposerPreview]=useState('')
   const[composerExistingImage,setComposerExistingImage]=useState('')
@@ -102,6 +126,7 @@ export function SimpleContentStudio({
   const selectedDish=useMemo(()=>menuItems.find(item=>item.id===selectedDishId)||null,[menuItems,selectedDishId])
   const composerImage=composerPreview||composerExistingImage||selectedDish?.image_url||''
   const selectedTemplate=templates.find(item=>item.id===template)||templates[0]
+  const selectedTemplateConfig=templateSlotConfig[template]
   const recentPosts=useMemo(()=>[...posts].filter(post=>post.status!=='rejected').slice(0,20),[posts])
 
   useEffect(()=>()=>{if(dishPreview.startsWith('blob:'))URL.revokeObjectURL(dishPreview)},[dishPreview])
@@ -185,12 +210,27 @@ export function SimpleContentStudio({
     if(composerPreview.startsWith('blob:'))URL.revokeObjectURL(composerPreview)
     setComposerFile(null);setComposerPreview('')
   }
+
+  function chooseTemplate(nextTemplate:TemplateId){
+    setTemplate(nextTemplate)
+    setTextSlots(seedTextSlots(nextTemplate,headline,text,cta))
+    setItemSlots(seedItemSlots(nextTemplate,menuItems,selectedDish))
+  }
+  function resetTemplateTexts(){
+    setTextSlots(seedTextSlots(template,headline,text,cta))
+    setItemSlots(seedItemSlots(template,menuItems,selectedDish))
+    setNotice('Tekstovi šablona su vraćeni na početne vrednosti.')
+  }
   function startFromDish(item:MenuItem){
     clearComposerPreview()
     setSelectedDishId(item.id);setComposerExistingImage(item.image_url||'')
-    setTemplate(defaultTemplate(restaurant));setFormat('feed');setHeadline(item.name)
+    const nextTemplate=defaultTemplate(restaurant)
+    const nextCta=restaurant.social_goal==='delivery'?'Poruči sada':restaurant.social_goal==='reservations'?'Rezerviši sto':'Svrati danas'
+    setTemplate(nextTemplate);setFormat('feed');setHeadline(item.name)
     setText(item.description||'');setPriceText(money(item));setBadgeText('')
-    setCta(restaurant.social_goal==='delivery'?'Poruči sada':restaurant.social_goal==='reservations'?'Rezerviši sto':'Svrati danas')
+    setCta(nextCta)
+    setTextSlots(seedTextSlots(nextTemplate,item.name,item.description||'',nextCta))
+    setItemSlots(seedItemSlots(nextTemplate,menuItems,item))
     setPrimaryColor(restaurant.primary_color||'#073c38');setAccentColor(restaurant.secondary_color||'#ef7d3a')
     setEditingPostId('');setTab('templates')
     window.scrollTo({top:0,behavior:'smooth'})
@@ -207,14 +247,21 @@ export function SimpleContentStudio({
     clearComposerPreview()
     setEditingPostId(post.id);setSelectedDishId(post.menu_item_id||'')
     setComposerExistingImage(resolvePostImage(post))
-    setTemplate((post.generation_meta?.visual_design?.template as TemplateId)||defaultTemplate(restaurant))
+    const design=post.generation_meta?.visual_design
+    const editTemplate=(design?.template as TemplateId)||defaultTemplate(restaurant)
+    const editHeadline=post.title||design?.headline||''
+    const editText=post.caption||design?.subline||''
+    const editCta=post.cta||'Svrati danas'
+    setTemplate(editTemplate)
     setFormat(post.post_type==='story'?'story':'feed')
-    setHeadline(post.title||post.generation_meta?.visual_design?.headline||'')
-    setText(post.caption||post.generation_meta?.visual_design?.subline||'')
+    setHeadline(editHeadline)
+    setText(editText)
+    setTextSlots(design?.text_slots?{...design.text_slots}:seedTextSlots(editTemplate,editHeadline,editText,editCta))
+    setItemSlots(design?.item_slots?.length?design.item_slots.map(item=>({...item})):seedItemSlots(editTemplate,menuItems,menuItems.find(item=>item.id===post.menu_item_id)||null))
     const manual=(post.generation_meta?.manual_fields||{}) as Record<string,unknown>
     setPriceText(typeof manual.price==='string'?manual.price:'')
     setBadgeText(typeof manual.badge==='string'?manual.badge:'')
-    setCta(post.cta||'Svrati danas')
+    setCta(editCta)
     setPrimaryColor(post.generation_meta?.visual_design?.primary_color||restaurant.primary_color||'#073c38')
     setAccentColor(post.generation_meta?.visual_design?.accent_color||restaurant.secondary_color||'#ef7d3a')
     setTab('templates');window.scrollTo({top:0,behavior:'smooth'})
@@ -231,7 +278,7 @@ export function SimpleContentStudio({
       const visualDesign:VisualDesignMeta={
         template,format,headline:headline.trim(),subline:caption,cta:cta.trim()||'Svrati danas',
         image_url:imageUrl,photo_position:'center',overlay:overlayFor(template),
-        primary_color:primaryColor,accent_color:accentColor,
+        primary_color:primaryColor,accent_color:accentColor,text_slots:{...textSlots},item_slots:itemSlots.map(item=>({...item})),
         logo_visible:Boolean(restaurant.logo_url&&(restaurant.default_logo_visible??true)),
         logo_position:restaurant.default_logo_position||'top-right',logo_size:restaurant.default_logo_size||'m',
         logo_badge:restaurant.default_logo_badge||'white',copy_position:'bottom',
@@ -327,8 +374,8 @@ export function SimpleContentStudio({
         <div className="dts-section-head"><div><span>GOTOVI DIZAJNI</span><h2>Izaberi šablon</h2></div><small>{selectedDish?<>Za: <strong>{selectedDish.name}</strong></>:'Prvo izaberi jelo.'}</small></div>
         {!selectedDish&&<div className="dts-choose-dish">{menuItems.map(item=><button key={item.id} onClick={()=>startFromDish(item)}>{item.image_url?<img src={item.image_url} alt=""/>:<ImageIcon size={20}/>}<span>{item.name}</span><ChevronRight size={14}/></button>)}</div>}
         {selectedDish&&<div className="dts-template-gallery">{templates.map((item,index)=><article key={item.id} className={template===item.id?'selected':''}>
-          <div className="dts-template-art"><RestaurantTemplateCanvas template={item.id} image={composerImage} headline={headline||selectedDish.name} text={text||selectedDish.description||'Tvoj tekst ovde'} price={priceText} badge={badgeText} cta={cta||'BUY'} primary={primaryColor} accent={accentColor}/></div>
-          <div className="dts-template-meta"><div><span>{item.category}</span><strong>{item.name}</strong><small>{item.note}</small></div><button onClick={()=>setTemplate(item.id)}>{template===item.id?<><Check size={14}/> Izabran</>:<>Koristi šablon <ChevronRight size={14}/></>}</button></div>
+          <div className="dts-template-art"><RestaurantTemplateCanvas template={item.id} image={composerImage} headline={headline||selectedDish.name} text={text||selectedDish.description||'Tvoj tekst ovde'} price={priceText} badge={badgeText} cta={cta||'BUY'} primary={primaryColor} accent={accentColor} textSlots={item.id===template?textSlots:seedTextSlots(item.id,headline||selectedDish.name,text||selectedDish.description||'',cta||'BUY')} itemSlots={item.id===template?itemSlots:seedItemSlots(item.id,menuItems,selectedDish)}/></div>
+          <div className="dts-template-meta"><div><span>{item.category}</span><strong>{item.name}</strong><small>{item.note}</small></div><button onClick={()=>chooseTemplate(item.id)}>{template===item.id?<><Check size={14}/> Izabran</>:<>Koristi šablon <ChevronRight size={14}/></>}</button></div>
         </article>)}</div>}
       </div>
 
@@ -339,13 +386,20 @@ export function SimpleContentStudio({
         <label>Tekst<textarea rows={4} maxLength={360} value={text} onChange={e=>setText(e.target.value)} placeholder="Kratka poruka gostima…"/></label>
         <div className="dts-two"><label>Cena / oznaka<input value={priceText} onChange={e=>setPriceText(e.target.value)} placeholder="890 RSD"/></label><label>Badge<input value={badgeText} onChange={e=>setBadgeText(e.target.value)} placeholder="20% OFF"/></label></div>
         <label>CTA<input value={cta} onChange={e=>setCta(e.target.value)} placeholder="Rezerviši sto"/></label>
+        <div className="dts-template-text-editor">
+          <div className="dts-template-text-head"><div><span>TEKSTOVI NA DIZAJNU</span><strong>{selectedTemplate.name}</strong></div><button type="button" onClick={resetTemplateTexts}>Vrati tekstove</button></div>
+          <div className="dts-template-text-fields">{selectedTemplateConfig.textSlots.map(slot=><label key={slot.key}>{slot.label}{slot.multiline
+            ?<textarea rows={2} value={textSlots[slot.key]??slot.defaultValue} onChange={e=>setTextSlots(current=>({...current,[slot.key]:e.target.value}))}/>
+            :<input value={textSlots[slot.key]??slot.defaultValue} onChange={e=>setTextSlots(current=>({...current,[slot.key]:e.target.value}))}/>}</label>)}</div>
+          {selectedTemplateConfig.itemSlots?.length?<div className="dts-item-slot-editor"><div className="dts-item-slot-title"><span>STAVKE U MENIJU</span><small>Svaki naziv i cena se menjaju posebno.</small></div>{itemSlots.map((item,index)=><div className="dts-item-slot-row" key={index}><b>{index+1}</b><input aria-label={`Naziv stavke ${index+1}`} value={item.title} onChange={e=>setItemSlots(current=>current.map((entry,i)=>i===index?{...entry,title:e.target.value}:entry))}/><input aria-label={`Cena stavke ${index+1}`} value={item.price} onChange={e=>setItemSlots(current=>current.map((entry,i)=>i===index?{...entry,price:e.target.value}:entry))}/></div>)}</div>:null}
+        </div>
         <div className="dts-color-editor">
           <div className="dts-color-title"><span>BOJE ŠABLONA</span><small>Klikni paletu ili izaberi svoje boje.</small></div>
           <div className="dts-palette-row">{colorPalettes.map(palette=><button type="button" key={palette.name} className={primaryColor===palette.primary&&accentColor===palette.accent?'active':''} onClick={()=>{setPrimaryColor(palette.primary);setAccentColor(palette.accent)}} title={palette.name}><i style={{background:palette.primary}}/><i style={{background:palette.accent}}/><span>{palette.name}</span></button>)}</div>
           <div className="dts-color-pickers"><label>Glavna<input type="color" value={primaryColor} onChange={e=>setPrimaryColor(e.target.value)}/><span>{primaryColor}</span></label><label>Akcent<input type="color" value={accentColor} onChange={e=>setAccentColor(e.target.value)}/><span>{accentColor}</span></label></div>
         </div>
         <div className="dts-format"><button className={format==='feed'?'active':''} onClick={()=>setFormat('feed')}>POST 1:1</button><button className={format==='story'?'active':''} onClick={()=>setFormat('story')}>STORY 9:16</button></div>
-        <RestaurantTemplateCanvas className="dts-live-preview" template={template} image={composerImage} headline={headline||selectedDish.name} text={text||selectedDish.description||'Tvoj tekst ovde'} price={priceText} badge={badgeText} cta={cta||'BUY'} primary={primaryColor} accent={accentColor} logoUrl={restaurant.logo_url} format={format}/>
+        <RestaurantTemplateCanvas className="dts-live-preview" template={template} image={composerImage} headline={headline||selectedDish.name} text={text||selectedDish.description||'Tvoj tekst ovde'} price={priceText} badge={badgeText} cta={cta||'BUY'} primary={primaryColor} accent={accentColor} logoUrl={restaurant.logo_url} format={format} textSlots={textSlots} itemSlots={itemSlots}/>
         <button className="dts-primary dts-save-post" disabled={postWorking} onClick={()=>void savePost()}><Save size={17}/>{postWorking?'Čuvam…':editingPostId?'Sačuvaj izmene':'Sačuvaj objavu'}</button>
       </aside>}
     </section>}
@@ -353,7 +407,7 @@ export function SimpleContentStudio({
     {tab==='posts'&&<section className="dts-posts">
       <div className="dts-section-head"><div><span>MOJE OBJAVE</span><h2>Sačuvani dizajni</h2></div><button className="dts-primary compact" onClick={()=>setTab('dishes')}><Plus size={15}/> Nova objava</button></div>
       {recentPosts.length?<div className="dts-post-grid">{recentPosts.map(post=>{const image=resolvePostImage(post);const tpl=(post.generation_meta?.visual_design?.template as TemplateId)||'editorial';const manual=(post.generation_meta?.manual_fields||{}) as Record<string,unknown>;const design=post.generation_meta?.visual_design;const postPrimary=design?.primary_color||restaurant.primary_color||'#073c38';const postAccent=design?.accent_color||restaurant.secondary_color||'#ef7d3a';return <article key={post.id}>
-        <div className="dts-post-art"><RestaurantTemplateCanvas template={tpl} image={image} headline={post.title||'Objava'} text={post.caption||''} price={typeof manual.price==='string'?manual.price:''} badge={typeof manual.badge==='string'?manual.badge:''} cta={post.cta||'BUY'} primary={postPrimary} accent={postAccent}/></div>
+        <div className="dts-post-art"><RestaurantTemplateCanvas template={tpl} image={image} headline={post.title||'Objava'} text={post.caption||''} price={typeof manual.price==='string'?manual.price:''} badge={typeof manual.badge==='string'?manual.badge:''} cta={post.cta||'BUY'} primary={postPrimary} accent={postAccent} textSlots={design?.text_slots||{}} itemSlots={design?.item_slots||[]}/></div>
         <div className="dts-post-info"><div><span className={`status ${post.status}`}>{post.status==='draft'?'Draft':post.status==='approved'?'Spremno':post.status==='published'?'Objavljeno':'Za doradu'}</span><strong>{post.title||'Bez naslova'}</strong></div><div className="dts-post-actions"><button onClick={()=>editPost(post)}><Pencil size={14}/> Izmeni</button><button onClick={()=>void duplicatePost(post)}><Copy size={14}/> Dupliraj</button><button className="schedule" onClick={()=>onNavigate('publish')}><CalendarClock size={14}/> Zakaži</button><button className="danger icon-only" onClick={()=>void deletePost(post)} title="Obriši"><Trash2 size={14}/></button></div></div>
       </article>})}</div>:<div className="dts-empty"><ImageIcon size={34}/><strong>Još nema objava.</strong><span>Dodaj jelo i izaberi prvi šablon.</span><button className="dts-primary compact" onClick={()=>setTab('dishes')}>Kreni od jela</button></div>}
     </section>}
