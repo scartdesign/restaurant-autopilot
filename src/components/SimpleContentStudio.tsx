@@ -20,8 +20,8 @@ type TemplateOption={
 }
 
 const templates:TemplateOption[]=[
-  {id:'luxe',name:'Today’s Menu Curve',category:'Premium',kicker:"TODAY'S MENU",note:'Tamni premium dizajn za večeru i fine dining.',badge:'TOP'},
-  {id:'editorial',name:'Good Morning',category:'Breakfast',kicker:'GOOD MORNING',note:'Elegantna fotografija sa potpisnim naslovom.',badge:'TOP'},
+  {id:'luxe',name:'Good Morning',category:'Premium',kicker:"TODAY'S MENU",note:'Tamni premium dizajn za večeru i fine dining.',badge:'TOP'},
+  {id:'editorial',name:'Today’s Menu Curve',category:'Breakfast',kicker:'GOOD MORNING',note:'Elegantna fotografija sa potpisnim naslovom.',badge:'TOP'},
   {id:'hero-menu',name:'Today’s Menu Circle',category:'Signature',kicker:'GRILLED SPECIAL',note:'Velika fotografija i jedan jak signature naslov.',badge:'TOP'},
   {id:'minimal',name:'Breakfast Special',category:'Modern',kicker:'FRESH TODAY',note:'Čist i moderan layout za novo jelo.'},
   {id:'bold',name:'Today’s Menu Discount',category:'Promo',kicker:'SPECIAL OFFER',note:'Jak discount badge i prodajni CTA.'},
