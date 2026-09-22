@@ -342,7 +342,7 @@ function App() {
     if (tab === 'notifications') await loadUnreadNotifications()
     if (restaurant) {
       if (tab === 'launch' || tab === 'dashboard' || tab === 'creative' || tab === 'publish' || tab === 'studio' || tab === 'insights') await loadPosts(restaurant.id)
-      if (tab === 'launch' || tab === 'creative' || tab === 'menu' || tab === 'promotions' || tab === 'studio' || tab === 'brand') await loadMenu(restaurant.id)
+      if (tab === 'launch' || tab === 'dashboard' || tab === 'creative' || tab === 'menu' || tab === 'promotions' || tab === 'studio' || tab === 'brand') await loadMenu(restaurant.id)
       if (tab === 'creative') await loadAccountState()
     }
     setActiveTab(tab)
@@ -471,7 +471,7 @@ function App() {
       {notice&&<div className="notice"><span>{notice}</span><button onClick={()=>setNotice('')}><X size={15}/></button></div>}
       <Suspense fallback={<LazyScreenFallback label="Učitavam modul…" />}>
       {activeTab==='launch'&&<RestorappDashboardV2 restaurant={restaurant} menuItems={menuItems} posts={posts} onCreate={()=>void openTab('creative')} onNavigate={(tab)=>void openTab(tab as Tab)} onFirstWeek={createFirstWeek}/>} 
-      {activeTab==='dashboard'&&<SimpleContentStudio restaurant={restaurant} posts={posts} onChanged={refreshContent} setNotice={setNotice}/>} 
+      {activeTab==='dashboard'&&<SimpleContentStudio restaurant={restaurant} userId={session.user.id} menuItems={menuItems} posts={posts} onChanged={refreshContent} onNavigate={(target)=>void openTab(target)} setNotice={setNotice}/>} 
       {activeTab==='creative'&&<CreativeHub restaurant={restaurant} menuItems={menuItems} entitlement={isSuperadmin?{active:true,is_superadmin:true,features:{campaign_pack:true}}:entitlement} onChanged={refreshContent} setNotice={setNotice}/>} 
       {activeTab==='studio'&&<VisualStudio restaurant={restaurant} menuItems={menuItems} posts={posts} setNotice={setNotice} onChanged={()=>loadPosts(restaurant.id)}/>} 
       {activeTab==='brand'&&<BrandKit restaurant={restaurant} menuItems={menuItems} onSaved={refreshRestaurant} setNotice={setNotice}/>} 
