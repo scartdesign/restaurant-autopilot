@@ -111,6 +111,7 @@ jobs:
           grep -Fq 'STAVKE U MENIJU' /tmp/demo.js
           grep -Fq 'FONTOVI' /tmp/demo.js
           grep -Fq 'Pisani font' /tmp/demo.js
+          grep -Fq 'Dug tekst se automatski uklapa.' /tmp/demo.js
           CONTENT_CHUNK=$(grep -oE 'SimpleContentStudio-[A-Za-z0-9_-]+\.js' /tmp/app.js | head -1)
           test -n "$CONTENT_CHUNK"
           curl --max-time 20 --retry 4 --retry-delay 2 --retry-all-errors -fsSL "$BASE/assets/$CONTENT_CHUNK" -o /tmp/content.js
@@ -143,6 +144,7 @@ jobs:
           grep -Fq 'FONTOVI' /tmp/content.js
           grep -Fq 'Osnovni font' /tmp/content.js
           grep -Fq 'Pisani font' /tmp/content.js
+          grep -Fq 'Dug tekst se automatski uklapa.' /tmp/content.js
           grep -Fq 'Signature' /tmp/content.js
           SHARED_CONTENT_CHUNK=$(grep -oE 'simple-content-studio-[A-Za-z0-9_-]+\.js' /tmp/app.js | head -1)
           test -n "$SHARED_CONTENT_CHUNK"
@@ -151,6 +153,8 @@ jobs:
           grep -Fq 'Bold Display' /tmp/content-shared.js
           grep -Fq -- '--rt-base-font' /tmp/content-shared.js
           grep -Fq -- '--rt-script-font' /tmp/content-shared.js
+          grep -Fq 'rtpl-fit-xlong' /tmp/content-shared.js
+          grep -Fq 'rtpl-safe-copy' /tmp/content-shared.js
           PUBLISH_CHUNK=$(grep -oE 'PublishCenter-[A-Za-z0-9_-]+\.js' /tmp/app.js | head -1)
           test -n "$PUBLISH_CHUNK"
           curl --max-time 20 --retry 4 --retry-delay 2 --retry-all-errors -fsSL "$BASE/assets/$PUBLISH_CHUNK" -o /tmp/publish.js
