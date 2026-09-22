@@ -1,4 +1,6 @@
-.restaurant-template-canvas{--rt-primary:#063c38;--rt-accent:#ef7b3a;position:relative;overflow:hidden;isolation:isolate;background:var(--rt-primary);color:#fff;aspect-ratio:1/1;font-family:var(--rt-base-font,Arial,Helvetica,sans-serif)}
+@import url('https://fonts.googleapis.com/css2?family=Allura&family=Bebas+Neue&family=Caveat:wght@500;600&family=DM+Sans:wght@400;500;600;700;800&family=DM+Serif+Display&family=Dancing+Script:wght@500;600&family=Great+Vibes&family=Manrope:wght@400;500;600;700;800&family=Parisienne&family=Playfair+Display:wght@500;600;700&display=swap');
+
+.restaurant-template-canvas{--rt-primary:#063c38;--rt-accent:#ef7b3a;position:relative;overflow:hidden;isolation:isolate;background:var(--rt-primary);color:#fff;aspect-ratio:1/1;font-family:var(--rt-base-font,"DM Sans",Arial,sans-serif);text-rendering:geometricPrecision;-webkit-font-smoothing:antialiased}
 .restaurant-template-canvas.story{aspect-ratio:9/16}
 .restaurant-template-canvas *{box-sizing:border-box}
 .rtpl-photo{position:absolute;background-size:cover;background-position:center}
