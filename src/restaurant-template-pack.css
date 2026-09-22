@@ -1,4 +1,6 @@
 .restaurant-template-canvas{--rt-primary:#063c38;--rt-accent:#ef7b3a;position:relative;overflow:hidden;isolation:isolate;background:var(--rt-primary);color:#fff;aspect-ratio:1/1;font-family:var(--rt-base-font,Arial,Helvetica,sans-serif)}
+.restaurant-template-canvas.feed{aspect-ratio:4/5}
+.restaurant-template-canvas.square{aspect-ratio:1/1}
 .restaurant-template-canvas.story{aspect-ratio:9/16}
 .restaurant-template-canvas *{box-sizing:border-box}
 .rtpl-photo{position:absolute;background-size:cover;background-position:center}
@@ -119,6 +121,8 @@
 
 /* Gallery/live wrappers */
 .dts-template-art .restaurant-template-canvas,.dts-post-art .restaurant-template-canvas{width:100%;height:100%;aspect-ratio:auto}
-.dts-live-preview.restaurant-template-canvas{width:100%;height:auto;aspect-ratio:1/1}
+.dts-live-preview.restaurant-template-canvas{width:100%;height:auto}
+.dts-live-preview.restaurant-template-canvas.feed{aspect-ratio:4/5}
+.dts-live-preview.restaurant-template-canvas.square{aspect-ratio:1/1}
 .dts-live-preview.restaurant-template-canvas.story{aspect-ratio:9/16}
 @media(max-width:620px){.rtpl-script{letter-spacing:-.05em}.rtpl-discount strong{font-size:16px}.rtpl-discount small{font-size:6px}}
