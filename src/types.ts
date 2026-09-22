@@ -85,6 +85,8 @@ export type VisualDesignMeta = {
   headline_tracking?: number
   headline_line_height?: number
   text_align?: 'left' | 'center' | 'right'
+  text_slots?: Record<string, string>
+  item_slots?: Array<{ title: string; price: string }>
   saved_at?: string
 }
 
