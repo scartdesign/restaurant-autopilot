@@ -46,8 +46,8 @@ function fitClass(value:string){
   return ''
 }
 
-function Script({children,className='',fitValue='' }:{children:ReactNode;className?:string;fitValue?:string}){
-  return <span className={`rtpl-script ${fitClass(fitValue)} ${className}`}>{children}</span>
+function Script({children,className='' }:{children:ReactNode;className?:string;fitValue?:string}){
+  return <span className={`rtpl-script ${className}`}>{children}</span>
 }
 
 export function RestaurantTemplateCanvas({
