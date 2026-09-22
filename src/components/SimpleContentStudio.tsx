@@ -11,6 +11,7 @@ import { baseFontFromLegacyPair, baseFontOptions, baseFontStack, defaultBaseFont
 type StudioTab='dishes'|'templates'|'posts'
 type TemplateId=NonNullable<VisualDesignMeta['template']>
 type Format='feed'|'story'
+type EditorPanel='text'|'style'|'fonts'
 
 type TemplateOption={
   id:TemplateId
@@ -125,6 +126,7 @@ export function SimpleContentStudio({
   const[composerExistingImage,setComposerExistingImage]=useState('')
   const[editingPostId,setEditingPostId]=useState('')
   const[postWorking,setPostWorking]=useState(false)
+  const[editorPanel,setEditorPanel]=useState<EditorPanel>('text')
 
   const selectedDish=useMemo(()=>menuItems.find(item=>item.id===selectedDishId)||null,[menuItems,selectedDishId])
   const composerImage=composerPreview||composerExistingImage||selectedDish?.image_url||''
@@ -236,7 +238,7 @@ export function SimpleContentStudio({
     setItemSlots(seedItemSlots(nextTemplate,menuItems,item))
     setPrimaryColor(restaurant.primary_color||'#073c38');setAccentColor(restaurant.secondary_color||'#ef7d3a')
     setBaseFont(defaultBaseFont(nextTemplate));setScriptFont('signature')
-    setEditingPostId('');setTab('templates')
+    setEditingPostId('');setEditorPanel('text');setTab('templates')
     window.scrollTo({top:0,behavior:'smooth'})
   }
   function chooseComposerImage(event:ChangeEvent<HTMLInputElement>){
@@ -270,7 +272,7 @@ export function SimpleContentStudio({
     setAccentColor(post.generation_meta?.visual_design?.accent_color||restaurant.secondary_color||'#ef7d3a')
     setBaseFont((design?.base_font as BaseFontId)||baseFontFromLegacyPair(design?.font_pair))
     setScriptFont((design?.script_font as ScriptFontId)||'signature')
-    setTab('templates');window.scrollTo({top:0,behavior:'smooth'})
+    setEditorPanel('text');setTab('templates');window.scrollTo({top:0,behavior:'smooth'})
   }
 
   async function savePost(){
@@ -385,32 +387,61 @@ export function SimpleContentStudio({
         </article>)}</div>}
       </div>
 
-      {selectedDish&&<aside className="dts-composer">
-        <div className="dts-composer-head"><span>OBJAVA</span><strong>{editingPostId?'Izmeni objavu':'Dovrši objavu'}</strong></div>
-        <label className="dts-composer-photo">{composerImage?<img src={composerImage} alt=""/>:<ImageIcon size={28}/>}<input type="file" accept="image/jpeg,image/png,image/webp" onChange={chooseComposerImage}/><span><Upload size={13}/> Promeni sliku</span></label>
-        <label>Naslov<input maxLength={56} value={headline} onChange={e=>setHeadline(e.target.value)} placeholder="Današnja preporuka"/></label>
-        <label>Tekst<textarea rows={4} maxLength={360} value={text} onChange={e=>setText(e.target.value)} placeholder="Kratka poruka gostima…"/></label>
-        <div className="dts-two"><label>Cena / oznaka<input value={priceText} onChange={e=>setPriceText(e.target.value)} placeholder="890 RSD"/></label><label>Badge<input value={badgeText} onChange={e=>setBadgeText(e.target.value)} placeholder="20% OFF"/></label></div>
-        <label>CTA<input value={cta} onChange={e=>setCta(e.target.value)} placeholder="Rezerviši sto"/></label>
-        <div className="dts-template-text-editor">
-          <div className="dts-template-text-head"><div><span>TEKSTOVI NA DIZAJNU</span><strong>{selectedTemplate.name}</strong><small>Naslovi imaju bezbedan limit da dizajn ostane uredan.</small></div><button type="button" onClick={resetTemplateTexts}>Vrati tekstove</button></div>
-          <div className="dts-template-text-fields">{selectedTemplateConfig.textSlots.map(slot=><label key={slot.key}>{slot.label}{slot.multiline
-            ?<textarea rows={2} maxLength={slot.maxLength} value={textSlots[slot.key]??slot.defaultValue} onChange={e=>setTextSlots(current=>({...current,[slot.key]:e.target.value}))}/>
-            :<input maxLength={slot.maxLength} value={textSlots[slot.key]??slot.defaultValue} onChange={e=>setTextSlots(current=>({...current,[slot.key]:e.target.value}))}/>}</label>)}</div>
-          {selectedTemplateConfig.itemSlots?.length?<div className="dts-item-slot-editor"><div className="dts-item-slot-title"><span>STAVKE U MENIJU</span><small>Svaki naziv i cena se menjaju posebno.</small></div>{itemSlots.map((item,index)=><div className="dts-item-slot-row" key={index}><b>{index+1}</b><input aria-label={`Naziv stavke ${index+1}`} value={item.title} onChange={e=>setItemSlots(current=>current.map((entry,i)=>i===index?{...entry,title:e.target.value}:entry))}/><input aria-label={`Cena stavke ${index+1}`} value={item.price} onChange={e=>setItemSlots(current=>current.map((entry,i)=>i===index?{...entry,price:e.target.value}:entry))}/></div>)}</div>:null}
+      {selectedDish&&<aside className="dts-composer dts-composer-premium">
+        <div className="dts-composer-head">
+          <div><span>LIVE STUDIO</span><strong>{selectedTemplate.name}</strong></div>
+          <span className="dts-live-dot">UŽIVO</span>
         </div>
-        <div className="dts-color-editor">
-          <div className="dts-color-title"><span>BOJE ŠABLONA</span><small>Klikni paletu ili izaberi svoje boje.</small></div>
-          <div className="dts-palette-row">{colorPalettes.map(palette=><button type="button" key={palette.name} className={primaryColor===palette.primary&&accentColor===palette.accent?'active':''} onClick={()=>{setPrimaryColor(palette.primary);setAccentColor(palette.accent)}} title={palette.name}><i style={{background:palette.primary}}/><i style={{background:palette.accent}}/><span>{palette.name}</span></button>)}</div>
-          <div className="dts-color-pickers"><label>Glavna<input type="color" value={primaryColor} onChange={e=>setPrimaryColor(e.target.value)}/><span>{primaryColor}</span></label><label>Akcent<input type="color" value={accentColor} onChange={e=>setAccentColor(e.target.value)}/><span>{accentColor}</span></label></div>
+
+        <div className="dts-preview-shell">
+          <div className="dts-preview-topbar">
+            <div><small>FINALNI PREVIEW</small><strong>{format==='feed'?'Instagram post · 1:1':'Story · 9:16'}</strong></div>
+            <div className="dts-format compact"><button className={format==='feed'?'active':''} onClick={()=>setFormat('feed')}>1:1</button><button className={format==='story'?'active':''} onClick={()=>setFormat('story')}>9:16</button></div>
+          </div>
+          <RestaurantTemplateCanvas className="dts-live-preview" template={template} image={composerImage} headline={headline||selectedDish.name} text={text||selectedDish.description||'Tvoj tekst ovde'} price={priceText} badge={badgeText} cta={cta||'BUY'} primary={primaryColor} accent={accentColor} logoUrl={restaurant.logo_url} format={format} textSlots={textSlots} itemSlots={itemSlots} baseFont={baseFont} scriptFont={scriptFont}/>
         </div>
-        <div className="dts-font-editor">
-          <div className="dts-font-title"><span>FONTOVI</span><small>Osnovni tekst i pisani naslov menjaju se odvojeno.</small></div>
-          <div className="dts-font-group"><strong>Osnovni font</strong><div className="dts-font-options">{baseFontOptions.map(font=><button type="button" key={font.id} className={baseFont===font.id?'active':''} onClick={()=>setBaseFont(font.id)}><b style={{fontFamily:baseFontStack(font.id)}}>{font.sample}</b><span>{font.name}</span></button>)}</div></div>
-          <div className="dts-font-group"><strong>Pisani font</strong><div className="dts-font-options script">{scriptFontOptions.map(font=><button type="button" key={font.id} className={scriptFont===font.id?'active':''} onClick={()=>setScriptFont(font.id)}><b style={{fontFamily:scriptFontStack(font.id)}}>{font.sample}</b><span>{font.name}</span></button>)}</div></div>
+
+        <div className="dts-editor-tabs">
+          <button className={editorPanel==='text'?'active':''} onClick={()=>setEditorPanel('text')}>Tekst</button>
+          <button className={editorPanel==='style'?'active':''} onClick={()=>setEditorPanel('style')}>Stil</button>
+          <button className={editorPanel==='fonts'?'active':''} onClick={()=>setEditorPanel('fonts')}>Fontovi</button>
         </div>
-        <div className="dts-format"><button className={format==='feed'?'active':''} onClick={()=>setFormat('feed')}>POST 1:1</button><button className={format==='story'?'active':''} onClick={()=>setFormat('story')}>STORY 9:16</button></div>
-        <RestaurantTemplateCanvas className="dts-live-preview" template={template} image={composerImage} headline={headline||selectedDish.name} text={text||selectedDish.description||'Tvoj tekst ovde'} price={priceText} badge={badgeText} cta={cta||'BUY'} primary={primaryColor} accent={accentColor} logoUrl={restaurant.logo_url} format={format} textSlots={textSlots} itemSlots={itemSlots} baseFont={baseFont} scriptFont={scriptFont}/>
+
+        {editorPanel==='text'&&<div className="dts-editor-panel">
+          <label className="dts-composer-photo compact-photo">{composerImage?<img src={composerImage} alt=""/>:<ImageIcon size={28}/>}<input type="file" accept="image/jpeg,image/png,image/webp" onChange={chooseComposerImage}/><span><Upload size={13}/> Promeni fotografiju</span></label>
+          <label>Naslov<input maxLength={56} value={headline} onChange={e=>setHeadline(e.target.value)} placeholder="Današnja preporuka"/></label>
+          <label>Opis<textarea rows={3} maxLength={360} value={text} onChange={e=>setText(e.target.value)} placeholder="Kratka poruka gostima…"/></label>
+          <div className="dts-two"><label>Cena<input value={priceText} onChange={e=>setPriceText(e.target.value)} placeholder="890 RSD"/></label><label>Popust / badge<input value={badgeText} onChange={e=>setBadgeText(e.target.value)} placeholder="20% OFF"/></label></div>
+          <label>CTA<input value={cta} onChange={e=>setCta(e.target.value)} placeholder="Rezerviši sto"/></label>
+
+          <details className="dts-advanced-copy">
+            <summary>Dodatni tekstovi šablona <span>{selectedTemplate.name}</span></summary>
+            <div className="dts-template-text-editor">
+              <div className="dts-template-text-head"><div><span>TEKSTOVI NA DIZAJNU</span><small>Menjaj samo ono što ti treba.</small></div><button type="button" onClick={resetTemplateTexts}>Vrati</button></div>
+              <div className="dts-template-text-fields">{selectedTemplateConfig.textSlots.map(slot=><label key={slot.key}>{slot.label}{slot.multiline
+                ?<textarea rows={2} maxLength={slot.maxLength} value={textSlots[slot.key]??slot.defaultValue} onChange={e=>setTextSlots(current=>({...current,[slot.key]:e.target.value}))}/>
+                :<input maxLength={slot.maxLength} value={textSlots[slot.key]??slot.defaultValue} onChange={e=>setTextSlots(current=>({...current,[slot.key]:e.target.value}))}/>}</label>)}</div>
+              {selectedTemplateConfig.itemSlots?.length?<div className="dts-item-slot-editor"><div className="dts-item-slot-title"><span>STAVKE U MENIJU</span><small>Naziv i cena svake stavke.</small></div>{itemSlots.map((item,index)=><div className="dts-item-slot-row" key={index}><b>{index+1}</b><input aria-label={`Naziv stavke ${index+1}`} value={item.title} onChange={e=>setItemSlots(current=>current.map((entry,i)=>i===index?{...entry,title:e.target.value}:entry))}/><input aria-label={`Cena stavke ${index+1}`} value={item.price} onChange={e=>setItemSlots(current=>current.map((entry,i)=>i===index?{...entry,price:e.target.value}:entry))}/></div>)}</div>:null}
+            </div>
+          </details>
+        </div>}
+
+        {editorPanel==='style'&&<div className="dts-editor-panel">
+          <div className="dts-color-editor premium-box">
+            <div className="dts-color-title"><span>PALETA</span><small>Jedan klik menja ceo vizuelni identitet.</small></div>
+            <div className="dts-palette-row">{colorPalettes.map(palette=><button type="button" key={palette.name} className={primaryColor===palette.primary&&accentColor===palette.accent?'active':''} onClick={()=>{setPrimaryColor(palette.primary);setAccentColor(palette.accent)}} title={palette.name}><i style={{background:palette.primary}}/><i style={{background:palette.accent}}/><span>{palette.name}</span></button>)}</div>
+            <div className="dts-color-pickers"><label>Glavna<input type="color" value={primaryColor} onChange={e=>setPrimaryColor(e.target.value)}/><span>{primaryColor}</span></label><label>Akcent<input type="color" value={accentColor} onChange={e=>setAccentColor(e.target.value)}/><span>{accentColor}</span></label></div>
+          </div>
+        </div>}
+
+        {editorPanel==='fonts'&&<div className="dts-editor-panel">
+          <div className="dts-font-editor premium-box">
+            <div className="dts-font-title"><span>TIPOGRAFIJA</span><small>Probrane kombinacije koje rade u restoran dizajnu.</small></div>
+            <div className="dts-font-group"><strong>Osnovni font</strong><div className="dts-font-options">{baseFontOptions.map(font=><button type="button" key={font.id} className={baseFont===font.id?'active':''} onClick={()=>setBaseFont(font.id)}><b style={{fontFamily:baseFontStack(font.id)}}>{font.sample}</b><span>{font.name}</span></button>)}</div></div>
+            <div className="dts-font-group"><strong>Pisani font</strong><div className="dts-font-options script">{scriptFontOptions.map(font=><button type="button" key={font.id} className={scriptFont===font.id?'active':''} onClick={()=>setScriptFont(font.id)}><b style={{fontFamily:scriptFontStack(font.id)}}>{font.sample}</b><span>{font.name}</span></button>)}</div></div>
+          </div>
+        </div>}
+
         <button className="dts-primary dts-save-post" disabled={postWorking} onClick={()=>void savePost()}><Save size={17}/>{postWorking?'Čuvam…':editingPostId?'Sačuvaj izmene':'Sačuvaj objavu'}</button>
       </aside>}
     </section>}

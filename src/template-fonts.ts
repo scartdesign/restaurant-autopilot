@@ -2,19 +2,19 @@ export type BaseFontId='modern-sans'|'soft-sans'|'elegant-serif'|'classic-serif'
 export type ScriptFontId='signature'|'handwritten'|'elegant-script'|'casual-script'|'retro-script'
 
 export const baseFontOptions:Array<{id:BaseFontId;name:string;stack:string;sample:string}>=[
-  {id:'modern-sans',name:'Modern Sans',stack:'Arial, Helvetica, sans-serif',sample:'Aa'},
-  {id:'soft-sans',name:'Soft Sans',stack:'"Trebuchet MS", Arial, sans-serif',sample:'Aa'},
-  {id:'elegant-serif',name:'Elegant Serif',stack:'Georgia, "Times New Roman", serif',sample:'Aa'},
-  {id:'classic-serif',name:'Classic Serif',stack:'"Times New Roman", Times, serif',sample:'Aa'},
-  {id:'bold-display',name:'Bold Display',stack:'Impact, "Arial Black", Arial, sans-serif',sample:'Aa'},
+  {id:'modern-sans',name:'DM Sans',stack:'"DM Sans", Arial, sans-serif',sample:'Aa'},
+  {id:'soft-sans',name:'Manrope',stack:'Manrope, "DM Sans", Arial, sans-serif',sample:'Aa'},
+  {id:'elegant-serif',name:'Playfair',stack:'"Playfair Display", Georgia, serif',sample:'Aa'},
+  {id:'classic-serif',name:'DM Serif',stack:'"DM Serif Display", Georgia, serif',sample:'Aa'},
+  {id:'bold-display',name:'Bebas',stack:'"Bebas Neue", Impact, sans-serif',sample:'Aa'},
 ]
 
 export const scriptFontOptions:Array<{id:ScriptFontId;name:string;stack:string;sample:string}>=[
-  {id:'signature',name:'Signature',stack:'"Brush Script MT", "Segoe Script", "URW Chancery L", cursive',sample:'Today’s Menu'},
-  {id:'handwritten',name:'Handwritten',stack:'"Segoe Script", "Lucida Handwriting", "Brush Script MT", cursive',sample:'Today’s Menu'},
-  {id:'elegant-script',name:'Elegant Script',stack:'"Snell Roundhand", "Apple Chancery", "URW Chancery L", cursive',sample:'Today’s Menu'},
-  {id:'casual-script',name:'Casual Script',stack:'"Bradley Hand", "Segoe Print", "Comic Sans MS", cursive',sample:'Today’s Menu'},
-  {id:'retro-script',name:'Retro Script',stack:'"Lucida Handwriting", "Brush Script MT", "Segoe Script", cursive',sample:'Today’s Menu'},
+  {id:'signature',name:'Allura',stack:'Allura, "Brush Script MT", cursive',sample:'Today’s Menu'},
+  {id:'handwritten',name:'Dancing Script',stack:'"Dancing Script", "Segoe Script", cursive',sample:'Today’s Menu'},
+  {id:'elegant-script',name:'Great Vibes',stack:'"Great Vibes", Allura, cursive',sample:'Today’s Menu'},
+  {id:'casual-script',name:'Caveat',stack:'Caveat, "Segoe Print", cursive',sample:'Today’s Menu'},
+  {id:'retro-script',name:'Parisienne',stack:'Parisienne, Allura, cursive',sample:'Today’s Menu'},
 ]
 
 export function baseFontStack(id?:string){

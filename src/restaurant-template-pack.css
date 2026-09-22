@@ -1,4 +1,6 @@
-.restaurant-template-canvas{--rt-primary:#063c38;--rt-accent:#ef7b3a;position:relative;overflow:hidden;isolation:isolate;background:var(--rt-primary);color:#fff;aspect-ratio:1/1;font-family:var(--rt-base-font,Arial,Helvetica,sans-serif)}
+@import url('https://fonts.googleapis.com/css2?family=Allura&family=Bebas+Neue&family=Caveat:wght@500;600&family=DM+Sans:wght@400;500;600;700;800&family=DM+Serif+Display&family=Dancing+Script:wght@500;600&family=Great+Vibes&family=Manrope:wght@400;500;600;700;800&family=Parisienne&family=Playfair+Display:wght@500;600;700&display=swap');
+
+.restaurant-template-canvas{--rt-primary:#063c38;--rt-accent:#ef7b3a;position:relative;overflow:hidden;isolation:isolate;background:var(--rt-primary);color:#fff;aspect-ratio:1/1;font-family:var(--rt-base-font,"DM Sans",Arial,sans-serif);text-rendering:geometricPrecision;-webkit-font-smoothing:antialiased}
 .restaurant-template-canvas.story{aspect-ratio:9/16}
 .restaurant-template-canvas *{box-sizing:border-box}
 .rtpl-photo{position:absolute;background-size:cover;background-position:center}
@@ -145,3 +147,87 @@
 .rtpl-lunch-time .rtpl-sale-left .rtpl-script{white-space:normal}
 .rtpl-poster .rtpl-steak-panel{overflow:visible}
 .rtpl-poster .rtpl-steak-panel .rtpl-script{line-height:1.02;padding-top:.08em;padding-bottom:.16em}
+
+
+/* Premium refinement — cleaner, more commercial restaurant compositions */
+.rtpl-script{font-weight:400;text-shadow:0 2px 14px rgba(0,0,0,.16);letter-spacing:0}
+.rtpl-discount{width:18%;border:0;box-shadow:0 10px 24px rgba(0,0,0,.18)}
+.rtpl-discount strong{font-family:"DM Sans",Arial,sans-serif;font-weight:800;letter-spacing:-.04em}
+.rtpl-discount small{font-family:"DM Sans",Arial,sans-serif;font-weight:800;letter-spacing:.08em}
+.rtpl-logo{border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.14)}
+
+/* Good Morning: cleaner editorial frame */
+.rtpl-luxe .rtpl-frame{inset:5.5%;border-color:color-mix(in srgb,var(--rt-accent) 62%,white)}
+.rtpl-luxe .photo-main{left:8%;right:8%;top:8%;height:57%}
+.rtpl-luxe .rtpl-bottom-band{left:8%;right:8%;bottom:7%;height:31%;padding:4% 7%;background:color-mix(in srgb,var(--rt-primary) 97%,black)}
+.rtpl-luxe .rtpl-bottom-band:before{left:0;right:0;height:1.5px}
+.rtpl-luxe .rtpl-bottom-band .rtpl-script{margin-top:-13%;font-size:clamp(28px,5.6vw,54px)}
+.rtpl-luxe .rtpl-bottom-band p{font-family:"DM Sans",Arial,sans-serif;letter-spacing:.01em}
+
+/* Editorial curve: stronger hierarchy and cleaner image frame */
+.rtpl-editorial .photo-center{left:11%;right:8%;top:27%;bottom:8%;border:4px solid rgba(255,255,255,.96);box-shadow:0 12px 30px rgba(0,0,0,.15)}
+.rtpl-editorial .rtpl-title-top{left:25%;top:4%;font-size:clamp(28px,5.9vw,56px)}
+.rtpl-editorial .rtpl-mini-copy{left:35%;right:11%;bottom:10%;padding:2.5% 3.5%;backdrop-filter:blur(4px);background:rgba(10,25,22,.62)}
+
+/* Circle menu: less clutter, more premium negative space */
+.rtpl-hero-menu .blob-a{width:54%;height:54%}.rtpl-hero-menu .blob-b{width:68%;height:66%}
+.rtpl-hero-menu .rtpl-script-right{right:6%;bottom:11%;font-size:clamp(30px,5.6vw,54px)}
+.rtpl-hero-menu .rtpl-right-copy{left:7%;right:48%;bottom:8%;font-family:"DM Sans",Arial,sans-serif}
+
+/* Breakfast special: stronger panel and cleaner CTA area */
+.rtpl-minimal .rtpl-diagonal-panel{left:-12%;bottom:-6%;width:72%;height:65%;clip-path:polygon(0 26%,100% 0,77% 100%,0 100%)}
+.rtpl-minimal .rtpl-breakfast{left:9%;bottom:23%;font-size:clamp(30px,5.6vw,54px)}
+.rtpl-minimal .rtpl-left-copy{left:8%;right:49%;bottom:7%;font-family:"DM Sans",Arial,sans-serif}
+
+/* Today menu discount: simpler typographic campaign */
+.rtpl-bold .rtpl-huge-off{left:13%;top:4%;font-size:clamp(36px,7vw,70px);transform:rotate(-4deg)}
+.rtpl-bold .rtpl-bottom-strip{left:24%;min-height:18%;padding:3.5% 5%}
+.rtpl-bold .rtpl-bottom-strip .rtpl-script{font-size:clamp(28px,4.7vw,46px)}
+
+/* Grilled special: refined glass panel instead of heavy blob */
+.rtpl-poster .outer{inset:3.5%;border-width:2px}.rtpl-poster .inner{inset:5.5%;border:1px solid rgba(255,255,255,.72)}
+.rtpl-poster .photo-inset{left:6%;right:6%;top:6%;bottom:6%}
+.rtpl-poster .rtpl-steak-panel{left:7%;right:7%;bottom:7%;min-height:27%;padding:4% 6%;background:linear-gradient(180deg,rgba(5,45,41,.78),rgba(5,45,41,.94));border-radius:48% 48% 0 0/25% 25% 0 0;backdrop-filter:blur(5px)}
+.rtpl-poster .rtpl-steak-panel .rtpl-script{font-size:clamp(30px,5.4vw,54px)}
+
+/* Breakfast card: make it look like a designed menu card */
+.rtpl-split .rtpl-label-white{left:33%;top:4%;padding:1.6% 6%;box-shadow:0 6px 16px rgba(0,0,0,.1)}
+.rtpl-split .rtpl-split-script{left:18%;right:18%;top:11%;font-size:clamp(27px,5vw,48px)}
+.rtpl-split .rtpl-white-card{left:9%;right:9%;top:28%;min-height:20%;padding:4.5% 8%;box-shadow:0 10px 22px rgba(0,0,0,.14)}
+.rtpl-split .photo-bottom{left:13%;right:13%;bottom:5%;height:47%;border:4px solid #fff;outline:1px solid var(--rt-accent)}
+
+/* Food Menu Grid: premium menu tiles */
+.rtpl-promo-badge .rtpl-grid-script{top:3%;font-size:clamp(30px,5.4vw,54px)}
+.rtpl-promo-badge .photo-oval{left:20%;right:20%;top:11%;height:43%;border:4px solid rgba(255,255,255,.96);box-shadow:0 12px 28px rgba(0,0,0,.16)}
+.rtpl-promo-badge .rtpl-price-grid{left:17%;right:17%;bottom:14%;height:33%;gap:2.5%}
+.rtpl-promo-badge .rtpl-price-grid>div{padding:12% 7%;border:0;border-radius:2px;box-shadow:0 8px 18px rgba(0,0,0,.12)}
+.rtpl-promo-badge .rtpl-price-grid strong{font-family:"DM Sans",Arial,sans-serif;font-weight:800;color:#111}
+.rtpl-promo-badge .rtpl-grid-footer{bottom:5%;opacity:.78}
+
+/* Diagonal menu: quieter premium panel */
+.rtpl-premium-grid .rtpl-black-cut{width:50%;background:linear-gradient(155deg,rgba(7,15,13,.88),color-mix(in srgb,var(--rt-primary) 94%,black))}
+.rtpl-premium-grid .rtpl-menu-script{right:7%;top:17%;font-size:clamp(30px,5.1vw,50px)}
+.rtpl-premium-grid .rtpl-menu-copy{right:7%;bottom:7%;width:34%;font-family:"DM Sans",Arial,sans-serif}
+
+/* Pizza Special: remove collage clutter, keep one hero photo + editorial side panel */
+.rtpl-bold-offer .rtpl-photo-strip{display:none}
+.rtpl-bold-offer .photo-box{left:5%;top:8%;width:61%;height:84%;border:0;box-shadow:0 14px 32px rgba(0,0,0,.18)}
+.rtpl-bold-offer .rtpl-side-panel{right:0;top:0;bottom:0;width:45%;padding:17% 6% 7%;background:linear-gradient(180deg,color-mix(in srgb,var(--rt-primary) 97%,black),color-mix(in srgb,var(--rt-primary) 88%,black))}
+.rtpl-bold-offer .rtpl-side-panel:before{content:"";position:absolute;left:0;top:9%;bottom:9%;width:2px;background:var(--rt-accent)}
+.rtpl-bold-offer .rtpl-side-panel .rtpl-script{font-size:clamp(30px,5vw,50px);line-height:.9;text-align:left;max-width:100%}
+.rtpl-bold-offer .rtpl-side-panel p{left:13%;right:10%;bottom:7%;font-family:"DM Sans",Arial,sans-serif;line-height:1.35}
+.rtpl-bold-offer .rtpl-discount{right:9%;top:50%;width:20%}
+
+/* Annual Mega Sale / lunch promo: bold but controlled */
+.rtpl-lunch-time .photo-right{width:61%;background-position:center}
+.rtpl-lunch-time .rtpl-sale-left{width:58%;padding:11% 7% 7%;background:linear-gradient(108deg,color-mix(in srgb,var(--rt-primary) 98%,black) 0 74%,transparent 74%)}
+.rtpl-lunch-time .rtpl-sale-left .rtpl-script{font-size:clamp(31px,5.4vw,54px);font-weight:400;line-height:.88;max-width:85%}
+.rtpl-lunch-time .rtpl-sale-left .rtpl-discount{left:11%;bottom:24%;width:20%}
+.rtpl-lunch-time .rtpl-sale-left p{left:8%;bottom:7%;width:57%;font-family:"DM Sans",Arial,sans-serif;line-height:1.35;opacity:.9}
+.rtpl-lunch-time .rtpl-sale-slash{left:46%;width:1.5px}
+
+/* Today special: cleaner collage */
+.rtpl-family .rtpl-top-bar{height:15%}
+.rtpl-family .rtpl-special-title{left:6%;top:6%;font-size:clamp(28px,5vw,50px)}
+.rtpl-family .photo-small{left:5%;bottom:5%;width:41%;height:39%;border:3px solid #fff;box-shadow:0 10px 24px rgba(0,0,0,.18)}
+.rtpl-family .rtpl-special-copy{width:56%;height:32%;padding:11% 6% 5%;font-family:"DM Sans",Arial,sans-serif}
