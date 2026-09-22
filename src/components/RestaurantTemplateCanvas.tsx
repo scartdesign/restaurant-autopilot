@@ -35,10 +35,14 @@ function Discount({value}:{value:string}){
 }
 
 function fitClass(value:string){
-  const clean=value.replace(/\n/g,' ').trim()
-  if(clean.length>34)return 'rtpl-fit-xlong'
-  if(clean.length>24)return 'rtpl-fit-long'
-  if(clean.length>16)return 'rtpl-fit-medium'
+  const raw=value.trim()
+  const lines=raw.split(/\n/)
+  const clean=raw.replace(/\n/g,' ')
+  const longest=Math.max(0,...lines.map(line=>line.trim().length))
+  const lineCount=lines.length
+  if(clean.length>34||longest>20||lineCount>=3)return 'rtpl-fit-xlong'
+  if(clean.length>24||longest>16||lineCount===2&&clean.length>18)return 'rtpl-fit-long'
+  if(clean.length>14||longest>12||lineCount===2)return 'rtpl-fit-medium'
   return ''
 }
 
