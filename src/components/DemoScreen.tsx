@@ -153,18 +153,18 @@ function DemoLaunch({notify,setTab}:{notify:(value:string)=>void;setTab:(tab:Dem
 
 type DemoContentTemplate={id:RestaurantTemplateId;name:string;category:string;kicker:string;note:string;badge?:string}
 const demoContentTemplates:DemoContentTemplate[]=[
-  {id:'luxe',name:'Midnight Menu',category:'Premium',kicker:"TODAY'S MENU",note:'Tamni premium dizajn.',badge:'TOP'},
+  {id:'luxe',name:'Today’s Menu Curve',category:'Premium',kicker:"TODAY'S MENU",note:'Tamni premium dizajn.',badge:'TOP'},
   {id:'editorial',name:'Good Morning',category:'Breakfast',kicker:'GOOD MORNING',note:'Elegantni food layout.',badge:'TOP'},
-  {id:'hero-menu',name:'Hero Dish',category:'Signature',kicker:'GRILLED SPECIAL',note:'Jedno jelo u prvom planu.',badge:'TOP'},
-  {id:'minimal',name:'Clean Plate',category:'Modern',kicker:'FRESH TODAY',note:'Čisto i moderno.'},
-  {id:'bold',name:'20% Off',category:'Promo',kicker:'SPECIAL OFFER',note:'Jak promo layout.'},
-  {id:'poster',name:'Chef Poster',category:'Story',kicker:"CHEF'S CHOICE",note:'Poster za story i event.'},
-  {id:'split',name:'Split Menu',category:'Menu',kicker:"TODAY'S MENU",note:'Slika + tekst zona.'},
-  {id:'promo-badge',name:'Weekend Special',category:'Promo',kicker:'WEEKEND SPECIAL',note:'Veliki promo badge.'},
-  {id:'premium-grid',name:'Tasting Grid',category:'Menu',kicker:'FOOD MENU',note:'Setovi i tasting meni.'},
-  {id:'bold-offer',name:'Mega Sale',category:'Campaign',kicker:'LIMITED OFFER',note:'Velika tipografija.'},
-  {id:'lunch-time',name:'Lunch Time',category:'Lunch',kicker:'LUNCH TIME',note:'Dnevni meni i ručak.'},
-  {id:'family',name:'Family Table',category:'Restaurant',kicker:'TODAY SPECIAL',note:'Topao restoran layout.'},
+  {id:'hero-menu',name:'Today’s Menu Circle',category:'Signature',kicker:'GRILLED SPECIAL',note:'Jedno jelo u prvom planu.',badge:'TOP'},
+  {id:'minimal',name:'Breakfast Special',category:'Modern',kicker:'FRESH TODAY',note:'Čisto i moderno.'},
+  {id:'bold',name:'Today’s Menu Discount',category:'Promo',kicker:'SPECIAL OFFER',note:'Jak promo layout.'},
+  {id:'poster',name:'Grilled Special',category:'Story',kicker:"CHEF'S CHOICE",note:'Poster za story i event.'},
+  {id:'split',name:'Breakfast Card',category:'Menu',kicker:"TODAY'S MENU",note:'Slika + tekst zona.'},
+  {id:'promo-badge',name:'Food Menu Grid',category:'Promo',kicker:'WEEKEND SPECIAL',note:'Veliki promo badge.'},
+  {id:'premium-grid',name:'Diagonal Today’s Menu',category:'Menu',kicker:'FOOD MENU',note:'Setovi i tasting meni.'},
+  {id:'bold-offer',name:'Pizza Special',category:'Campaign',kicker:'LIMITED OFFER',note:'Velika tipografija.'},
+  {id:'lunch-time',name:'Annual Mega Sale',category:'Lunch',kicker:'LUNCH TIME',note:'Dnevni meni i ručak.'},
+  {id:'family',name:'Today’s Special Menu',category:'Restaurant',kicker:'TODAY SPECIAL',note:'Topao restoran layout.'},
 ] as const
 
 type DemoDish={id:string;name:string;price:string;description:string;category:string;image:string}
@@ -206,7 +206,6 @@ function DemoContent({notify,setTab}:{notify:(value:string)=>void;setTab:(tab:De
   })))
   const[editingDesignId,setEditingDesignId]=useState('')
   const selectedDish=dishes.find(item=>item.id===selectedDishId)||dishes[0]||{id:'empty',name:'Dodaj jelo',price:'',description:'',category:'JELO',image:food.lasagna}
-  const selectedTemplate=demoContentTemplates.find(item=>item.id===template)||demoContentTemplates[0]
 
   function chooseDishPhoto(event:ChangeEvent<HTMLInputElement>){
     const file=event.target.files?.[0]
