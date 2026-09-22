@@ -100,7 +100,7 @@ jobs:
           grep -Fq 'Publishing je bezbedno blokiran' /tmp/demo.js
           grep -Fq 'FIRST SUCCESS DEMO' /tmp/demo.js
           grep -Fq 'Simuliraj prvi uspeh novog restorana' /tmp/demo.js
-          DASHBOARD_CHUNK=$(grep -oE 'Dashboard-[A-Za-z0-9_-]+\\.js' /tmp/app.js | head -1)
+          DASHBOARD_CHUNK=$(grep -oE 'Dashboard-[A-Za-z0-9_-]+\.js' /tmp/app.js | head -1)
           test -n "$DASHBOARD_CHUNK"
           curl --max-time 20 --retry 4 --retry-delay 2 --retry-all-errors -fsSL "$BASE/assets/$DASHBOARD_CHUNK" -o /tmp/dashboard.js
           grep -Fq 'Preporučeni šabloni' /tmp/dashboard.js
