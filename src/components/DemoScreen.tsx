@@ -177,6 +177,7 @@ function DemoContent({notify,setTab}:{notify:(value:string)=>void;setTab:(tab:De
     {id:'salad',name:'Garden Special',price:'690 RSD',description:'Sveže povrće, avokado i house dressing.',category:'FRESH',image:food.salad},
   ])
   const[dishForm,setDishForm]=useState({name:'',price:'',description:'',category:''})
+  const[editingDishId,setEditingDishId]=useState('')
   const[dishPhoto,setDishPhoto]=useState(food.lasagna)
   const[selectedDishId,setSelectedDishId]=useState('pizza')
   const[template,setTemplate]=useState('luxe')
@@ -192,7 +193,7 @@ function DemoContent({notify,setTab}:{notify:(value:string)=>void;setTab:(tab:De
     price:index===0?'890 RSD':index===1?'940 RSD':index===2?'520 RSD':'690 RSD',badge:post.type==='PROMO'?'20% OFF':'',
   })))
   const[editingDesignId,setEditingDesignId]=useState('')
-  const selectedDish=dishes.find(item=>item.id===selectedDishId)||dishes[0]
+  const selectedDish=dishes.find(item=>item.id===selectedDishId)||dishes[0]||{id:'empty',name:'Dodaj jelo',price:'',description:'',category:'JELO',image:food.lasagna}
   const selectedTemplate=demoContentTemplates.find(item=>item.id===template)||demoContentTemplates[0]
 
   function chooseDishPhoto(event:ChangeEvent<HTMLInputElement>){
@@ -204,12 +205,18 @@ function DemoContent({notify,setTab}:{notify:(value:string)=>void;setTab:(tab:De
   function addDish(event:FormEvent){
     event.preventDefault()
     if(!dishForm.name.trim()){notify('Upiši naziv jela.');return}
-    const id='dish-'+Date.now()
-    const next={id,name:dishForm.name.trim(),price:dishForm.price.trim()||'—',description:dishForm.description.trim(),category:dishForm.category.trim().toUpperCase()||'JELO',image:dishPhoto}
-    setDishes(current=>[next,...current])
-    setDishForm({name:'',price:'',description:'',category:''})
-    startDish(next)
-    notify('Demo: jelo je dodato. Sada izaberi šablon.')
+    const next={id:editingDishId||'dish-'+Date.now(),name:dishForm.name.trim(),price:dishForm.price.trim()||'—',description:dishForm.description.trim(),category:dishForm.category.trim().toUpperCase()||'JELO',image:dishPhoto}
+    if(editingDishId){
+      setDishes(current=>current.map(item=>item.id===editingDishId?next:item))
+      setEditingDishId('')
+      setDishForm({name:'',price:'',description:'',category:''})
+      notify('Demo: izmene jela su sačuvane.')
+    }else{
+      setDishes(current=>[next,...current])
+      setDishForm({name:'',price:'',description:'',category:''})
+      startDish(next)
+      notify('Demo: jelo je dodato. Sada izaberi šablon.')
+    }
   }
   function startDish(item:DemoDish){
     setSelectedDishId(item.id);setHeadline(item.name);setText(item.description);setPriceText(item.price);setBadge('');setTemplate('luxe');setEditingDesignId('');setStudioTab('templates')
@@ -243,14 +250,14 @@ function DemoContent({notify,setTab}:{notify:(value:string)=>void;setTab:(tab:De
 
     {studioTab==='dishes'&&<section className="dts-dishes">
       <form className="dts-dish-form" onSubmit={addDish}>
-        <div className="dts-section-head"><div><span>NOVO JELO</span><h2>Dodaj jelo</h2></div></div>
+        <div className="dts-section-head"><div><span>{editingDishId?'IZMENI JELO':'NOVO JELO'}</span><h2>{editingDishId?'Sačuvaj izmene':'Dodaj jelo'}</h2></div>{editingDishId&&<button type="button" className="dts-icon" onClick={()=>{setEditingDishId('');setDishForm({name:'',price:'',description:'',category:''})}}><X size={17}/></button>}</div>
         <label className="dts-dish-upload has-image"><img src={dishPhoto} alt=""/><input type="file" accept="image/*" onChange={chooseDishPhoto}/><em><Upload size={13}/> Promeni sliku</em></label>
         <label>Naziv jela<input value={dishForm.name} onChange={e=>setDishForm({...dishForm,name:e.target.value})} placeholder="Pizza Capricciosa"/></label>
         <div className="dts-two"><label>Cena<input value={dishForm.price} onChange={e=>setDishForm({...dishForm,price:e.target.value})} placeholder="890 RSD"/></label><label>Kategorija<input value={dishForm.category} onChange={e=>setDishForm({...dishForm,category:e.target.value})} placeholder="Pizza"/></label></div>
         <label>Kratak opis<textarea rows={3} value={dishForm.description} onChange={e=>setDishForm({...dishForm,description:e.target.value})} placeholder="Pelat, mozzarella, šunka…"/></label>
-        <button className="dts-primary"><Plus size={16}/> Dodaj jelo</button>
+        <button className="dts-primary">{editingDishId?<Save size={16}/>:<Plus size={16}/>} {editingDishId?'Sačuvaj jelo':'Dodaj jelo'}</button>
       </form>
-      <div className="dts-dish-library"><div className="dts-section-head"><div><span>MOJA JELA</span><h2>Izaberi šta reklamiraš</h2></div><small>Klikni Kreiraj objavu.</small></div><div className="dts-dish-grid">{dishes.map(item=><article key={item.id}><div className="dts-dish-photo"><img src={item.image} alt=""/><span>{item.category}</span></div><div className="dts-dish-copy"><div><h3>{item.name}</h3><strong>{item.price}</strong></div><p>{item.description}</p></div><button className="dts-create-post" onClick={()=>startDish(item)}><LayoutTemplate size={15}/> Kreiraj objavu</button><div className="dts-row-actions"><button onClick={()=>{setDishForm({name:item.name,price:item.price,description:item.description,category:item.category});setDishPhoto(item.image);notify('Demo: podatke jela možeš izmeniti u formi levo.')}}><Pencil size={14}/> Izmeni</button><button className="danger" onClick={()=>{setDishes(current=>current.filter(entry=>entry.id!==item.id));notify('Demo: jelo je obrisano.')}}><Trash2 size={14}/> Obriši</button></div></article>)}</div></div>
+      <div className="dts-dish-library"><div className="dts-section-head"><div><span>MOJA JELA</span><h2>Izaberi šta reklamiraš</h2></div><small>Klikni Kreiraj objavu.</small></div><div className="dts-dish-grid">{dishes.map(item=><article key={item.id}><div className="dts-dish-photo"><img src={item.image} alt=""/><span>{item.category}</span></div><div className="dts-dish-copy"><div><h3>{item.name}</h3><strong>{item.price}</strong></div><p>{item.description}</p></div><button className="dts-create-post" onClick={()=>startDish(item)}><LayoutTemplate size={15}/> Kreiraj objavu</button><div className="dts-row-actions"><button onClick={()=>{setEditingDishId(item.id);setDishForm({name:item.name,price:item.price,description:item.description,category:item.category});setDishPhoto(item.image);window.scrollTo({top:0,behavior:'smooth'});notify('Demo: izmeni podatke i klikni Sačuvaj jelo.')}}><Pencil size={14}/> Izmeni</button><button className="danger" onClick={()=>{setDishes(current=>current.filter(entry=>entry.id!==item.id));notify('Demo: jelo je obrisano.')}}><Trash2 size={14}/> Obriši</button></div></article>)}</div></div>
     </section>}
 
     {studioTab==='templates'&&<section className="dts-template-screen">
