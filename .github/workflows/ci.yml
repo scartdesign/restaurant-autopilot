@@ -147,6 +147,15 @@ jobs:
           grep -Fq 'publish-social-simple' "$PUB"
           grep -Fq "advancedOpen?'Sakrij napredno':'Napredno'" "$PUB"
           grep -Fq 'Pregledaj. Zakaži. Gotovo.' "$PUB"
+          grep -Fq "Dizajn je sada u Sadržaj → Šabloni" "$APP"
+          if grep -Fq "mobileGo('studio')" "$APP"; then
+            echo "Duplicate Visual Studio must not be visible in customer navigation"
+            exit 1
+          fi
+          if grep -Fq "<VisualStudio" "$APP"; then
+            echo "Duplicate Visual Studio must not render as a customer screen"
+            exit 1
+          fi
       - name: Onboarding starter menu guard
         shell: bash
         run: |

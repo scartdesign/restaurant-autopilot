@@ -14,7 +14,6 @@ import { RestorappDashboardV2 } from './components/RestorappDashboardV2'
 import { RestorappSidebarLogo } from './components/RestorappSidebarLogo'
 
 const DemoScreen = lazy(() => import('./components/DemoScreen').then((m) => ({ default: m.DemoScreen })))
-const VisualStudio = lazy(() => import('./components/VisualStudio').then((m) => ({ default: m.VisualStudio })))
 const PublishCenter = lazy(() => import('./components/PublishCenter').then((m) => ({ default: m.PublishCenter })))
 const BrandKit = lazy(() => import('./components/BrandKit').then((m) => ({ default: m.BrandKit })))
 const BillingPage = lazy(() => import('./components/BillingPage').then((m) => ({ default: m.BillingPage })))
@@ -335,14 +334,19 @@ function App() {
   async function refreshRestaurant() { if (session && restaurant) await loadRestaurants(session.user.id, restaurant.id) }
 
   async function openTab(tab: Tab) {
+    if (tab === 'studio') {
+      setMobileMenuOpen(false)
+      setNotice('Dizajn je sada u Sadržaj → Šabloni. Sve je na jednom mestu.')
+      tab = 'dashboard'
+    }
     if (tab === 'promotions' && !canUseCampaigns) {
       setNotice('Campaign Autopilot je uključen u Pro i Business paket. Paket možeš promeniti iz „Paket / licenca“.')
       setActiveTab('billing'); return
     }
     if (tab === 'notifications') await loadUnreadNotifications()
     if (restaurant) {
-      if (tab === 'launch' || tab === 'dashboard' || tab === 'creative' || tab === 'publish' || tab === 'studio' || tab === 'insights') await loadPosts(restaurant.id)
-      if (tab === 'launch' || tab === 'dashboard' || tab === 'creative' || tab === 'menu' || tab === 'promotions' || tab === 'studio' || tab === 'brand') await loadMenu(restaurant.id)
+      if (tab === 'launch' || tab === 'dashboard' || tab === 'creative' || tab === 'publish' || tab === 'insights') await loadPosts(restaurant.id)
+      if (tab === 'launch' || tab === 'dashboard' || tab === 'creative' || tab === 'menu' || tab === 'promotions' || tab === 'brand') await loadMenu(restaurant.id)
       if (tab === 'creative') await loadAccountState()
     }
     setActiveTab(tab)
@@ -404,7 +408,7 @@ function App() {
   const remainingRestaurants = restaurantLimit === null ? null : Math.max(0, restaurantLimit - restaurants.length)
   const planName = isSuperadmin ? 'OWNER' : entitlement?.plan_name || 'Aktivan paket'
   const generationUsage = useMemo(() => entitlement?.generation_limit == null ? null : `${entitlement.generated_this_month || 0}/${entitlement.generation_limit}`, [entitlement])
-  const activeSectionLabel = ({launch:'Početna',dashboard:'Sadržaj',creative:'AI alat',studio:'Slike',brand:'Brend',publish:'Objave',insights:'Rezultati',menu:'Meni',promotions:'Kampanje',settings:'Podešavanja',support:'Podrška',notifications:'Obaveštenja',billing:'Paket',admin:'OWNER'} as Record<Tab,string>)[activeTab]
+  const activeSectionLabel = ({launch:'Početna',dashboard:'Sadržaj',creative:'AI alat',studio:'Sadržaj',brand:'Brend',publish:'Objave',insights:'Rezultati',menu:'Meni',promotions:'Kampanje',settings:'Podešavanja',support:'Podrška',notifications:'Obaveštenja',billing:'Paket',admin:'OWNER'} as Record<Tab,string>)[activeTab]
 
   if (legalParam && ['terms','privacy','ai','refund'].includes(legalParam)) return <LegalScreen kind={legalParam} onBack={()=>{window.history.replaceState({},'',window.location.pathname);window.location.reload()}} />
   if (demo) return <Suspense fallback={<LazyScreenFallback label="Učitavam demo…" />}><DemoScreen onExit={() => { const next = new URL(window.location.href); next.searchParams.delete('demo'); window.history.replaceState({}, '', `${next.pathname}${next.search}${next.hash}`); setDemo(false) }} /></Suspense>
@@ -445,7 +449,6 @@ function App() {
 
     {mobileMenuOpen&&<div className="mobile-drawer-backdrop" onMouseDown={()=>setMobileMenuOpen(false)}><div className="mobile-drawer" onMouseDown={e=>e.stopPropagation()}><div className="mobile-drawer-head"><div><strong>Još alata</strong><small>{restaurant.name}</small></div><button className="icon-button" onClick={()=>setMobileMenuOpen(false)}><X size={19}/></button></div><div className="mobile-drawer-grid">
       <button onClick={()=>mobileGo('creative')}><Sparkles size={19}/><span>AI alat</span><small>ideje i tekstovi</small></button>
-      <button onClick={()=>mobileGo('studio')}><ImageIcon size={19}/><span>Slike</span><small>Visual Studio</small></button>
       <button onClick={()=>mobileGo('brand')}><Palette size={19}/><span>Brend</span><small>logo i boje</small></button>
       <button onClick={()=>mobileGo('insights')}><BarChart3 size={19}/><span>Rezultati</span><small>šta najbolje radi</small></button>
       <button onClick={()=>mobileGo('promotions')} className={!canUseCampaigns?'locked':''}><Megaphone size={19}/><span>Kampanje</span><small>{canUseCampaigns?'akcije i promocije':'PRO / BUSINESS'}</small></button>
@@ -473,7 +476,6 @@ function App() {
       {activeTab==='launch'&&<RestorappDashboardV2 restaurant={restaurant} menuItems={menuItems} posts={posts} onCreate={()=>void openTab('creative')} onNavigate={(tab)=>void openTab(tab as Tab)} onFirstWeek={createFirstWeek}/>} 
       {activeTab==='dashboard'&&<SimpleContentStudio restaurant={restaurant} userId={session.user.id} menuItems={menuItems} posts={posts} onChanged={refreshContent} onNavigate={(target)=>void openTab(target)} setNotice={setNotice}/>} 
       {activeTab==='creative'&&<CreativeHub restaurant={restaurant} menuItems={menuItems} entitlement={isSuperadmin?{active:true,is_superadmin:true,features:{campaign_pack:true}}:entitlement} onChanged={refreshContent} setNotice={setNotice}/>} 
-      {activeTab==='studio'&&<VisualStudio restaurant={restaurant} menuItems={menuItems} posts={posts} setNotice={setNotice} onChanged={()=>loadPosts(restaurant.id)}/>} 
       {activeTab==='brand'&&<BrandKit restaurant={restaurant} menuItems={menuItems} onSaved={refreshRestaurant} setNotice={setNotice}/>} 
       {activeTab==='publish'&&<PublishCenter restaurant={restaurant} posts={posts} onChanged={()=>loadPosts(restaurant.id)} setNotice={setNotice}/>} 
       {activeTab==='insights'&&<InsightsCenter restaurant={restaurant} posts={posts} menuItems={menuItems} setNotice={setNotice} onChanged={refreshContent} onNavigate={(tab)=>void openTab(tab)}/>} 
