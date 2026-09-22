@@ -3,6 +3,14 @@
 .restaurant-template-canvas *{box-sizing:border-box}
 .rtpl-photo{position:absolute;background-size:cover;background-position:center}
 .rtpl-script{font-family:var(--rt-script-font,"Brush Script MT","Segoe Script","URW Chancery L",cursive);font-weight:400;color:#fff;line-height:.9;letter-spacing:-.03em;text-shadow:0 1px 1px rgba(0,0,0,.18)}
+.rtpl-script.rtpl-fit-medium{font-size:calc(1em * .88)!important}
+.rtpl-script.rtpl-fit-long{font-size:calc(1em * .74)!important;line-height:.94}
+.rtpl-script.rtpl-fit-xlong{font-size:calc(1em * .62)!important;line-height:.98;letter-spacing:-.045em}
+.rtpl-fit-medium:not(.rtpl-script){font-size:88%!important}
+.rtpl-fit-long:not(.rtpl-script){font-size:76%!important;line-height:1.05}
+.rtpl-fit-xlong:not(.rtpl-script){font-size:66%!important;line-height:1.08}
+.rtpl-safe-copy{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:4;overflow:hidden;overflow-wrap:anywhere}
+.rtpl-safe-cta{display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .rtpl-discount{position:absolute;z-index:8;width:19%;aspect-ratio:1;border-radius:50%;display:grid;place-items:center;align-content:center;background:#fff;color:#10201c;text-align:center;box-shadow:0 4px 15px rgba(0,0,0,.18);border:1px solid rgba(0,0,0,.05)}
 .rtpl-discount strong{font-size:clamp(13px,2.8vw,24px);line-height:.85}.rtpl-discount small{font-size:clamp(5px,.75vw,8px);font-weight:900;line-height:1;margin-top:2px}
 .rtpl-logo{position:absolute;z-index:20;right:4%;bottom:4%;width:10%;aspect-ratio:1;object-fit:contain;background:rgba(255,255,255,.93);padding:3px}
@@ -122,3 +130,10 @@
 .dts-live-preview.restaurant-template-canvas{width:100%;height:auto;aspect-ratio:1/1}
 .dts-live-preview.restaurant-template-canvas.story{aspect-ratio:9/16}
 @media(max-width:620px){.rtpl-script{letter-spacing:-.05em}.rtpl-discount strong{font-size:16px}.rtpl-discount small{font-size:6px}}
+
+/* Extra overflow protection for user-editable content */
+.rtpl-bottom-band,.rtpl-mini-copy,.rtpl-right-copy,.rtpl-left-copy,.rtpl-steak-panel,.rtpl-white-card,.rtpl-menu-copy,.rtpl-side-panel,.rtpl-sale-left,.rtpl-special-copy{overflow:hidden}
+.rtpl-bottom-band p,.rtpl-steak-panel p,.rtpl-side-panel p,.rtpl-sale-left p,.rtpl-special-copy p{overflow-wrap:anywhere}
+.rtpl-price-grid small{overflow-wrap:anywhere;max-height:4.3em;overflow:hidden}
+.rtpl-price-grid strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rtpl-label-white,.rtpl-vertical-label{max-width:100%;overflow:hidden;text-overflow:ellipsis}
