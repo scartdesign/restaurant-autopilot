@@ -109,6 +109,17 @@ jobs:
           grep -Fq 'chooseStarterDishPhoto' "$FILE"
           grep -Fq "maxSide:1800,quality:.88" "$FILE"
           grep -Fq "update({image_url:imageUrl})" "$FILE"
+      - name: Demo content edit and templates guard
+        shell: bash
+        run: |
+          set -euo pipefail
+          FILE="src/components/DemoScreen.tsx"
+          grep -Fq 'Tvoje objave. Tvoj izgled.' "$FILE"
+          grep -Fq 'Sačuvaj izmene' "$FILE"
+          grep -Fq 'Primeni šablon' "$FILE"
+          grep -Fq 'post-edit-button' "$FILE"
+          grep -Fq '<Rocket size={18} /> Početna' "$FILE"
+          grep -Fq '<CalendarDays size={18} /> Sadržaj' "$FILE"
       - name: Demo Meta connection safety guard
         shell: bash
         run: |
