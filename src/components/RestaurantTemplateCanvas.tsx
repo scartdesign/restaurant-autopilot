@@ -35,15 +35,6 @@ function Script({children,className=''}:{children:ReactNode;className?:string}){
   return <span className={`rtpl-script ${className}`}>{children}</span>
 }
 
-function CommonCopy({headline,text,price,cta}:{headline:string;text:string;price?:string;cta?:string}){
-  return <div className="rtpl-common-copy">
-    {price&&<em>{price}</em>}
-    <h3>{headline}</h3>
-    {text&&<p>{slot('smallDesc',text)}</p>}
-    {cta&&<b>{cta}</b>}
-  </div>
-}
-
 export function RestaurantTemplateCanvas({
   template,image,headline,text,price='',badge='',cta='BUY',primary,accent,logoUrl,format='feed',className='',textSlots={},itemSlots=[],
 }:Props){
@@ -168,7 +159,7 @@ export function RestaurantTemplateCanvas({
         <div className="rtpl-sale-left">
           <Script>{lines(slot('scriptMain','ANNUAL MEGA\nSALE'))}</Script>
           <Discount value={discount}/>
-          <p>{text}</p>
+          <p>{slot('smallDesc',text)}</p>
         </div>
         <span className="rtpl-sale-slash"/>
       </>
