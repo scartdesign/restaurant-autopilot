@@ -34,8 +34,16 @@ function Discount({value}:{value:string}){
   return <span className="rtpl-discount"><strong>{parts[0]}</strong><small>{parts.slice(1).join(' ')||'OFF'}</small></span>
 }
 
-function Script({children,className=''}:{children:ReactNode;className?:string}){
-  return <span className={`rtpl-script ${className}`}>{children}</span>
+function fitClass(value:string){
+  const clean=value.replace(/\n/g,' ').trim()
+  if(clean.length>34)return 'rtpl-fit-xlong'
+  if(clean.length>24)return 'rtpl-fit-long'
+  if(clean.length>16)return 'rtpl-fit-medium'
+  return ''
+}
+
+function Script({children,className='',fitValue='' }:{children:ReactNode;className?:string;fitValue?:string}){
+  return <span className={`rtpl-script ${fitClass(fitValue)} ${className}`}>{children}</span>
 }
 
 export function RestaurantTemplateCanvas({
@@ -59,7 +67,7 @@ export function RestaurantTemplateCanvas({
         <div className="rtpl-frame"/>
         <div className="rtpl-photo photo-main" style={photoStyle(image)}/>
         <div className="rtpl-bottom-band">
-          <Script>{lines(slot('scriptTop','Good Morning'))}</Script>
+          <Script fitValue={slot('scriptTop','Good Morning')}>{lines(slot('scriptTop','Good Morning'))}</Script>
           <p>{slot('smallDesc',text||'Your morning breakfast is ready')}</p>
           <button>{slot('buttonText',cta||'BUY')}</button>
         </div>
@@ -69,10 +77,10 @@ export function RestaurantTemplateCanvas({
       body=<>
         <div className="rtpl-photo photo-center" style={photoStyle(image)}/>
         <div className="rtpl-top-curve"/>
-        <Script className="rtpl-title-top">{lines(slot('scriptTop','Today’s\nMenu'))}</Script>
+        <Script fitValue={slot('scriptTop','Today’s\nMenu')} className="rtpl-title-top">{lines(slot('scriptTop','Today’s\nMenu'))}</Script>
         <Discount value={discount}/>
         <span className="rtpl-dot-stack"/>
-        <div className="rtpl-mini-copy"><strong>{slot('overlayTitle',headline)}</strong><small>{slot('smallDesc',text)}</small></div>
+        <div className="rtpl-mini-copy"><strong className={fitClass(slot('overlayTitle',headline))}>{slot('overlayTitle',headline)}</strong><small className="rtpl-safe-copy">{slot('smallDesc',text)}</small></div>
       </>
       break
     case 'hero-menu':
@@ -81,8 +89,8 @@ export function RestaurantTemplateCanvas({
         <div className="rtpl-blob blob-a"/><div className="rtpl-blob blob-b"/>
         <span className="rtpl-orange-arc"/>
         <Discount value={discount}/>
-        <Script className="rtpl-script-right">{lines(slot('scriptRight','Today’s\nMenu'))}</Script>
-        <div className="rtpl-right-copy"><p>{slot('smallDesc',text)}</p><small>{slot('smallCta',cta)}</small></div>
+        <Script fitValue={slot('scriptRight','Today’s\nMenu')} className="rtpl-script-right">{lines(slot('scriptRight','Today’s\nMenu'))}</Script>
+        <div className="rtpl-right-copy"><p className="rtpl-safe-copy">{slot('smallDesc',text)}</p><small className="rtpl-safe-cta">{slot('smallCta',cta)}</small></div>
       </>
       break
     case 'minimal':
@@ -91,18 +99,18 @@ export function RestaurantTemplateCanvas({
         <div className="rtpl-diagonal-panel"/>
         <Discount value={discount}/>
         <span className="rtpl-vertical-label">{slot('verticalText','SPECIAL DISCOUNT')}</span>
-        <Script className="rtpl-breakfast">{lines(slot('scriptMain','Breakfast'))}</Script>
-        <div className="rtpl-left-copy"><p>{slot('smallDesc',text)}</p><small>{slot('smallCta',cta)}</small></div>
+        <Script fitValue={slot('scriptMain','Breakfast')} className="rtpl-breakfast">{lines(slot('scriptMain','Breakfast'))}</Script>
+        <div className="rtpl-left-copy"><p className="rtpl-safe-copy">{slot('smallDesc',text)}</p><small className="rtpl-safe-cta">{slot('smallCta',cta)}</small></div>
       </>
       break
     case 'bold':
       body=<>
         <div className="rtpl-photo photo-full" style={photoStyle(image)}/>
-        <Script className="rtpl-huge-off">{lines(slot('hugeOffer',badge||'70% OFF'))}</Script>
+        <Script fitValue={slot('hugeOffer',badge||'70% OFF')} className="rtpl-huge-off">{lines(slot('hugeOffer',badge||'70% OFF'))}</Script>
         <Discount value={discount}/>
         <div className="rtpl-bottom-strip">
-          <Script>{lines(slot('scriptBottom','Today’s Menu'))}</Script>
-          <small>{slot('smallDesc',text)}</small>
+          <Script fitValue={slot('scriptBottom','Today’s Menu')}>{lines(slot('scriptBottom','Today’s Menu'))}</Script>
+          <small className="rtpl-safe-copy">{slot('smallDesc',text)}</small>
         </div>
       </>
       break
@@ -111,8 +119,8 @@ export function RestaurantTemplateCanvas({
         <div className="rtpl-double-frame outer"/><div className="rtpl-double-frame inner"/>
         <div className="rtpl-photo photo-inset" style={photoStyle(image)}/>
         <div className="rtpl-steak-panel">
-          <Script>{lines(slot('scriptMain',headline||'Grilled steak'))}</Script>
-          <p>{slot('smallDesc',text)}</p>
+          <Script fitValue={slot('scriptMain',headline||'Grilled steak')}>{lines(slot('scriptMain',headline||'Grilled steak'))}</Script>
+          <p className="rtpl-safe-copy">{slot('smallDesc',text)}</p>
         </div>
       </>
       break
@@ -120,29 +128,29 @@ export function RestaurantTemplateCanvas({
       body=<>
         <span className="rtpl-corner-dots left"/>
         <span className="rtpl-label-white">{slot('topLabel','Breakfast')}</span>
-        <Script className="rtpl-split-script">{lines(slot('scriptMain','Get Delicious\nWith us'))}</Script>
-        <div className="rtpl-white-card"><p>{slot('whiteCardText',text)}</p></div>
+        <Script fitValue={slot('scriptMain','Get Delicious\nWith us')} className="rtpl-split-script">{lines(slot('scriptMain','Get Delicious\nWith us'))}</Script>
+        <div className="rtpl-white-card"><p className="rtpl-safe-copy">{slot('whiteCardText',text)}</p></div>
         <div className="rtpl-photo photo-bottom" style={photoStyle(image)}/>
         <span className="rtpl-pink-dots"/>
       </>
       break
     case 'promo-badge':
       body=<>
-        <Script className="rtpl-grid-script">{lines(slot('scriptMain','Breakfast'))}</Script>
+        <Script fitValue={slot('scriptMain','Breakfast')} className="rtpl-grid-script">{lines(slot('scriptMain','Breakfast'))}</Script>
         <div className="rtpl-photo photo-oval" style={photoStyle(image)}/>
         <div className="rtpl-price-grid">
-          {(itemSlots.length?itemSlots:[{title:'Food Name',price:price||'$7'},{title:'Food Name',price:price||'$7'},{title:'Food Name',price:price||'$7'}]).slice(0,3).map((item,i)=><div key={i}><strong>{item.price||price||'$7'}</strong><small>{lines(item.title||'Food Name')}</small></div>)}
+          {(itemSlots.length?itemSlots:[{title:'Food Name',price:price||'$7'},{title:'Food Name',price:price||'$7'},{title:'Food Name',price:price||'$7'}]).slice(0,3).map((item,i)=><div key={i}><strong>{item.price||price||'$7'}</strong><small className={fitClass(item.title||'Food Name')}>{lines(item.title||'Food Name')}</small></div>)}
         </div>
-        <p className="rtpl-grid-footer">{slot('footerText',text)}</p>
+        <p className="rtpl-grid-footer rtpl-safe-copy">{slot('footerText',text)}</p>
       </>
       break
     case 'premium-grid':
       body=<>
         <div className="rtpl-photo photo-diagonal" style={photoStyle(image)}/>
         <div className="rtpl-black-cut"/>
-        <Script className="rtpl-menu-script">{lines(slot('scriptMain','Today’s\nMenu'))}</Script>
+        <Script fitValue={slot('scriptMain','Today’s\nMenu')} className="rtpl-menu-script">{lines(slot('scriptMain','Today’s\nMenu'))}</Script>
         <Discount value={badge||'30% OFF'}/>
-        <div className="rtpl-menu-copy"><p>{slot('smallDesc',text)}</p><small>{slot('smallCta',cta)}</small></div>
+        <div className="rtpl-menu-copy"><p className="rtpl-safe-copy">{slot('smallDesc',text)}</p><small className="rtpl-safe-cta">{slot('smallCta',cta)}</small></div>
       </>
       break
     case 'bold-offer':
@@ -152,7 +160,7 @@ export function RestaurantTemplateCanvas({
         <div className="rtpl-photo photo-box" style={photoStyle(image)}/>
         <div className="rtpl-photo-strip bottom" style={photoStyle(image)}/>
         <div className="rtpl-side-panel">
-          <Script>{lines(slot('scriptMain','Today’s\nMenu'))}</Script>
+          <Script fitValue={slot('scriptMain','Today’s\nMenu')}>{lines(slot('scriptMain','Today’s\nMenu'))}</Script>
           <p>{slot('smallDesc',text)}</p>
         </div>
         <Discount value={discount}/>
@@ -162,7 +170,7 @@ export function RestaurantTemplateCanvas({
       body=<>
         <div className="rtpl-photo photo-right" style={photoStyle(image)}/>
         <div className="rtpl-sale-left">
-          <Script>{lines(slot('scriptMain','ANNUAL MEGA\nSALE'))}</Script>
+          <Script fitValue={slot('scriptMain','ANNUAL MEGA\nSALE')}>{lines(slot('scriptMain','ANNUAL MEGA\nSALE'))}</Script>
           <Discount value={discount}/>
           <p>{slot('smallDesc',text)}</p>
         </div>
@@ -173,10 +181,10 @@ export function RestaurantTemplateCanvas({
       body=<>
         <div className="rtpl-photo photo-full" style={photoStyle(image)}/>
         <span className="rtpl-top-bar"><span className="rtpl-dot-inline"/></span>
-        <Script className="rtpl-special-title">{lines(slot('scriptMain','Today’s\nSpecial menu'))}</Script>
+        <Script fitValue={slot('scriptMain','Today’s\nSpecial menu')} className="rtpl-special-title">{lines(slot('scriptMain','Today’s\nSpecial menu'))}</Script>
         <Discount value={discount}/>
         <div className="rtpl-photo photo-small" style={photoStyle(image)}/>
-        <div className="rtpl-special-copy"><p>{slot('smallDesc',text)}</p><small>{slot('smallCta',cta)}</small></div>
+        <div className="rtpl-special-copy"><p className="rtpl-safe-copy">{slot('smallDesc',text)}</p><small className="rtpl-safe-cta">{slot('smallCta',cta)}</small></div>
       </>
       break
   }

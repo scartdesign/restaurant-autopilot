@@ -160,6 +160,24 @@ jobs:
           grep -Fq "id:'bold-display'" "$FONTS"
           grep -Fq 'var(--rt-script-font' "$PACK"
           grep -Fq 'var(--rt-base-font' "$PACK"
+      - name: Template auto text fit guard
+        shell: bash
+        run: |
+          set -euo pipefail
+          RENDERER="src/components/RestaurantTemplateCanvas.tsx"
+          PACK="src/restaurant-template-pack.css"
+          STUDIO="src/components/SimpleContentStudio.tsx"
+          DEMO="src/components/DemoScreen.tsx"
+          grep -Fq 'function fitClass(value:string)' "$RENDERER"
+          grep -Fq 'rtpl-fit-xlong' "$RENDERER"
+          grep -Fq 'rtpl-safe-copy' "$RENDERER"
+          grep -Fq 'fitValue=' "$RENDERER"
+          grep -Fq '.rtpl-script.rtpl-fit-long' "$PACK"
+          grep -Fq '.rtpl-script.rtpl-fit-xlong' "$PACK"
+          grep -Fq -- '-webkit-line-clamp:4' "$PACK"
+          grep -Fq 'rtpl-safe-cta' "$PACK"
+          grep -Fq 'Dug tekst se automatski uklapa.' "$STUDIO"
+          grep -Fq 'Dug tekst se automatski uklapa.' "$DEMO"
       - name: Simplified customer UX guard
         shell: bash
         run: |
