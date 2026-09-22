@@ -166,6 +166,8 @@ jobs:
           if [ -n "$SCRIPT_PACK_CSS" ]; then
             curl --max-time 20 --retry 4 --retry-delay 2 --retry-all-errors -fsSL "$BASE/assets/$SCRIPT_PACK_CSS" -o /tmp/script-pack.css
             grep -Fq 'overflow:visible' /tmp/script-pack.css
+            grep -Fq 'aspect-ratio:9/16' /tmp/script-pack.css
+            grep -Fq 'width:min(100%,242px)' /tmp/script-pack.css
           fi
           PUBLISH_CHUNK=$(grep -oE 'PublishCenter-[A-Za-z0-9_-]+\.js' /tmp/app.js | head -1)
           test -n "$PUBLISH_CHUNK"

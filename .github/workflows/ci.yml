@@ -215,6 +215,7 @@ jobs:
           grep -Fq 'FINALNI PREVIEW' "$DEMO"
           grep -Fq 'dts-composer-premium' "$DEMO"
           grep -Fq 'Premium Content Studio — sales-ready visual polish' "$CSS"
+          grep -Fq '.dts-preview-shell .restaurant-template-canvas.story{width:min(100%,242px)!important;aspect-ratio:9/16!important;height:auto!important;max-height:none!important' "$CSS"
           grep -Fq 'DM Sans' "$FONTS"
           grep -Fq 'Great Vibes' "$FONTS"
           grep -Fq 'Bebas' "$FONTS"

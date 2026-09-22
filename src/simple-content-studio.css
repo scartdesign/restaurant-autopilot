@@ -176,7 +176,7 @@
 .dts-format.compact{display:flex;gap:4px;margin:0}
 .dts-format.compact button{min-height:28px;min-width:44px;padding:0 8px;border-radius:8px;font-size:7px}
 .dts-preview-shell .dts-live-preview{margin:0;border-radius:14px;box-shadow:0 16px 36px rgba(18,29,23,.18)}
-.dts-preview-shell .dts-live-preview.story{max-height:430px}
+.dts-preview-shell .dts-live-preview.story{width:min(100%,242px);height:auto;aspect-ratio:9/16;max-height:none;margin-left:auto;margin-right:auto}
 
 .dts-editor-tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin:12px 0 0;padding:4px;border:1px solid #e2e3df;border-radius:13px;background:#f3f5f2}
 .dts-editor-tabs button{min-height:36px;border:0;border-radius:9px;background:transparent;color:#7b857f;font-size:9px;font-weight:900;cursor:pointer}
@@ -237,3 +237,6 @@
   .dts-composer-premium{padding:10px;border-radius:17px}
   .dts-font-options,.dts-palette-row{grid-template-columns:1fr 1fr}
 }
+
+/* Keep Story preview physically proportional to 1080×1920 instead of stretching to panel width. */
+.dts-preview-shell .restaurant-template-canvas.story{width:min(100%,242px)!important;aspect-ratio:9/16!important;height:auto!important;max-height:none!important;margin-left:auto!important;margin-right:auto!important}
