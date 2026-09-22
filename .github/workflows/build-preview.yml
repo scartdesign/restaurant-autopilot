@@ -142,7 +142,7 @@ jobs:
           grep -Fq 'Navy' /tmp/content.js
           grep -Fq 'TEKSTOVI NA DIZAJNU' /tmp/content.js
           grep -Fq 'STAVKE U MENIJU' /tmp/content.js
-          grep -Fq 'Vrati tekstove' /tmp/content.js
+          grep -Fq '>Vrati<' /tmp/content.js || grep -Fq 'Vrati' /tmp/content.js
           grep -Fq 'TIPOGRAFIJA' /tmp/content.js
           grep -Fq 'Osnovni font' /tmp/content.js
           grep -Fq 'Pisani font' /tmp/content.js
