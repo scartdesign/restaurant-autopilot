@@ -20,18 +20,18 @@ type TemplateOption={
 }
 
 const templates:TemplateOption[]=[
-  {id:'luxe',name:'Midnight Menu',category:'Premium',kicker:"TODAY'S MENU",note:'Tamni premium dizajn za večeru i fine dining.',badge:'TOP'},
+  {id:'luxe',name:'Today’s Menu Curve',category:'Premium',kicker:"TODAY'S MENU",note:'Tamni premium dizajn za večeru i fine dining.',badge:'TOP'},
   {id:'editorial',name:'Good Morning',category:'Breakfast',kicker:'GOOD MORNING',note:'Elegantna fotografija sa potpisnim naslovom.',badge:'TOP'},
-  {id:'hero-menu',name:'Hero Dish',category:'Signature',kicker:'GRILLED SPECIAL',note:'Velika fotografija i jedan jak signature naslov.',badge:'TOP'},
-  {id:'minimal',name:'Clean Plate',category:'Modern',kicker:'FRESH TODAY',note:'Čist i moderan layout za novo jelo.'},
-  {id:'bold',name:'20% Off',category:'Promo',kicker:'SPECIAL OFFER',note:'Jak discount badge i prodajni CTA.'},
-  {id:'poster',name:'Chef Poster',category:'Story',kicker:"CHEF'S CHOICE",note:'Poster stil za događaj, story i večernju ponudu.'},
-  {id:'split',name:'Split Menu',category:'Menu',kicker:"TODAY'S MENU",note:'Fotografija + uredna tekst zona za cenu i opis.'},
-  {id:'promo-badge',name:'Weekend Special',category:'Promo',kicker:'WEEKEND SPECIAL',note:'Veliki promo krug i premium food fotografija.'},
-  {id:'premium-grid',name:'Tasting Grid',category:'Menu',kicker:'FOOD MENU',note:'Meni kartica za više ponuda i setove.'},
-  {id:'bold-offer',name:'Mega Sale',category:'Campaign',kicker:'LIMITED OFFER',note:'Velika tipografija za akcije i popuste.'},
-  {id:'lunch-time',name:'Lunch Time',category:'Lunch',kicker:'LUNCH TIME',note:'Dnevni meni i poslovni ručak.'},
-  {id:'family',name:'Family Table',category:'Restaurant',kicker:'TODAY SPECIAL',note:'Topao layout za porodični restoran i zajednički sto.'},
+  {id:'hero-menu',name:'Today’s Menu Circle',category:'Signature',kicker:'GRILLED SPECIAL',note:'Velika fotografija i jedan jak signature naslov.',badge:'TOP'},
+  {id:'minimal',name:'Breakfast Special',category:'Modern',kicker:'FRESH TODAY',note:'Čist i moderan layout za novo jelo.'},
+  {id:'bold',name:'Today’s Menu Discount',category:'Promo',kicker:'SPECIAL OFFER',note:'Jak discount badge i prodajni CTA.'},
+  {id:'poster',name:'Grilled Special',category:'Story',kicker:"CHEF'S CHOICE",note:'Poster stil za događaj, story i večernju ponudu.'},
+  {id:'split',name:'Breakfast Card',category:'Menu',kicker:"TODAY'S MENU",note:'Fotografija + uredna tekst zona za cenu i opis.'},
+  {id:'promo-badge',name:'Food Menu Grid',category:'Promo',kicker:'WEEKEND SPECIAL',note:'Veliki promo krug i premium food fotografija.'},
+  {id:'premium-grid',name:'Diagonal Today’s Menu',category:'Menu',kicker:'FOOD MENU',note:'Meni kartica za više ponuda i setove.'},
+  {id:'bold-offer',name:'Pizza Special',category:'Campaign',kicker:'LIMITED OFFER',note:'Velika tipografija za akcije i popuste.'},
+  {id:'lunch-time',name:'Annual Mega Sale',category:'Lunch',kicker:'LUNCH TIME',note:'Dnevni meni i poslovni ručak.'},
+  {id:'family',name:'Today’s Special Menu',category:'Restaurant',kicker:'TODAY SPECIAL',note:'Topao layout za porodični restoran i zajednički sto.'},
 ]
 
 const colorPalettes=[
