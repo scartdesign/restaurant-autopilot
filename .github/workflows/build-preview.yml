@@ -100,15 +100,17 @@ jobs:
           grep -Fq 'Publishing je bezbedno blokiran' /tmp/demo.js
           grep -Fq 'FIRST SUCCESS DEMO' /tmp/demo.js
           grep -Fq 'Simuliraj prvi uspeh novog restorana' /tmp/demo.js
-          grep -Fq 'Tvoje objave. Tvoj izgled.' /tmp/demo.js
-          grep -Fq 'Sačuvaj izmene' /tmp/demo.js
-          grep -Fq 'Primeni šablon' /tmp/demo.js
-          DASHBOARD_CHUNK=$(grep -oE 'Dashboard-[A-Za-z0-9_-]+\.js' /tmp/app.js | head -1)
-          test -n "$DASHBOARD_CHUNK"
-          curl --max-time 20 --retry 4 --retry-delay 2 --retry-all-errors -fsSL "$BASE/assets/$DASHBOARD_CHUNK" -o /tmp/dashboard.js
-          grep -Fq 'Preporučeni šabloni' /tmp/dashboard.js
-          grep -Fq 'Primeni šablon' /tmp/dashboard.js
-          grep -Fq 'Izmeni' /tmp/dashboard.js
+          grep -Fq 'Slika. Šablon. Tekst. Gotovo.' /tmp/demo.js
+          grep -Fq 'Izaberi svoju fotografiju' /tmp/demo.js
+          grep -Fq 'Sačuvaj objavu' /tmp/demo.js
+          CONTENT_CHUNK=$(grep -oE 'SimpleContentStudio-[A-Za-z0-9_-]+\.js' /tmp/app.js | head -1)
+          test -n "$CONTENT_CHUNK"
+          curl --max-time 20 --retry 4 --retry-delay 2 --retry-all-errors -fsSL "$BASE/assets/$CONTENT_CHUNK" -o /tmp/content.js
+          grep -Fq 'Slika. Šablon. Tekst. Gotovo.' /tmp/content.js
+          grep -Fq 'Ubaci fotografiju' /tmp/content.js
+          grep -Fq 'Midnight Gold' /tmp/content.js
+          grep -Fq 'Hero Dish' /tmp/content.js
+          grep -Fq 'Special Badge' /tmp/content.js
           PUBLISH_CHUNK=$(grep -oE 'PublishCenter-[A-Za-z0-9_-]+\.js' /tmp/app.js | head -1)
           test -n "$PUBLISH_CHUNK"
           curl --max-time 20 --retry 4 --retry-delay 2 --retry-all-errors -fsSL "$BASE/assets/$PUBLISH_CHUNK" -o /tmp/publish.js
