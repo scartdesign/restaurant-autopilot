@@ -155,6 +155,15 @@ jobs:
           grep -Fq -- '--rt-script-font' /tmp/content-shared.js
           grep -Fq 'rtpl-fit-xlong' /tmp/content-shared.js
           grep -Fq 'rtpl-safe-copy' /tmp/content-shared.js
+          grep -Fq 'Script safe-zones' /tmp/content-shared.css || true
+          SCRIPT_PACK_CSS=$(grep -oE 'simple-content-studio-[A-Za-z0-9_-]+\.css' /tmp/index.html | head -1 || true)
+          if [ -z "$SCRIPT_PACK_CSS" ]; then
+            SCRIPT_PACK_CSS=$(grep -oE 'simple-content-studio-[A-Za-z0-9_-]+\.css' /tmp/app.js | head -1 || true)
+          fi
+          if [ -n "$SCRIPT_PACK_CSS" ]; then
+            curl --max-time 20 --retry 4 --retry-delay 2 --retry-all-errors -fsSL "$BASE/assets/$SCRIPT_PACK_CSS" -o /tmp/script-pack.css
+            grep -Fq 'overflow:visible' /tmp/script-pack.css
+          fi
           PUBLISH_CHUNK=$(grep -oE 'PublishCenter-[A-Za-z0-9_-]+\.js' /tmp/app.js | head -1)
           test -n "$PUBLISH_CHUNK"
           curl --max-time 20 --retry 4 --retry-delay 2 --retry-all-errors -fsSL "$BASE/assets/$PUBLISH_CHUNK" -o /tmp/publish.js

@@ -178,6 +178,23 @@ jobs:
           grep -Fq 'rtpl-safe-cta' "$PACK"
           grep -Fq 'Dug tekst se automatski uklapa.' "$STUDIO"
           grep -Fq 'Dug tekst se automatski uklapa.' "$DEMO"
+      - name: Script clipping regression guard
+        shell: bash
+        run: |
+          set -euo pipefail
+          PACK="src/restaurant-template-pack.css"
+          RENDERER="src/components/RestaurantTemplateCanvas.tsx"
+          grep -Fq 'Script safe-zones' "$PACK"
+          grep -Fq '.rtpl-bottom-band,.rtpl-steak-panel,.rtpl-side-panel,.rtpl-sale-left{overflow:visible}' "$PACK"
+          grep -Fq '.rtpl-luxe .rtpl-bottom-band .rtpl-script' "$PACK"
+          grep -Fq '.rtpl-bold-offer .rtpl-side-panel .rtpl-script' "$PACK"
+          grep -Fq '.rtpl-lunch-time .rtpl-sale-left .rtpl-script' "$PACK"
+          grep -Fq 'const longest=Math.max' "$RENDERER"
+          grep -Fq 'const lineCount=lines.length' "$RENDERER"
+          if grep -Fq '.rtpl-bottom-band,.rtpl-mini-copy,.rtpl-right-copy,.rtpl-left-copy,.rtpl-steak-panel,.rtpl-white-card,.rtpl-menu-copy,.rtpl-side-panel,.rtpl-sale-left,.rtpl-special-copy{overflow:hidden}' "$PACK"; then
+            echo "Script containers are clipped again"
+            exit 1
+          fi
       - name: Simplified customer UX guard
         shell: bash
         run: |
