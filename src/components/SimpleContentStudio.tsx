@@ -10,7 +10,7 @@ import { baseFontFromLegacyPair, baseFontOptions, baseFontStack, defaultBaseFont
 
 type StudioTab='dishes'|'templates'|'posts'
 type TemplateId=NonNullable<VisualDesignMeta['template']>
-type Format='feed'|'story'
+type Format='feed'|'square'|'story'
 
 type TemplateOption={
   id:TemplateId
@@ -257,7 +257,7 @@ export function SimpleContentStudio({
     const editText=post.caption||design?.subline||''
     const editCta=post.cta||'Svrati danas'
     setTemplate(editTemplate)
-    setFormat(post.post_type==='story'?'story':'feed')
+    setFormat(post.post_type==='story'?'story':design?.format==='square'?'square':'feed')
     setHeadline(editHeadline)
     setText(editText)
     setTextSlots(design?.text_slots?{...design.text_slots}:seedTextSlots(editTemplate,editHeadline,editText,editCta))
@@ -296,7 +296,7 @@ export function SimpleContentStudio({
         manual_fields:{price:priceText.trim(),badge:badgeText.trim(),template_name:selectedTemplate.name,primary_color:primaryColor,accent_color:accentColor,base_font:baseFont,script_font:scriptFont},
       }
       const payload={
-        menu_item_id:selectedDishId||null,post_type:format,title:headline.trim(),caption,
+        menu_item_id:selectedDishId||null,post_type:format==='story'?'story':'feed',title:headline.trim(),caption,
         cta:cta.trim()||'Svrati danas',generation_meta:generationMeta,
         platform_content:{instagram:{caption,hashtags:[]},facebook:{caption,hashtags:[]}},status:'draft' as const,
       }
@@ -409,7 +409,7 @@ export function SimpleContentStudio({
           <div className="dts-font-group"><strong>Osnovni font</strong><div className="dts-font-options">{baseFontOptions.map(font=><button type="button" key={font.id} className={baseFont===font.id?'active':''} onClick={()=>setBaseFont(font.id)}><b style={{fontFamily:baseFontStack(font.id)}}>{font.sample}</b><span>{font.name}</span></button>)}</div></div>
           <div className="dts-font-group"><strong>Pisani font</strong><div className="dts-font-options script">{scriptFontOptions.map(font=><button type="button" key={font.id} className={scriptFont===font.id?'active':''} onClick={()=>setScriptFont(font.id)}><b style={{fontFamily:scriptFontStack(font.id)}}>{font.sample}</b><span>{font.name}</span></button>)}</div></div>
         </div>
-        <div className="dts-format"><button className={format==='feed'?'active':''} onClick={()=>setFormat('feed')}>POST 1:1</button><button className={format==='story'?'active':''} onClick={()=>setFormat('story')}>STORY 9:16</button></div>
+        <div className="dts-format"><button className={format==='feed'?'active':''} onClick={()=>setFormat('feed')}>FEED 4:5</button><button className={format==='square'?'active':''} onClick={()=>setFormat('square')}>KVADRAT 1:1</button><button className={format==='story'?'active':''} onClick={()=>setFormat('story')}>STORY 9:16</button></div>
         <RestaurantTemplateCanvas className="dts-live-preview" template={template} image={composerImage} headline={headline||selectedDish.name} text={text||selectedDish.description||'Tvoj tekst ovde'} price={priceText} badge={badgeText} cta={cta||'BUY'} primary={primaryColor} accent={accentColor} logoUrl={restaurant.logo_url} format={format} textSlots={textSlots} itemSlots={itemSlots} baseFont={baseFont} scriptFont={scriptFont}/>
         <button className="dts-primary dts-save-post" disabled={postWorking} onClick={()=>void savePost()}><Save size={17}/>{postWorking?'Čuvam…':editingPostId?'Sačuvaj izmene':'Sačuvaj objavu'}</button>
       </aside>}
