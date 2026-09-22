@@ -92,6 +92,23 @@ jobs:
           grep -Fq 'type="color"' "$FILE"
           grep -Fq "primary_color:primaryColor" "$FILE"
           grep -Fq "accent_color:accentColor" "$FILE"
+          RENDERER="src/components/RestaurantTemplateCanvas.tsx"
+          PACK="src/restaurant-template-pack.css"
+          grep -Fq "case 'luxe'" "$RENDERER"
+          grep -Fq "case 'editorial'" "$RENDERER"
+          grep -Fq "case 'hero-menu'" "$RENDERER"
+          grep -Fq "case 'minimal'" "$RENDERER"
+          grep -Fq "case 'bold'" "$RENDERER"
+          grep -Fq "case 'poster'" "$RENDERER"
+          grep -Fq "case 'split'" "$RENDERER"
+          grep -Fq "case 'promo-badge'" "$RENDERER"
+          grep -Fq "case 'premium-grid'" "$RENDERER"
+          grep -Fq "case 'bold-offer'" "$RENDERER"
+          grep -Fq "case 'lunch-time'" "$RENDERER"
+          grep -Fq "case 'family'" "$RENDERER"
+          grep -Fq '.rtpl-luxe' "$PACK"
+          grep -Fq '.rtpl-editorial' "$PACK"
+          grep -Fq '.rtpl-family' "$PACK"
       - name: Simplified customer UX guard
         shell: bash
         run: |
