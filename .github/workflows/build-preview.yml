@@ -114,10 +114,20 @@ jobs:
           grep -Fq 'Dodaj jelo' /tmp/content.js
           grep -Fq 'Kreiraj objavu' /tmp/content.js
           grep -Fq 'Koristi šablon' /tmp/content.js
-          grep -Fq 'Midnight Menu' /tmp/content.js
-          grep -Fq 'Hero Dish' /tmp/content.js
-          grep -Fq 'Weekend Special' /tmp/content.js
-          grep -Fq 'Mega Sale' /tmp/content.js
+          grep -Fq 'Good Morning' /tmp/content.js
+          grep -Fq 'Today’s Menu Curve' /tmp/content.js
+          grep -Fq 'Today’s Menu Circle' /tmp/content.js
+          grep -Fq 'Breakfast Special' /tmp/content.js
+          grep -Fq 'Today’s Menu Discount' /tmp/content.js
+          grep -Fq 'Grilled Special' /tmp/content.js
+          grep -Fq 'Breakfast Card' /tmp/content.js
+          grep -Fq 'Food Menu Grid' /tmp/content.js
+          grep -Fq 'Diagonal Today’s Menu' /tmp/content.js
+          grep -Fq 'Pizza Special' /tmp/content.js
+          grep -Fq 'Annual Mega Sale' /tmp/content.js
+          grep -Fq 'Today’s Special Menu' /tmp/content.js
+          grep -Fq 'Good Morning' /tmp/demo.js
+          grep -Fq 'Today’s Special Menu' /tmp/demo.js
           grep -Fq 'BOJE ŠABLONA' /tmp/content.js
           grep -Fq 'Black Gold' /tmp/content.js
           grep -Fq 'Burgundy' /tmp/content.js
