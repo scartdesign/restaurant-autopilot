@@ -1,4 +1,4 @@
-import { useState, type ChangeEvent, type FormEvent } from 'react'
+import { useState, type CSSProperties, type ChangeEvent, type FormEvent } from 'react'
 import { AlertTriangle, ArrowLeft, BarChart3, CalendarClock, CalendarDays, Check, CheckCircle2, ChevronRight, Clock3, Copy, Facebook, Hash, Image as ImageIcon, Instagram, LayoutDashboard, LayoutTemplate, MapPin, Megaphone, Menu as MenuIcon, MousePointerClick, Palette, Pencil, Plus, RefreshCw, Rocket, Save, Search, Send, Settings, ShieldCheck, Sparkles, Target, Trash2, TrendingUp, Upload, UtensilsCrossed, X, Zap } from 'lucide-react'
 import { VisualStudio } from './VisualStudio'
 import { BrandKit } from './BrandKit'
