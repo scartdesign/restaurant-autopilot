@@ -1,0 +1,9 @@
+.dts-preview-topbar{flex-wrap:wrap}
+.dts-download-png{margin-left:auto;min-height:30px;display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:0 10px;border:1px solid #d6ddd8;border-radius:9px;background:#fff;color:#0b4c45;font:inherit;font-size:7px;font-weight:900;cursor:pointer;box-shadow:0 3px 10px rgba(18,36,29,.05);transition:.16s ease}
+.dts-download-png:hover{background:#0b4c45;color:#fff;border-color:#0b4c45;transform:translateY(-1px)}
+.dts-download-png.working{pointer-events:none;opacity:.78}
+.dts-download-png.done{background:#edf7ef;color:#377047;border-color:#cfe5d3}
+.dts-download-png.error{background:#fff4f1;color:#9b493d;border-color:#f0cdc7}
+.dts-download-spinner{width:10px;height:10px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:dts-spin .7s linear infinite}
+@keyframes dts-spin{to{transform:rotate(360deg)}}
+@media(max-width:540px){.dts-download-png{order:3;width:100%;min-height:34px;margin-left:0}.dts-preview-topbar>.dts-format.compact{margin-left:auto}}
