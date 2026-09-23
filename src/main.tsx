@@ -37,6 +37,7 @@ import './legal.css'
 import './insights.css'
 import './restorapp-refresh.css'
 import './restorapp-dashboard-v2.css'
+import './studio-download'
 
 function PreviewShell({kind}:{kind:'creative'|'owner'}) {
   const [message, setMessage] = React.useState('')
