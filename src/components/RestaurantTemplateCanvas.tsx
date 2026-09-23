@@ -54,11 +54,15 @@ function Script({children,className='' }:{children:ReactNode;className?:string;f
 export function RestaurantTemplateCanvas({
   template,image,headline,text,price='',badge='',cta='BUY',primary,accent,logoUrl,format='feed',className='',textSlots={},itemSlots=[],baseFont='modern-sans',scriptFont='signature',
 }:Props){
+  const formatStyle:CSSProperties=format==='story'
+    ?{aspectRatio:'9 / 16',height:'min(64vh, 620px)',width:'auto',maxWidth:'100%',maxHeight:'none',marginInline:'auto'}
+    :{aspectRatio:'1 / 1',width:'100%',height:'auto',maxHeight:'none'}
   const rootStyle={
     '--rt-primary':primary,
     '--rt-accent':accent,
     '--rt-base-font':baseFontStack(baseFont),
     '--rt-script-font':scriptFontStack(scriptFont),
+    ...formatStyle,
   } as CSSProperties
   const discount=badge||'20% OFF'
   const slot=(key:string,fallback:string)=>textSlots[key]??fallback
