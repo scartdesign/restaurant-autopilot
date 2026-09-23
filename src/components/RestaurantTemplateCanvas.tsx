@@ -2,6 +2,7 @@ import type { CSSProperties, ReactNode } from 'react'
 import type { VisualDesignMeta } from '../types'
 import { baseFontStack, scriptFontStack } from '../template-fonts'
 import '../restaurant-template-pack.css'
+import '../restaurant-template-story.css'
 
 export type RestaurantTemplateId=NonNullable<VisualDesignMeta['template']>
 
