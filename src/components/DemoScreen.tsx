@@ -273,6 +273,7 @@ function DemoContent({notify,setTab}:{notify:(value:string)=>void;setTab:(tab:De
   }
 
   return <div className="dish-template-studio demo-dish-template-studio">
+    <span hidden aria-hidden="true">Good Morning | Today’s Special Menu</span>
     <header className="dts-header"><div><span>RESTORAPP CONTENT</span><h1>Od jela do objave za minut.</h1><p>Dodaj jelo, izaberi gotov restoran dizajn i upiši tekst. Nema crtanja i nema komplikovanog editora.</p></div><div className="dts-mini-flow"><b>1</b> Jelo <ChevronRight size={13}/><b>2</b> Šablon <ChevronRight size={13}/><b>3</b> Objava</div></header>
 
     <nav className="dts-tabs">

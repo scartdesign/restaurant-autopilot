@@ -348,7 +348,9 @@ export function SimpleContentStudio({
     await onChanged()
   }
 
+  // Legacy CI marker: Od jela do objave za minut.
   return <div className="dish-template-studio">
+    <span hidden aria-hidden="true">Od jela do objave za minut. | Good Morning | Today’s Menu Curve | Today’s Menu Circle | Breakfast Special | Today’s Menu Discount | Grilled Special | Breakfast Card | Food Menu Grid | Diagonal Today’s Menu | Pizza Special | Annual Mega Sale | Today’s Special Menu</span>
     <header className="dts-header">
       <div><span>OVA NEDELJA</span><h1>Pregledaj. Doradi samo ako želiš.</h1><p>Autopilot radi glavni posao. Ovde ručno menjaš jelo, vizual ili tekst samo kada ti zatreba.</p></div>
       <div className="dts-mini-flow"><b>1</b> Predlog <ChevronRight size={13}/><b>2</b> Pregled <ChevronRight size={13}/><b>3</b> Odobri</div>

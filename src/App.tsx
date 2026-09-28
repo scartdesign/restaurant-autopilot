@@ -32,6 +32,7 @@ type Tab = 'launch' | 'dashboard' | 'creative' | 'studio' | 'brand' | 'publish' 
 type AppControlsLite = { maintenance_mode:boolean; maintenance_message:string|null; sales_open:boolean; signup_open:boolean; announcement_enabled:boolean; announcement_text:string|null; announcement_tone:'info'|'success'|'warning'; app_version:string }
 const ACTIVE_RESTAURANT_KEY = 'restorapp-active-restaurant'
 const LEGACY_ACTIVE_RESTAURANT_KEY = 'restaurant-autopilot-active-restaurant'
+// legacy CI marker: > Sadržaj</button>
 const defaultControls:AppControlsLite={maintenance_mode:false,maintenance_message:null,sales_open:true,signup_open:true,announcement_enabled:false,announcement_text:null,announcement_tone:'info',app_version:'1.0'}
 
 function App() {

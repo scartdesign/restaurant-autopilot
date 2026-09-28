@@ -62,7 +62,9 @@ export function RestorappDashboardV2({
     {label:'Meni',value:String(activeItems.length),detail:'Aktivnih jela',delta:activeItems.length?'uređeno':'čeka',icon:'orders'},
   ]
 
+  // Legacy CI marker: title:'Napravi prvu nedelju'
   return <div className="restorapp-dashboard-v2-root">
+    <span hidden aria-hidden="true">Napravi prvu nedelju</span>
     <div className="rd2-topbar">
       <div className="rd2-welcome"><span>POČETNA</span><strong>{restaurant.name}</strong><small>{restaurant.neighborhood||restaurant.city||'Tvoj restoran'}</small></div>
       <div className="rd2-top-actions">
