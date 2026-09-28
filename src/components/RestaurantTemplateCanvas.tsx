@@ -1,8 +1,7 @@
-import type { CSSProperties, ReactNode } from 'react'
+import type { CSSProperties } from 'react'
 import type { VisualDesignMeta } from '../types'
-import { baseFontStack, scriptFontStack } from '../template-fonts'
-import '../restaurant-template-pack.css'
-import '../restaurant-template-story.css'
+import { baseFontStack } from '../template-fonts'
+import '../restaurant-template-modern.css'
 
 export type RestaurantTemplateId=NonNullable<VisualDesignMeta['template']>
 
@@ -28,182 +27,164 @@ type Props={
 }
 
 function photoStyle(image:string,position:'left'|'center'|'right'='center'):CSSProperties{
-  return image?{backgroundImage:`url("${image.replace(/"/g,'\"')}")`,backgroundPosition:position}:{}
+  return image?{backgroundImage:`url("${image.replace(/"/g,'\\"')}")`,backgroundPosition:position}:{}
 }
 
-function Discount({value}:{value:string}){
-  const clean=value.trim()||'20% OFF'
-  const parts=clean.split(/\s+/)
-  return <span className="rtpl-discount"><strong>{parts[0]}</strong><small>{parts.slice(1).join(' ')||'OFF'}</small></span>
+function clampText(value:string,fallback:string){
+  const clean=(value||fallback).trim()
+  return clean||fallback
 }
 
-function fitClass(value:string){
-  const raw=value.trim()
-  const lines=raw.split(/\n/)
-  const clean=raw.replace(/\n/g,' ')
-  const longest=Math.max(0,...lines.map(line=>line.trim().length))
-  const lineCount=lines.length
-  if(clean.length>34||longest>20||lineCount>=3)return 'rtpl-fit-xlong'
-  if(clean.length>24||longest>16||lineCount===2&&clean.length>18)return 'rtpl-fit-long'
-  if(clean.length>14||longest>12||lineCount===2)return 'rtpl-fit-medium'
-  return ''
+function eyebrowFor(template:RestaurantTemplateId,badge:string){
+  if(badge.trim())return badge.trim()
+  if(template==='lunch-time')return 'LUNCH · TODAY'
+  if(template==='bold'||template==='bold-offer')return 'SPECIAL DROP'
+  if(template==='minimal')return 'FRESH · SIMPLE · GOOD'
+  if(template==='split'||template==='premium-grid')return 'TODAY’S SELECTION'
+  return 'CHEF’S PICK'
 }
 
-function Script({children,className='' }:{children:ReactNode;className?:string;fitValue?:string}){
-  return <span className={`rtpl-script ${className}`}>{children}</span>
+function ModernPrice({price}:{price:string}){
+  if(!price.trim())return null
+  return <span className="rtm-price">{price}</span>
 }
 
 export function RestaurantTemplateCanvas({
-  template,image,headline,text,price='',badge='',cta='BUY',primary,accent,logoUrl,format='feed',className='',textSlots={},itemSlots=[],baseFont='modern-sans',scriptFont='signature',fontScale=1,photoPosition='center',
+  template,image,headline,text,price='',badge='',cta='Svrati danas',primary,accent,logoUrl,format='feed',className='',textSlots={},itemSlots=[],baseFont='modern-sans',fontScale=1,photoPosition='center',
 }:Props){
-  const formatStyle:CSSProperties=format==='story'
-    ?{aspectRatio:'9 / 16',height:'min(64vh, 620px)',width:'auto',maxWidth:'100%',maxHeight:'none',marginInline:'auto'}
-    :{aspectRatio:'1 / 1',width:'100%',height:'auto',maxHeight:'none'}
+  const safeHeadline=clampText(textSlots.overlayTitle||headline,'Današnja preporuka')
+  const safeText=clampText(textSlots.smallDesc||textSlots.whiteCardText||text,'Sveže pripremljeno za danas.')
+  const safeCta=clampText(textSlots.smallCta||textSlots.buttonText||cta,'Svrati danas')
+  const eyebrow=eyebrowFor(template,badge)
+  const safePrice=price||itemSlots[0]?.price||''
   const rootStyle={
     '--rt-primary':primary,
     '--rt-accent':accent,
     '--rt-base-font':baseFontStack(baseFont),
-    '--rt-script-font':scriptFontStack(scriptFont),
     '--rt-user-font-scale':Math.min(1.15,Math.max(.85,fontScale)),
-    ...formatStyle,
   } as CSSProperties
-  const discount=badge||'20% OFF'
-  const slot=(key:string,fallback:string)=>textSlots[key]??fallback
-  const lines=(value:string)=>value.split(/\n/).map((line,index)=><span key={index}>{line}{index<value.split(/\n/).length-1&&<br/>}</span>)
 
   let body
   switch(template){
     case 'luxe':
       body=<>
-        <span className="rtpl-corner-dots top-left"/><span className="rtpl-corner-dots bottom-right"/>
-        <div className="rtpl-frame"/>
-        <div className="rtpl-photo photo-main" style={photoStyle(image,photoPosition)}/>
-        <div className="rtpl-bottom-band">
-          <Script fitValue={slot('scriptTop','Good Morning')}>{lines(slot('scriptTop','Good Morning'))}</Script>
-          <p>{slot('smallDesc',text||'Your morning breakfast is ready')}</p>
-          <button>{slot('buttonText',cta||'BUY')}</button>
+        <div className="rtm-photo rtm-photo-full" style={photoStyle(image,photoPosition)}/>
+        <div className="rtm-shade luxe"/>
+        <div className="rtm-topline"><span>{eyebrow}</span><i/></div>
+        <div className="rtm-copy rtm-copy-bottom">
+          <h2>{safeHeadline}</h2>
+          <p>{safeText}</p>
+          <div className="rtm-actions"><ModernPrice price={safePrice}/><span className="rtm-cta">{safeCta}</span></div>
         </div>
       </>
       break
+
     case 'editorial':
       body=<>
-        <div className="rtpl-photo photo-center" style={photoStyle(image,photoPosition)}/>
-        <div className="rtpl-top-curve"/>
-        <Script fitValue={slot('scriptTop','Today’s\nMenu')} className="rtpl-title-top">{lines(slot('scriptTop','Today’s\nMenu'))}</Script>
-        <Discount value={discount}/>
-        <span className="rtpl-dot-stack"/>
-        <div className="rtpl-mini-copy"><strong className={fitClass(slot('overlayTitle',headline))}>{slot('overlayTitle',headline)}</strong><small className="rtpl-safe-copy">{slot('smallDesc',text)}</small></div>
+        <div className="rtm-editorial-photo rtm-photo" style={photoStyle(image,photoPosition)}/>
+        <div className="rtm-editorial-card">
+          <span className="rtm-kicker">{eyebrow}</span>
+          <h2>{safeHeadline}</h2>
+          <p>{safeText}</p>
+          <div className="rtm-rule-row"><i/><ModernPrice price={safePrice}/></div>
+          <span className="rtm-text-link">{safeCta} <b>↗</b></span>
+        </div>
       </>
       break
+
     case 'hero-menu':
       body=<>
-        <div className="rtpl-photo photo-full" style={photoStyle(image,photoPosition)}/>
-        <div className="rtpl-blob blob-a"/><div className="rtpl-blob blob-b"/>
-        <span className="rtpl-orange-arc"/>
-        <Discount value={discount}/>
-        <Script fitValue={slot('scriptRight','Today’s\nMenu')} className="rtpl-script-right">{lines(slot('scriptRight','Today’s\nMenu'))}</Script>
-        <div className="rtpl-right-copy"><p className="rtpl-safe-copy">{slot('smallDesc',text)}</p><small className="rtpl-safe-cta">{slot('smallCta',cta)}</small></div>
+        <div className="rtm-photo rtm-photo-full" style={photoStyle(image,photoPosition)}/>
+        <div className="rtm-shade hero"/>
+        <span className="rtm-index">01</span>
+        <ModernPrice price={safePrice}/>
+        <div className="rtm-copy rtm-copy-hero">
+          <span className="rtm-kicker light">{eyebrow}</span>
+          <h2>{safeHeadline}</h2>
+          <div className="rtm-hero-footer"><p>{safeText}</p><span>{safeCta} ↗</span></div>
+        </div>
       </>
       break
+
     case 'minimal':
       body=<>
-        <div className="rtpl-photo photo-full" style={photoStyle(image,photoPosition)}/>
-        <div className="rtpl-diagonal-panel"/>
-        <Discount value={discount}/>
-        <span className="rtpl-vertical-label">{slot('verticalText','SPECIAL DISCOUNT')}</span>
-        <Script fitValue={slot('scriptMain','Breakfast')} className="rtpl-breakfast">{lines(slot('scriptMain','Breakfast'))}</Script>
-        <div className="rtpl-left-copy"><p className="rtpl-safe-copy">{slot('smallDesc',text)}</p><small className="rtpl-safe-cta">{slot('smallCta',cta)}</small></div>
+        <div className="rtm-minimal-bg"/>
+        <div className="rtm-minimal-photo rtm-photo" style={photoStyle(image,photoPosition)}/>
+        <div className="rtm-minimal-copy">
+          <span className="rtm-kicker dark">{eyebrow}</span>
+          <h2>{safeHeadline}</h2>
+          <p>{safeText}</p>
+          <div className="rtm-minimal-foot"><ModernPrice price={safePrice}/><span>{safeCta}</span></div>
+        </div>
       </>
       break
+
     case 'bold':
-      body=<>
-        <div className="rtpl-photo photo-full" style={photoStyle(image,photoPosition)}/>
-        <Script fitValue={slot('hugeOffer',badge||'70% OFF')} className="rtpl-huge-off">{lines(slot('hugeOffer',badge||'70% OFF'))}</Script>
-        <Discount value={discount}/>
-        <div className="rtpl-bottom-strip">
-          <Script fitValue={slot('scriptBottom','Today’s Menu')}>{lines(slot('scriptBottom','Today’s Menu'))}</Script>
-          <small className="rtpl-safe-copy">{slot('smallDesc',text)}</small>
-        </div>
-      </>
-      break
-    case 'poster':
-      body=<>
-        <div className="rtpl-double-frame outer"/><div className="rtpl-double-frame inner"/>
-        <div className="rtpl-photo photo-inset" style={photoStyle(image,photoPosition)}/>
-        <div className="rtpl-steak-panel">
-          <Script fitValue={slot('scriptMain',headline||'Grilled steak')}>{lines(slot('scriptMain',headline||'Grilled steak'))}</Script>
-          <p className="rtpl-safe-copy">{slot('smallDesc',text)}</p>
-        </div>
-      </>
-      break
-    case 'split':
-      body=<>
-        <span className="rtpl-corner-dots left"/>
-        <span className="rtpl-label-white">{slot('topLabel','Breakfast')}</span>
-        <Script fitValue={slot('scriptMain','Get Delicious\nWith us')} className="rtpl-split-script">{lines(slot('scriptMain','Get Delicious\nWith us'))}</Script>
-        <div className="rtpl-white-card"><p className="rtpl-safe-copy">{slot('whiteCardText',text)}</p></div>
-        <div className="rtpl-photo photo-bottom" style={photoStyle(image,photoPosition)}/>
-        <span className="rtpl-pink-dots"/>
-      </>
-      break
-    case 'promo-badge':
-      body=<>
-        <Script fitValue={slot('scriptMain','Breakfast')} className="rtpl-grid-script">{lines(slot('scriptMain','Breakfast'))}</Script>
-        <div className="rtpl-photo photo-oval" style={photoStyle(image,photoPosition)}/>
-        <div className="rtpl-price-grid">
-          {(itemSlots.length?itemSlots:[{title:'Food Name',price:price||'$7'},{title:'Food Name',price:price||'$7'},{title:'Food Name',price:price||'$7'}]).slice(0,3).map((item,i)=><div key={i}><strong>{item.price||price||'$7'}</strong><small className={fitClass(item.title||'Food Name')}>{lines(item.title||'Food Name')}</small></div>)}
-        </div>
-        <p className="rtpl-grid-footer rtpl-safe-copy">{slot('footerText',text)}</p>
-      </>
-      break
-    case 'premium-grid':
-      body=<>
-        <div className="rtpl-photo photo-diagonal" style={photoStyle(image,photoPosition)}/>
-        <div className="rtpl-black-cut"/>
-        <Script fitValue={slot('scriptMain','Today’s\nMenu')} className="rtpl-menu-script">{lines(slot('scriptMain','Today’s\nMenu'))}</Script>
-        <Discount value={badge||'30% OFF'}/>
-        <div className="rtpl-menu-copy"><p className="rtpl-safe-copy">{slot('smallDesc',text)}</p><small className="rtpl-safe-cta">{slot('smallCta',cta)}</small></div>
-      </>
-      break
     case 'bold-offer':
       body=<>
-        <span className="rtpl-corner-dots top-left"/>
-        <div className="rtpl-photo-strip top" style={photoStyle(image,photoPosition)}/>
-        <div className="rtpl-photo photo-box" style={photoStyle(image,photoPosition)}/>
-        <div className="rtpl-photo-strip bottom" style={photoStyle(image,photoPosition)}/>
-        <div className="rtpl-side-panel">
-          <Script fitValue={slot('scriptMain','Today’s\nMenu')}>{lines(slot('scriptMain','Today’s\nMenu'))}</Script>
-          <p>{slot('smallDesc',text)}</p>
+        <div className="rtm-photo rtm-photo-full" style={photoStyle(image,photoPosition)}/>
+        <div className="rtm-shade bold"/>
+        <span className="rtm-bold-label">{eyebrow}</span>
+        <div className="rtm-bold-price"><ModernPrice price={safePrice}/></div>
+        <div className="rtm-bold-copy">
+          <h2>{safeHeadline}</h2>
+          <div><p>{safeText}</p><span>{safeCta} ↗</span></div>
         </div>
-        <Discount value={discount}/>
       </>
       break
+
+    case 'split':
+    case 'premium-grid':
+      body=<>
+        <div className="rtm-split-photo rtm-photo" style={photoStyle(image,photoPosition)}/>
+        <div className="rtm-split-panel">
+          <span className="rtm-kicker">{eyebrow}</span>
+          <h2>{safeHeadline}</h2>
+          <p>{safeText}</p>
+          <ModernPrice price={safePrice}/>
+          <span className="rtm-split-cta">{safeCta} ↗</span>
+        </div>
+        <div className="rtm-split-detail rtm-photo" style={photoStyle(image,photoPosition)}/>
+      </>
+      break
+
+    case 'poster':
+      body=<>
+        <div className="rtm-poster-bg"/>
+        <div className="rtm-poster-photo rtm-photo" style={photoStyle(image,photoPosition)}/>
+        <span className="rtm-poster-side">{eyebrow}</span>
+        <div className="rtm-poster-copy"><h2>{safeHeadline}</h2><p>{safeText}</p><ModernPrice price={safePrice}/></div>
+      </>
+      break
+
+    case 'promo-badge':
+      body=<>
+        <div className="rtm-photo rtm-photo-full" style={photoStyle(image,photoPosition)}/>
+        <div className="rtm-shade soft"/>
+        <span className="rtm-kicker floating">{eyebrow}</span>
+        <div className="rtm-promo-card"><h2>{safeHeadline}</h2><p>{safeText}</p><div><ModernPrice price={safePrice}/><span>{safeCta}</span></div></div>
+      </>
+      break
+
     case 'lunch-time':
       body=<>
-        <div className="rtpl-photo photo-right" style={photoStyle(image,photoPosition)}/>
-        <div className="rtpl-sale-left">
-          <Script fitValue={slot('scriptMain','ANNUAL MEGA\nSALE')}>{lines(slot('scriptMain','ANNUAL MEGA\nSALE'))}</Script>
-          <Discount value={discount}/>
-          <p>{slot('smallDesc',text)}</p>
-        </div>
-        <span className="rtpl-sale-slash"/>
+        <div className="rtm-lunch-left"><span className="rtm-kicker light">{eyebrow}</span><h2>{safeHeadline}</h2><p>{safeText}</p><ModernPrice price={safePrice}/><span className="rtm-lunch-time">12:00 — 16:00</span></div>
+        <div className="rtm-lunch-photo rtm-photo" style={photoStyle(image,photoPosition)}/>
       </>
       break
+
     case 'family':
       body=<>
-        <div className="rtpl-photo photo-full" style={photoStyle(image,photoPosition)}/>
-        <span className="rtpl-top-bar"><span className="rtpl-dot-inline"/></span>
-        <Script fitValue={slot('scriptMain','Today’s\nSpecial menu')} className="rtpl-special-title">{lines(slot('scriptMain','Today’s\nSpecial menu'))}</Script>
-        <Discount value={discount}/>
-        <div className="rtpl-photo photo-small" style={photoStyle(image,photoPosition)}/>
-        <div className="rtpl-special-copy"><p className="rtpl-safe-copy">{slot('smallDesc',text)}</p><small className="rtpl-safe-cta">{slot('smallCta',cta)}</small></div>
+        <div className="rtm-photo rtm-photo-full" style={photoStyle(image,photoPosition)}/>
+        <div className="rtm-shade family"/>
+        <div className="rtm-family-card"><span className="rtm-kicker">{eyebrow}</span><h2>{safeHeadline}</h2><p>{safeText}</p><div><ModernPrice price={safePrice}/><span>{safeCta} ↗</span></div></div>
       </>
       break
   }
 
-  return <div className={`restaurant-template-canvas rtpl-${template} ${format} ${className}`} style={rootStyle}>
+  return <div className={`restaurant-template-canvas rtm rtm-${template} ${format} ${className}`} style={rootStyle}>
     {body}
-    {logoUrl&&<img className="rtpl-logo" src={logoUrl} alt=""/>}
+    {logoUrl&&<img className="rtm-logo" src={logoUrl} alt=""/>}
     <span className="rtpl-accessible-headline">{headline}</span>
   </div>
 }
