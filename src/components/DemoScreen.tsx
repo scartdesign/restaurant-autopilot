@@ -72,7 +72,7 @@ export function DemoScreen({ onExit }: { onExit: () => void }) {
           <div className="autopilot-status"><span className="live-dot" /> AUTOPILOT ACTIVE · AUTO WEEK ON</div>
           <nav className="simple-primary-nav demo-simple-nav">
             <button className={tab === 'launch' ? 'nav-active' : ''} onClick={() => {setTab('launch');setDemoMoreOpen(false)}}><Rocket size={18} /> Početna</button>
-            <button className={tab === 'content' ? 'nav-active' : ''} onClick={() => {setTab('content');setDemoMoreOpen(false)}}><CalendarDays size={18} /> Sadržaj</button>
+            <button className={tab === 'content' ? 'nav-active' : ''} onClick={() => {setTab('content');setDemoMoreOpen(false)}}><CalendarDays size={18} /> Nedelja</button>
             <button className={tab === 'publish' ? 'nav-active' : ''} onClick={() => {setTab('publish');setDemoMoreOpen(false)}}><Send size={18} /> Objave</button>
             <button className={tab === 'menu' ? 'nav-active' : ''} onClick={() => {setTab('menu');setDemoMoreOpen(false)}}><UtensilsCrossed size={18} /> Meni</button>
             <button className={tab === 'settings' ? 'nav-active' : ''} onClick={() => {setTab('settings');setDemoMoreOpen(false)}}><Settings size={18} /> Podešavanja</button>
@@ -92,7 +92,7 @@ export function DemoScreen({ onExit }: { onExit: () => void }) {
       <main className="main-area">
         <div className="restorapp-topbar demo-restorapp-topbar"><div className="restorapp-topbar-copy"><span>Live product demo</span><strong>Bella Napoli</strong><small>Vračar · Beograd · Premium</small></div><div className="restorapp-topbar-actions"><div className="restorapp-profile-chip demo-profile-chip"><img src={demoLogo} alt="Bella Napoli"/><div><strong>Bella Napoli</strong><small>Demo restoran</small></div></div></div></div>
         
-        {tab === 'content' && <DemoContent notify={notify} setTab={setTab} />}
+        {tab === 'content' && <DemoWeek approved={approved} setApproved={setApproved} notify={notify} setTab={setTab} />}
         {tab === 'launch' && <DemoLaunch notify={notify} setTab={setTab} />}
         {tab === 'studio' && <VisualStudio restaurant={demoRestaurant} posts={demoVisualPosts} menuItems={demoMenu} setNotice={notify} onChanged={async()=>{}} />}
         {tab === 'brand' && <BrandKit restaurant={demoRestaurant} menuItems={demoMenu} onSaved={async () => {}} setNotice={notify} demo />}
@@ -150,6 +150,20 @@ function DemoLaunch({notify,setTab}:{notify:(value:string)=>void;setTab:(tab:Dem
       <article><span className="eyebrow">MENI</span><strong>5 aktivnih jela</strong><small>4 sa fotografijom · 80% coverage</small><button onClick={()=>setTab('menu')}><UtensilsCrossed size={15}/> Uredi meni</button></article>
       <article><span className="eyebrow">PUBLISH</span><strong>2 buduće objave</strong><small>2 odobreno / objavljeno</small><button onClick={()=>setTab('publish')}><Send size={15}/> Publish Center</button></article>
     </section>
+  </div>
+}
+
+function DemoWeek({approved,setApproved,notify,setTab}:{approved:string[];setApproved:(value:string[])=>void;notify:(value:string)=>void;setTab:(tab:DemoTab)=>void}){
+  const approvedCount=demoPosts.filter(post=>approved.includes(post.title)).length
+  return <div className="dts-week demo-autopilot-week">
+    <section className="dts-week-hero"><div><span><Sparkles size={15}/> RESTORAPP AUTOPILOT</span><h2>Tvoja nedelja je spremna.</h2><p>4 gotove objave. Tekst, format i termin su već predloženi. Ti samo odobriš.</p></div><div className="dts-week-summary"><b>4</b><span>objave</span><i>{approvedCount} odobreno</i></div></section>
+    <div className="dts-week-list">{demoPosts.map((post,index)=>{const ready=approved.includes(post.title);return <article className={`dts-week-card ${ready?'ready':''}`} key={post.title}>
+      <div className="dts-week-time"><strong>{post.day}</strong><span><Clock3 size={13}/>{post.time}</span><em>{post.type}</em></div>
+      <div className="dts-week-demo-photo" style={{backgroundImage:`linear-gradient(180deg,rgba(0,0,0,.02),rgba(0,0,0,.18)),url(${post.image})`}}><span>{String(index+1).padStart(2,'0')}</span></div>
+      <div className="dts-week-copy"><div className="dts-week-copy-head"><span className={`status ${ready?'approved':'draft'}`}>{ready?'Odobreno':'Čeka odobrenje'}</span><strong>{post.title}</strong></div><p>{post.caption}</p><small>Discovery score {post.score} · Instagram + Facebook</small></div>
+      <div className="dts-week-actions">{!ready?<button className="dts-week-approve" onClick={()=>{setApproved([...approved,post.title]);notify(`${post.title} je odobrena.`)}}><CheckCircle2 size={16}/> Odobri</button>:<button className="dts-week-approved" onClick={()=>notify(`${post.title} je već odobrena.`)}><Check size={15}/> Spremno</button>}<button onClick={()=>notify('Demo: ručna dorada je opcionalna — Autopilot ostaje glavni tok.')}><Pencil size={14}/> Uredi</button><button onClick={()=>setTab('publish')}><CalendarClock size={14}/> Termin</button></div>
+    </article>})}</div>
+    <div className="dts-week-bottom"><div><strong>{approvedCount===demoPosts.length?'Cela nedelja je odobrena.':'Još malo i gotovo.'}</strong><span>{approvedCount}/{demoPosts.length} objava spremno za zakazivanje.</span></div><button className="dts-primary" onClick={()=>setTab('publish')}><Send size={16}/> Otvori Objave</button></div>
   </div>
 }
 
