@@ -1,0 +1,32 @@
+name: Modernize template picker
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/modernize-template-picker.yml'
+      - '.github/scripts/modernize-template-picker.py'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - name: Apply template picker patch
+        run: python .github/scripts/modernize-template-picker.py
+      - run: npm ci
+      - run: npm run build
+      - name: Commit source changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/components/SimpleContentStudio.tsx
+          git diff --cached --quiet && exit 0
+          git commit -m "Show six premium template directions"
+          git push
