@@ -11,7 +11,13 @@ def replace_once(path: str, old: str, new: str) -> None:
 canvas = Path("src/components/RestaurantTemplateCanvas.tsx")
 text = canvas.read_text()
 text = text.replace("  scriptFont?:string\n  fontScale?:number\n}", "  scriptFont?:string\n  fontScale?:number\n  photoPosition?:'left'|'center'|'right'\n}", 1)
-text = text.replace("function photoStyle(image:string):CSSProperties{\n  return image?{backgroundImage:`url(\\\"${image.replace(/\\\"/g,'\\\\\\\"')}\\\")`}:{}\n}", "function photoStyle(image:string,position:'left'|'center'|'right'='center'):CSSProperties{\n  return image?{backgroundImage:`url(\\\"${image.replace(/\\\"/g,'\\\\\\\"')}\\\")`,backgroundPosition:position}:{}\n}", 1)
+text = text.replace(
+    "function photoStyle(image:string):CSSProperties{\n  return image?{backgroundImage:`url(\"${image.replace(/\"/g,'\\\"')}\")`}:{}\n}",
+    "function photoStyle(image:string,position:'left'|'center'|'right'='center'):CSSProperties{\n  return image?{backgroundImage:`url(\"${image.replace(/\"/g,'\\\"')}\")`,backgroundPosition:position}:{}\n}",
+    1,
+)
+if "function photoStyle(image:string,position:" not in text:
+    raise SystemExit("photoStyle signature replacement failed")
 text = text.replace("scriptFont='signature',fontScale=1,\n}:Props){", "scriptFont='signature',fontScale=1,photoPosition='center',\n}:Props){", 1)
 text = text.replace("photoStyle(image)", "photoStyle(image,photoPosition)")
 canvas.write_text(text)
