@@ -291,6 +291,8 @@ export function SimpleContentStudio({
     try{
       const imageUrl=composerFile?await upload(composerFile,'content'):composerImage
       const caption=text.trim()||headline.trim()
+      const existingPost=editingPostId?posts.find(post=>post.id===editingPostId)||null:null
+      const existingManual=((existingPost?.generation_meta?.manual_fields||{}) as Record<string,unknown>)
       const visualDesign:VisualDesignMeta={
         template,format,headline:headline.trim(),subline:caption,cta:cta.trim()||'Svrati danas',
         image_url:imageUrl,photo_position:photoPosition,overlay:overlayFor(template),
@@ -302,13 +304,18 @@ export function SimpleContentStudio({
         saved_at:new Date().toISOString(),
       }
       const generationMeta={
+        ...(existingPost?.generation_meta||{}),
         image_url:imageUrl,generation_source:'manual_composer',visual_design:visualDesign,
-        manual_fields:{price:priceText.trim(),badge:badgeText.trim(),template_name:selectedTemplate.name,primary_color:primaryColor,accent_color:accentColor,base_font:baseFont,script_font:scriptFont,font_scale:fontScale},
+        manual_fields:{...existingManual,price:priceText.trim(),badge:badgeText.trim(),template_name:selectedTemplate.name,primary_color:primaryColor,accent_color:accentColor,base_font:baseFont,script_font:scriptFont,font_scale:fontScale},
+      }
+      const platformContent={
+        instagram:{...(existingPost?.platform_content?.instagram||{}),caption,hashtags:existingPost?.platform_content?.instagram?.hashtags||[]},
+        facebook:{...(existingPost?.platform_content?.facebook||{}),caption,hashtags:existingPost?.platform_content?.facebook?.hashtags||[]},
       }
       const payload={
         menu_item_id:selectedDishId||null,post_type:format,title:headline.trim(),caption,
         cta:cta.trim()||'Svrati danas',generation_meta:generationMeta,
-        platform_content:{instagram:{caption,hashtags:[]},facebook:{caption,hashtags:[]}},status:'draft' as const,
+        platform_content:platformContent,status:'draft' as const,
       }
       if(editingPostId){
         const{error}=await supabase.from('posts').update(payload).eq('id',editingPostId).eq('restaurant_id',restaurant.id)
