@@ -2,12 +2,68 @@ import { exportTemplatePng } from './lib/export-template-png'
 import './studio-download.css'
 
 const BUTTON_CLASS='dts-download-png'
+const FONT_SCALE_CLASS='dts-font-scale-control'
+const FONT_SCALE_KEY='restorapp-font-scale'
 
 function slug(value:string){
   return value
     .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
     .toLowerCase().replace(/[^a-z0-9]+/g,'-')
     .replace(/^-+|-+$/g,'').slice(0,54)||'restorapp-objava'
+}
+
+function storedFontScale(){
+  const raw=Number(window.localStorage.getItem(FONT_SCALE_KEY)||100)
+  return Number.isFinite(raw)?Math.min(115,Math.max(85,Math.round(raw))):100
+}
+
+function applyFontScale(value:number){
+  const safe=Math.min(115,Math.max(85,Math.round(value)))
+  window.localStorage.setItem(FONT_SCALE_KEY,String(safe))
+  const scale=String(safe/100)
+  document.querySelectorAll<HTMLElement>('.restaurant-template-canvas').forEach(canvas=>{
+    canvas.style.setProperty('--rt-user-font-scale',scale)
+  })
+  document.querySelectorAll<HTMLElement>(`.${FONT_SCALE_CLASS}`).forEach(control=>{
+    const range=control.querySelector<HTMLInputElement>('input[type="range"]')
+    const valueLabel=control.querySelector<HTMLElement>('[data-font-scale-value]')
+    if(range&&range.value!==String(safe))range.value=String(safe)
+    if(valueLabel)valueLabel.textContent=`${safe}%`
+  })
+}
+
+function attachFontScaleControls(){
+  const current=storedFontScale()
+  document.querySelectorAll<HTMLElement>('.dts-font-editor').forEach(editor=>{
+    if(editor.querySelector(`.${FONT_SCALE_CLASS}`))return
+
+    const control=document.createElement('div')
+    control.className=FONT_SCALE_CLASS
+    control.innerHTML=`
+      <div class="dts-font-scale-copy">
+        <strong>Veličina teksta</strong>
+        <small>Brzo povećaj ili smanji tekst na svim šablonima.</small>
+      </div>
+      <div class="dts-font-scale-tools">
+        <button type="button" data-font-scale-step="-5" aria-label="Smanji tekst">−</button>
+        <input type="range" min="85" max="115" step="1" value="${current}" aria-label="Veličina teksta" />
+        <button type="button" data-font-scale-step="5" aria-label="Povećaj tekst">+</button>
+        <b data-font-scale-value>${current}%</b>
+      </div>`
+
+    const range=control.querySelector<HTMLInputElement>('input[type="range"]')
+    range?.addEventListener('input',()=>applyFontScale(Number(range.value)))
+    control.querySelectorAll<HTMLButtonElement>('[data-font-scale-step]').forEach(button=>{
+      button.addEventListener('click',()=>{
+        const next=storedFontScale()+Number(button.dataset.fontScaleStep||0)
+        applyFontScale(next)
+      })
+    })
+
+    const title=editor.querySelector('.dts-font-title')
+    if(title?.nextSibling)editor.insertBefore(control,title.nextSibling)
+    else editor.appendChild(control)
+  })
 }
 
 function attachDownloadButtons(){
@@ -65,6 +121,8 @@ function scheduleAttach(){
   requestAnimationFrame(()=>{
     scheduled=false
     attachDownloadButtons()
+    attachFontScaleControls()
+    applyFontScale(storedFontScale())
   })
 }
 
