@@ -1,5 +1,6 @@
 from pathlib import Path
 
+# Trigger after workflow installation.
 # Expand the visible library to all 12 modern restaurant directions while preserving saved template IDs.
 p=Path('src/components/SimpleContentStudio.tsx')
 s=p.read_text()
