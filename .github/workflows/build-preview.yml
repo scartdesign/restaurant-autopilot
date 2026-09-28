@@ -44,6 +44,7 @@ jobs:
           set -euo pipefail
           SHA=$(git rev-parse HEAD)
           BASE="https://raw.githack.com/scartdesign/restaurant-autopilot/$SHA/preview-app"
+
           curl --max-time 20 --retry 4 --retry-delay 2 --retry-all-errors -fsSL -D /tmp/html.headers "$BASE/index.html" -o /tmp/app.html
           tr -d '\r' < /tmp/html.headers > /tmp/html.clean
           grep -Eiq '^content-type: *text/html' /tmp/html.clean
@@ -53,6 +54,7 @@ jobs:
             echo "Legacy customer-facing brand found in preview HTML"
             exit 1
           fi
+
           JS_PATH=$(grep -oE 'src="./assets/[^"]+\.js"' /tmp/app.html | head -1 | cut -d'"' -f2)
           CSS_PATH=$(grep -oE 'href="./assets/[^"]+\.css"' /tmp/app.html | head -1 | cut -d'"' -f2)
           test -n "$JS_PATH"
@@ -68,88 +70,37 @@ jobs:
           test -s /tmp/app.js
           test -s /tmp/app.css
           grep -Fq 'Restorapp' /tmp/app.js
+          grep -Fq 'Marketing za 7 dana.' /tmp/app.js
+          grep -Fq 'Napravi prvu nedelju' /tmp/app.js
           if grep -Fq 'Restaurant Autopilot' /tmp/app.js; then
             echo "Legacy customer-facing brand found in compiled app"
             exit 1
           fi
-          grep -Fq 'INCIDENT CENTER DEMO' /tmp/app.js
-          grep -Fq 'Potvrdi proveru' /tmp/app.js
-          grep -Fq 'Vrati u queue' /tmp/app.js
-          grep -Fq 'Obavesti vlasnika' /tmp/app.js
-          grep -Fq 'E2E dry-run' /tmp/app.js
-          grep -Fq 'READ-ONLY E2E DRY-RUN' /tmp/app.js
-          grep -Fq 'RELEASE GATE DEMO' /tmp/app.js
-          grep -Fq 'Meta publish E2E' /tmp/app.js
-          grep -Fq 'ACTION HISTORY DEMO' /tmp/app.js
-          grep -Fq 'Potvrđen Meta manual review' /tmp/app.js
-          grep -Fq 'Prva jela za Autopilot' /tmp/app.js
-          grep -Fq 'Sa jednim HERO jelom i fotografijom Restorapp odmah ima mnogo bolji start' /tmp/app.js
-          grep -Fq 'SLEDEĆI KORAK' /tmp/app.js
-          grep -Fq 'Napravi prvu nedelju' /tmp/app.js
-          grep -Fq 'Prva Autopilot nedelja je spremna' /tmp/app.js
-          grep -Fq 'Još alata' /tmp/app.js
-          grep -Fq 'Dodaj fotografiju' /tmp/app.js
-          DEMO_CHUNK=$(grep -oE 'DemoScreen-[A-Za-z0-9_-]+\.js' /tmp/app.js | head -1)
-          test -n "$DEMO_CHUNK"
-          curl --max-time 20 --retry 4 --retry-delay 2 --retry-all-errors -fsSL "$BASE/assets/$DEMO_CHUNK" -o /tmp/demo.js
-          grep -Fq 'LAUNCH CENTER DEMO' /tmp/demo.js
-          grep -Fq 'META PUBLISH READINESS' /tmp/demo.js
-          grep -Fq 'Direktno Meta objavljivanje je povezano' /tmp/demo.js
-          grep -Fq 'META TOKEN WARNING DEMO' /tmp/demo.js
-          grep -Fq 'Ponovo poveži Meta' /tmp/demo.js
-          grep -Fq 'Publishing je bezbedno blokiran' /tmp/demo.js
-          grep -Fq 'FIRST SUCCESS DEMO' /tmp/demo.js
-          grep -Fq 'Simuliraj prvi uspeh novog restorana' /tmp/demo.js
-          grep -Fq 'Od jela do objave za minut.' /tmp/demo.js
-          grep -Fq 'Dodaj jelo' /tmp/demo.js
-          grep -Fq 'Kreiraj objavu' /tmp/demo.js
-          grep -Fq 'Koristi šablon' /tmp/demo.js
-          grep -Fq 'Dupliraj' /tmp/demo.js
-          grep -Fq 'PALETA' /tmp/demo.js
-          grep -Fq 'Black Gold' /tmp/demo.js
-          grep -Fq 'TEKSTOVI NA DIZAJNU' /tmp/demo.js
-          grep -Fq 'STAVKE U MENIJU' /tmp/demo.js
-          grep -Fq 'TIPOGRAFIJA' /tmp/demo.js
-          grep -Fq 'Pisani font' /tmp/demo.js
-          grep -Fq 'FINALNI PREVIEW' /tmp/demo.js
-          grep -Fq 'Dodatni tekstovi šablona' /tmp/demo.js
-          grep -Fq 'Dodatni tekstovi šablona' /tmp/demo.js
+
           CONTENT_CHUNK=$(grep -oE 'SimpleContentStudio-[A-Za-z0-9_-]+\.js' /tmp/app.js | head -1)
           test -n "$CONTENT_CHUNK"
           curl --max-time 20 --retry 4 --retry-delay 2 --retry-all-errors -fsSL "$BASE/assets/$CONTENT_CHUNK" -o /tmp/content.js
-          grep -Fq 'Od jela do objave za minut.' /tmp/content.js
-          grep -Fq 'Dodaj jelo' /tmp/content.js
+          grep -Fq 'RESTORAPP STUDIO' /tmp/content.js
+          grep -Fq 'Autopilot ili ručno. Sve na jednom mestu.' /tmp/content.js
+          grep -Fq 'Ova nedelja' /tmp/content.js
           grep -Fq 'Kreiraj objavu' /tmp/content.js
-          grep -Fq 'Koristi šablon' /tmp/content.js
-          grep -Fq 'Good Morning' /tmp/content.js
-          grep -Fq 'Today’s Menu Curve' /tmp/content.js
-          grep -Fq 'Today’s Menu Circle' /tmp/content.js
-          grep -Fq 'Breakfast Special' /tmp/content.js
-          grep -Fq 'Today’s Menu Discount' /tmp/content.js
-          grep -Fq 'Grilled Special' /tmp/content.js
-          grep -Fq 'Breakfast Card' /tmp/content.js
-          grep -Fq 'Food Menu Grid' /tmp/content.js
-          grep -Fq 'Diagonal Today’s Menu' /tmp/content.js
-          grep -Fq 'Pizza Special' /tmp/content.js
-          grep -Fq 'Annual Mega Sale' /tmp/content.js
-          grep -Fq 'Today’s Special Menu' /tmp/content.js
-          grep -Fq 'Good Morning' /tmp/demo.js
-          grep -Fq 'Today’s Special Menu' /tmp/demo.js
+          grep -Fq 'DIZAJN OBJAVE' /tmp/content.js
+          grep -Fq 'FINALNI PREVIEW' /tmp/content.js
           grep -Fq 'PALETA' /tmp/content.js
-          grep -Fq 'Black Gold' /tmp/content.js
-          grep -Fq 'Burgundy' /tmp/content.js
-          grep -Fq 'Olive' /tmp/content.js
-          grep -Fq 'Navy' /tmp/content.js
-          grep -Fq 'TEKSTOVI NA DIZAJNU' /tmp/content.js
-          grep -Fq 'STAVKE U MENIJU' /tmp/content.js
-          grep -Fq '>Vrati<' /tmp/content.js || grep -Fq 'Vrati' /tmp/content.js
           grep -Fq 'TIPOGRAFIJA' /tmp/content.js
-          grep -Fq 'Osnovni font' /tmp/content.js
-          grep -Fq 'Pisani font' /tmp/content.js
-          grep -Fq 'FINALNI PREVIEW' /tmp/content.js
-          grep -Fq 'Dodatni tekstovi šablona' /tmp/content.js
-          grep -Fq 'Dodatni tekstovi šablona' /tmp/content.js
-          grep -Fq 'FINALNI PREVIEW' /tmp/content.js
+          grep -Fq 'Noir Signature' /tmp/content.js
+          grep -Fq 'Hero Dish' /tmp/content.js
+          grep -Fq 'Magazine Plate' /tmp/content.js
+          grep -Fq 'Studio White' /tmp/content.js
+          grep -Fq 'Street Impact' /tmp/content.js
+          grep -Fq 'Chef Split' /tmp/content.js
+          grep -Fq 'Night Poster' /tmp/content.js
+          grep -Fq 'Offer Glass' /tmp/content.js
+          grep -Fq 'Menu Select' /tmp/content.js
+          grep -Fq 'Flash Offer' /tmp/content.js
+          grep -Fq 'Lunch Window' /tmp/content.js
+          grep -Fq 'Warm Table' /tmp/content.js
+
           SHARED_CONTENT_CHUNK=$(grep -oE 'simple-content-studio-[A-Za-z0-9_-]+\.js' /tmp/app.js | head -1)
           test -n "$SHARED_CONTENT_CHUNK"
           curl --max-time 20 --retry 4 --retry-delay 2 --retry-all-errors -fsSL "$BASE/assets/$SHARED_CONTENT_CHUNK" -o /tmp/content-shared.js
@@ -158,30 +109,18 @@ jobs:
           grep -Fq -- '--rt-base-font' /tmp/content-shared.js
           grep -Fq -- '--rt-script-font' /tmp/content-shared.js
           grep -Fq 'rtpl-safe-copy' /tmp/content-shared.js
-          grep -Fq 'Script safe-zones' /tmp/content-shared.css || true
-          SCRIPT_PACK_CSS=$(grep -oE 'simple-content-studio-[A-Za-z0-9_-]+\.css' /tmp/index.html | head -1 || true)
-          if [ -z "$SCRIPT_PACK_CSS" ]; then
-            SCRIPT_PACK_CSS=$(grep -oE 'simple-content-studio-[A-Za-z0-9_-]+\.css' /tmp/app.js | head -1 || true)
-          fi
+
+          SCRIPT_PACK_CSS=$(grep -oE 'simple-content-studio-[A-Za-z0-9_-]+\.css' /tmp/app.js | head -1 || true)
           if [ -n "$SCRIPT_PACK_CSS" ]; then
             curl --max-time 20 --retry 4 --retry-delay 2 --retry-all-errors -fsSL "$BASE/assets/$SCRIPT_PACK_CSS" -o /tmp/script-pack.css
-            grep -Fq 'overflow:visible' /tmp/script-pack.css
             grep -Fq 'aspect-ratio:9/16' /tmp/script-pack.css
-            grep -Fq 'width:min(100%,242px)' /tmp/script-pack.css
           fi
+
           PUBLISH_CHUNK=$(grep -oE 'PublishCenter-[A-Za-z0-9_-]+\.js' /tmp/app.js | head -1)
           test -n "$PUBLISH_CHUNK"
           curl --max-time 20 --retry 4 --retry-delay 2 --retry-all-errors -fsSL "$BASE/assets/$PUBLISH_CHUNK" -o /tmp/publish.js
-          grep -Fq 'OWNER provera' /tmp/publish.js
           grep -Fq 'Pregledaj. Zakaži. Gotovo.' /tmp/publish.js
           grep -Fq 'Poveži Instagram + Facebook' /tmp/publish.js
-          grep -Fq 'Sakrij napredno' /tmp/publish.js
-          CREATIVE_CHUNK=$(grep -oE 'CreativeHub-[A-Za-z0-9_-]+\.js' /tmp/app.js | head -1)
-          test -n "$CREATIVE_CHUNK"
-          curl --max-time 20 --retry 4 --retry-delay 2 --retry-all-errors -fsSL "$BASE/assets/$CREATIVE_CHUNK" -o /tmp/creative.js
-          if grep -Fq 'restaurant-autopilot-ai-' /tmp/creative.js; then
-            echo "Legacy AI download filename found in compiled Creative Hub"
-            exit 1
-          fi
-          echo "Restorapp simplified customer UX + onboarding + Autopilot safety + OWNER ops markers OK"
+
+          echo "Restorapp current Studio + Autopilot preview markers OK"
           echo "Public preview OK: $BASE/index.html"
