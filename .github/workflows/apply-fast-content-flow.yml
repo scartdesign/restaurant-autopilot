@@ -1,0 +1,32 @@
+name: Apply fast Content Studio flow
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/apply-fast-content-flow.yml'
+      - '.github/scripts/apply-fast-content-flow.py'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - name: Apply deterministic source patch
+        run: python .github/scripts/apply-fast-content-flow.py
+      - run: npm ci
+      - run: npm run build
+      - name: Commit source changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/components/SimpleContentStudio.tsx src/studio-download.css
+          git diff --cached --quiet && exit 0
+          git commit -m "Speed up Content Studio customer flow"
+          git push
