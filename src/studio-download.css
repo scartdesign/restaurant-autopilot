@@ -12,3 +12,16 @@
 .restaurant-template-canvas :is(.rtpl-script,p,small,strong,button,.rtpl-vertical-label,.rtpl-label-white){scale:var(--rt-user-font-scale,1);transform-origin:center}
 @keyframes dts-spin{to{transform:rotate(360deg)}}
 @media(max-width:540px){.dts-download-png{order:3;width:100%;min-height:34px;margin-left:0}.dts-preview-topbar>.dts-format.compact{margin-left:auto}.dts-font-scale-control{grid-template-columns:1fr}.dts-font-scale-tools{width:100%}.dts-font-scale-tools input{flex:1;min-width:0}}
+
+
+/* Faster customer flow: save from the preview and swipe templates on mobile */
+.dts-quick-save{display:grid;gap:5px;margin:10px 0 2px}.dts-quick-save .dts-primary{width:100%;min-height:43px}.dts-quick-save small{text-align:center;color:#849089;font-size:7px;line-height:1.35}
+@media(max-width:820px){
+  .dts-template-gallery{display:flex!important;grid-template-columns:none!important;overflow-x:auto;overscroll-behavior-inline:contain;scroll-snap-type:x mandatory;gap:10px;padding:2px 2px 10px;scrollbar-width:thin;-webkit-overflow-scrolling:touch}
+  .dts-template-gallery article{flex:0 0 min(76vw,285px);scroll-snap-align:start}
+  .dts-template-art{height:255px}
+}
+@media(max-width:540px){
+  .dts-template-gallery article{flex-basis:min(84vw,300px)}
+  .dts-template-art{height:285px}
+}

@@ -409,6 +409,8 @@ export function SimpleContentStudio({
           <RestaurantTemplateCanvas className="dts-live-preview" template={template} image={composerImage} headline={headline||selectedDish.name} text={text||selectedDish.description||'Tvoj tekst ovde'} price={priceText} badge={badgeText} cta={cta||'BUY'} primary={primaryColor} accent={accentColor} logoUrl={restaurant.logo_url} format={format} textSlots={textSlots} itemSlots={itemSlots} baseFont={baseFont} scriptFont={scriptFont} fontScale={fontScale} photoPosition={photoPosition}/>
         </div>
 
+        <div className="dts-quick-save"><button className="dts-primary" disabled={postWorking} onClick={()=>void savePost()}><CheckCircle2 size={17}/>{postWorking?'Čuvam…':editingPostId?'Sačuvaj izmene':'Sačuvaj odmah'}</button><small>Preview ti odgovara? Ne moraš ništa više da podešavaš.</small></div>
+
         <div className="dts-editor-tabs">
           <button className={editorPanel==='text'?'active':''} onClick={()=>setEditorPanel('text')}>Tekst</button>
           <button className={editorPanel==='style'?'active':''} onClick={()=>setEditorPanel('style')}>Stil</button>
