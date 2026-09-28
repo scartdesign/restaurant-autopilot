@@ -21,6 +21,7 @@ MVP web aplikacija koja pretvara meni, fotografije, brend i ponude restorana u n
 - 12 gotovih restoranskih šablona sa odvojenim 1:1 i pravim 9:16 Story prikazom
 - izbor osnovnog i pisanog fonta + veličina teksta 85–115% koja se čuva posebno za svaku objavu
 - jednostavna kontrola fokusa fotografije levo / centar / desno koja se čuva posebno za svaku objavu
+- sačuvani Story dizajni zadržavaju pravi 9:16 prikaz i u listi objava
 - pravi browser-side PNG export za post i Story u punoj rezoluciji
 - **Publish Center** sa content queue pregledom
 - CSV export cele nedelje
