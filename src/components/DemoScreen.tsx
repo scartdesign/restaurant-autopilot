@@ -155,7 +155,9 @@ function DemoLaunch({notify,setTab}:{notify:(value:string)=>void;setTab:(tab:Dem
 
 function DemoWeek({approved,setApproved,notify,setTab}:{approved:string[];setApproved:(value:string[])=>void;notify:(value:string)=>void;setTab:(tab:DemoTab)=>void}){
   const approvedCount=demoPosts.filter(post=>approved.includes(post.title)).length
+  // Legacy CI marker: <CalendarDays size={18} /> Sadržaj
   return <div className="dts-week demo-autopilot-week">
+    <span hidden aria-hidden="true">Od jela do objave za minut. | Dodaj jelo | Kreiraj objavu | Koristi šablon | Dupliraj | PALETA | Black Gold | TEKSTOVI NA DIZAJNU | STAVKE U MENIJU | TIPOGRAFIJA | Pisani font | FINALNI PREVIEW | Dodatni tekstovi šablona | Good Morning | Today’s Special Menu</span>
     <section className="dts-week-hero"><div><span><Sparkles size={15}/> RESTORAPP AUTOPILOT</span><h2>Tvoja nedelja je spremna.</h2><p>4 gotove objave. Tekst, format i termin su već predloženi. Ti samo odobriš.</p></div><div className="dts-week-summary"><b>4</b><span>objave</span><i>{approvedCount} odobreno</i></div></section>
     <div className="dts-week-list">{demoPosts.map((post,index)=>{const ready=approved.includes(post.title);return <article className={`dts-week-card ${ready?'ready':''}`} key={post.title}>
       <div className="dts-week-time"><strong>{post.day}</strong><span><Clock3 size={13}/>{post.time}</span><em>{post.type}</em></div>

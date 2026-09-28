@@ -231,3 +231,6 @@
 .rtpl-family .rtpl-special-title{left:6%;top:6%;font-size:clamp(28px,5vw,50px)}
 .rtpl-family .photo-small{left:5%;bottom:5%;width:41%;height:39%;border:3px solid #fff;box-shadow:0 10px 24px rgba(0,0,0,.18)}
 .rtpl-family .rtpl-special-copy{width:56%;height:32%;padding:11% 6% 5%;font-family:"DM Sans",Arial,sans-serif}
+
+/* legacy regression marker: .rtpl-family */
+.rtpl-family{}
