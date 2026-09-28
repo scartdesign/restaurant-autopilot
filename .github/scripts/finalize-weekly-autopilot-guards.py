@@ -1,5 +1,6 @@
 from pathlib import Path
 
+# Trigger after workflow installation.
 p=Path('src/components/SimpleContentStudio.tsx')
 s=p.read_text()
 old='<span hidden aria-hidden="true">Od jela do objave za minut. | Good Morning | Today’s Menu Curve | Today’s Menu Circle | Breakfast Special | Today’s Menu Discount | Grilled Special | Breakfast Card | Food Menu Grid | Diagonal Today’s Menu | Pizza Special | Annual Mega Sale | Today’s Special Menu</span>'
