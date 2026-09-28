@@ -37,9 +37,9 @@ export function RestorappDashboardV2({
   const nextStep=!activeItems.length
     ?{title:'Dodaj prvo jelo',text:'To je jedino što Restorappu treba da bi počeo.',label:'Dodaj jelo',kind:'menu' as const}
     :!posts.length
-      ?{title:'Napravi prvu nedelju',text:'Restorapp će pripremiti sadržaj i termine za tebe.',label:'Napravi nedelju',kind:'week' as const}
+      ?{title:'Napravi marketing za 7 dana',text:'Restorapp sam priprema plan, tekstove i termine. Ti samo pregledaš.',label:'Pokreni Autopilot',kind:'week' as const}
       :approved===0
-        ?{title:'Pregledaj sadržaj',text:`${posts.length} predloga je spremno. Odobri ono što ti se sviđa.`,label:'Pregledaj',kind:'content' as const}
+        ?{title:'Tvoja nedelja je spremna',text:`${posts.length} predloga čeka pregled. Odobri dobre i završi posao.`,label:'Pregledaj nedelju',kind:'content' as const}
         :scheduled===0
           ?{title:'Zakaži objave',text:'Sadržaj je odobren. Sada samo izaberi kada ide napolje.',label:'Zakaži',kind:'publish' as const}
           :published===0
@@ -86,14 +86,14 @@ export function RestorappDashboardV2({
         </section>
         <section className={'rd2-hero '+(image?'has-image':'')} style={image?{backgroundImage:`linear-gradient(90deg,rgba(8,18,14,.96) 0%,rgba(8,18,14,.78) 39%,rgba(8,18,14,.18) 70%),url(${image})`}:undefined}>
           <div className="rd2-hero-copy">
-            <span>GOOD AFTERNOON,</span>
-            <h1>Time to make<br/><em>today delicious!</em></h1>
-            <p>Restorapp pomaže da privučeš više gostiju, napraviš bolji sadržaj i razvijaš restoran — sve na jednom mestu.</p>
+            <span>RESTORAPP AUTOPILOT</span>
+            <h1>Marketing za 7 dana.<br/><em>Jedan klik.</em></h1>
+            <p>Ubaci meni i fotografije. Restorapp pripremi plan, tekstove i termine. Ti samo pregledaš i odobriš.</p>
             <div className="rd2-hero-actions">
-              <button className="rd2-primary" onClick={onCreate}><Sparkles size={17}/> Napravi sadržaj</button>
+              <button className="rd2-primary" onClick={()=>posts.length?onNavigate?.('dashboard'):void startFirstWeek()} disabled={firstWeekWorking}><Sparkles size={17}/> {firstWeekWorking?'Pripremam nedelju…':posts.length?'Otvori ovu nedelju':'Napravi moju nedelju'}</button>
             </div>
           </div>
-          <div className="rd2-hero-script"><span>Great food</span><strong>brings people</strong><em>together</em></div>
+          <div className="rd2-hero-script"><span>Manje posla.</span><strong>Više prisustva.</strong><em>Više gostiju.</em></div>
         </section>
 
         <section className="rd2-stats">
@@ -133,7 +133,7 @@ export function RestorappDashboardV2({
 
           <article className="rd2-panel rd2-quick">
             <header><h2>Brzo</h2></header>
-            <button onClick={()=>onNavigate?.('dashboard')}><Sparkles size={17}/><span>Sadržaj</span><ChevronRight size={15}/></button>
+            <button onClick={()=>onNavigate?.('dashboard')}><Sparkles size={17}/><span>Pregledaj nedelju</span><ChevronRight size={15}/></button>
             <button onClick={()=>onNavigate?.('publish')}><CalendarDays size={17}/><span>Objave</span><ChevronRight size={15}/></button>
             <button onClick={()=>onNavigate?.('menu')}><UtensilsCrossed size={17}/><span>Meni</span><ChevronRight size={15}/></button>
           </article>

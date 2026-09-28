@@ -439,7 +439,7 @@ function App() {
       {!isSuperadmin && <div className="sidebar-plan-mini"><span>{restaurants.length}/{restaurantLimit || '∞'} lokacija</span>{generationUsage&&<span>{generationUsage} objava</span>}{remainingRestaurants===0&&restaurantLimit!==null?<small>Za više lokacija promeni paket.</small>:null}</div>}
       <nav className="simple-primary-nav">
         <button className={activeTab==='launch'?'nav-active':''} onClick={()=>void openTab('launch')}><Rocket size={18}/> Početna</button>
-        <button className={activeTab==='dashboard'?'nav-active':''} onClick={()=>void openTab('dashboard')}><CalendarDays size={18}/> Sadržaj</button>
+        <button className={activeTab==='dashboard'?'nav-active':''} onClick={()=>void openTab('dashboard')}><CalendarDays size={18}/> Nedelja</button>
         <button className={activeTab==='publish'?'nav-active':''} onClick={()=>void openTab('publish')}><Send size={18}/> Objave</button>
         <button className={activeTab==='menu'?'nav-active':''} onClick={()=>void openTab('menu')}><UtensilsCrossed size={18}/> Meni</button>
         <button className={activeTab==='settings'?'nav-active':''} onClick={()=>void openTab('settings')}><Settings size={18}/> Podešavanja</button>
