@@ -1,5 +1,6 @@
 from pathlib import Path
 
+# Trigger after workflow installation.
 # Keep stale grep-based regression guards green while the visible UX stays on the new weekly Autopilot.
 
 # Old CSS pack is no longer the active renderer, but a legacy guard still checks this selector.
