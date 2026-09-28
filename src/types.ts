@@ -79,6 +79,7 @@ export type VisualDesignMeta = {
   font_pair?: 'modern' | 'editorial' | 'impact'
   base_font?: string
   script_font?: string
+  font_scale?: number
   price_visible?: boolean
   headline_scale?: number
   subline_scale?: number

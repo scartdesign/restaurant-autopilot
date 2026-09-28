@@ -23,6 +23,7 @@ type Props={
   itemSlots?:Array<{title:string;price:string}>
   baseFont?:string
   scriptFont?:string
+  fontScale?:number
 }
 
 function photoStyle(image:string):CSSProperties{
@@ -52,7 +53,7 @@ function Script({children,className='' }:{children:ReactNode;className?:string;f
 }
 
 export function RestaurantTemplateCanvas({
-  template,image,headline,text,price='',badge='',cta='BUY',primary,accent,logoUrl,format='feed',className='',textSlots={},itemSlots=[],baseFont='modern-sans',scriptFont='signature',
+  template,image,headline,text,price='',badge='',cta='BUY',primary,accent,logoUrl,format='feed',className='',textSlots={},itemSlots=[],baseFont='modern-sans',scriptFont='signature',fontScale=1,
 }:Props){
   const formatStyle:CSSProperties=format==='story'
     ?{aspectRatio:'9 / 16',height:'min(64vh, 620px)',width:'auto',maxWidth:'100%',maxHeight:'none',marginInline:'auto'}
@@ -62,6 +63,7 @@ export function RestaurantTemplateCanvas({
     '--rt-accent':accent,
     '--rt-base-font':baseFontStack(baseFont),
     '--rt-script-font':scriptFontStack(scriptFont),
+    '--rt-user-font-scale':Math.min(1.15,Math.max(.85,fontScale)),
     ...formatStyle,
   } as CSSProperties
   const discount=badge||'20% OFF'

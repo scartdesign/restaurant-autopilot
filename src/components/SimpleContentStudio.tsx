@@ -66,6 +66,10 @@ function overlayFor(template:TemplateId){
   if(template==='luxe'||template==='editorial'||template==='premium-grid')return .58
   return .7
 }
+function normalizeFontScale(value:unknown){
+  const parsed=Number(value)
+  return Number.isFinite(parsed)?Math.min(1.15,Math.max(.85,parsed)):1
+}
 
 function seedTextSlots(template:TemplateId,headline:string,description:string,cta:string){
   const slots=defaultTextSlots(template)
@@ -119,6 +123,7 @@ export function SimpleContentStudio({
   const[accentColor,setAccentColor]=useState(restaurant.secondary_color||'#ef7d3a')
   const[baseFont,setBaseFont]=useState<BaseFontId>(()=>defaultBaseFont(defaultTemplate(restaurant)))
   const[scriptFont,setScriptFont]=useState<ScriptFontId>('signature')
+  const[fontScale,setFontScale]=useState(1)
   const[textSlots,setTextSlots]=useState<Record<string,string>>(()=>defaultTextSlots(defaultTemplate(restaurant)))
   const[itemSlots,setItemSlots]=useState<TemplateItemSlot[]>(()=>defaultItemSlots(defaultTemplate(restaurant)))
   const[composerFile,setComposerFile]=useState<File|null>(null)
@@ -237,7 +242,7 @@ export function SimpleContentStudio({
     setTextSlots(seedTextSlots(nextTemplate,item.name,item.description||'',nextCta))
     setItemSlots(seedItemSlots(nextTemplate,menuItems,item))
     setPrimaryColor(restaurant.primary_color||'#073c38');setAccentColor(restaurant.secondary_color||'#ef7d3a')
-    setBaseFont(defaultBaseFont(nextTemplate));setScriptFont('signature')
+    setBaseFont(defaultBaseFont(nextTemplate));setScriptFont('signature');setFontScale(1)
     setEditingPostId('');setEditorPanel('text');setTab('templates')
     window.scrollTo({top:0,behavior:'smooth'})
   }
@@ -272,6 +277,7 @@ export function SimpleContentStudio({
     setAccentColor(post.generation_meta?.visual_design?.accent_color||restaurant.secondary_color||'#ef7d3a')
     setBaseFont((design?.base_font as BaseFontId)||baseFontFromLegacyPair(design?.font_pair))
     setScriptFont((design?.script_font as ScriptFontId)||'signature')
+    setFontScale(normalizeFontScale(design?.font_scale))
     setEditorPanel('text');setTab('templates');window.scrollTo({top:0,behavior:'smooth'})
   }
 
@@ -286,7 +292,7 @@ export function SimpleContentStudio({
       const visualDesign:VisualDesignMeta={
         template,format,headline:headline.trim(),subline:caption,cta:cta.trim()||'Svrati danas',
         image_url:imageUrl,photo_position:'center',overlay:overlayFor(template),
-        primary_color:primaryColor,accent_color:accentColor,base_font:baseFont,script_font:scriptFont,text_slots:{...textSlots},item_slots:itemSlots.map(item=>({...item})),
+        primary_color:primaryColor,accent_color:accentColor,base_font:baseFont,script_font:scriptFont,font_scale:fontScale,text_slots:{...textSlots},item_slots:itemSlots.map(item=>({...item})),
         logo_visible:Boolean(restaurant.logo_url&&(restaurant.default_logo_visible??true)),
         logo_position:restaurant.default_logo_position||'top-right',logo_size:restaurant.default_logo_size||'m',
         logo_badge:restaurant.default_logo_badge||'white',copy_position:'bottom',
@@ -295,7 +301,7 @@ export function SimpleContentStudio({
       }
       const generationMeta={
         image_url:imageUrl,generation_source:'manual_composer',visual_design:visualDesign,
-        manual_fields:{price:priceText.trim(),badge:badgeText.trim(),template_name:selectedTemplate.name,primary_color:primaryColor,accent_color:accentColor,base_font:baseFont,script_font:scriptFont},
+        manual_fields:{price:priceText.trim(),badge:badgeText.trim(),template_name:selectedTemplate.name,primary_color:primaryColor,accent_color:accentColor,base_font:baseFont,script_font:scriptFont,font_scale:fontScale},
       }
       const payload={
         menu_item_id:selectedDishId||null,post_type:format,title:headline.trim(),caption,
@@ -382,7 +388,7 @@ export function SimpleContentStudio({
         <div className="dts-section-head"><div><span>GOTOVI DIZAJNI</span><h2>Izaberi šablon</h2></div><small>{selectedDish?<>Za: <strong>{selectedDish.name}</strong></>:'Prvo izaberi jelo.'}</small></div>
         {!selectedDish&&<div className="dts-choose-dish">{menuItems.map(item=><button key={item.id} onClick={()=>startFromDish(item)}>{item.image_url?<img src={item.image_url} alt=""/>:<ImageIcon size={20}/>}<span>{item.name}</span><ChevronRight size={14}/></button>)}</div>}
         {selectedDish&&<div className="dts-template-gallery">{templates.map((item,index)=><article key={item.id} className={template===item.id?'selected':''}>
-          <div className="dts-template-art"><RestaurantTemplateCanvas template={item.id} image={composerImage} headline={headline||selectedDish.name} text={text||selectedDish.description||'Tvoj tekst ovde'} price={priceText} badge={badgeText} cta={cta||'BUY'} primary={primaryColor} accent={accentColor} textSlots={item.id===template?textSlots:seedTextSlots(item.id,headline||selectedDish.name,text||selectedDish.description||'',cta||'BUY')} itemSlots={item.id===template?itemSlots:seedItemSlots(item.id,menuItems,selectedDish)} baseFont={item.id===template?baseFont:defaultBaseFont(item.id)} scriptFont={item.id===template?scriptFont:'signature'}/></div>
+          <div className="dts-template-art"><RestaurantTemplateCanvas template={item.id} image={composerImage} headline={headline||selectedDish.name} text={text||selectedDish.description||'Tvoj tekst ovde'} price={priceText} badge={badgeText} cta={cta||'BUY'} primary={primaryColor} accent={accentColor} textSlots={item.id===template?textSlots:seedTextSlots(item.id,headline||selectedDish.name,text||selectedDish.description||'',cta||'BUY')} itemSlots={item.id===template?itemSlots:seedItemSlots(item.id,menuItems,selectedDish)} baseFont={item.id===template?baseFont:defaultBaseFont(item.id)} scriptFont={item.id===template?scriptFont:'signature'} fontScale={item.id===template?fontScale:1}/></div>
           <div className="dts-template-meta"><div><span>{item.category}</span><strong>{item.name}</strong><small>{item.note}</small></div><button onClick={()=>chooseTemplate(item.id)}>{template===item.id?<><Check size={14}/> Izabran</>:<>Koristi šablon <ChevronRight size={14}/></>}</button></div>
         </article>)}</div>}
       </div>
@@ -398,7 +404,7 @@ export function SimpleContentStudio({
             <div><small>FINALNI PREVIEW</small><strong>{format==='feed'?'Instagram post · 1:1':'Story · 9:16'}</strong></div>
             <div className="dts-format compact"><button className={format==='feed'?'active':''} onClick={()=>setFormat('feed')}>1:1</button><button className={format==='story'?'active':''} onClick={()=>setFormat('story')}>9:16</button></div>
           </div>
-          <RestaurantTemplateCanvas className="dts-live-preview" template={template} image={composerImage} headline={headline||selectedDish.name} text={text||selectedDish.description||'Tvoj tekst ovde'} price={priceText} badge={badgeText} cta={cta||'BUY'} primary={primaryColor} accent={accentColor} logoUrl={restaurant.logo_url} format={format} textSlots={textSlots} itemSlots={itemSlots} baseFont={baseFont} scriptFont={scriptFont}/>
+          <RestaurantTemplateCanvas className="dts-live-preview" template={template} image={composerImage} headline={headline||selectedDish.name} text={text||selectedDish.description||'Tvoj tekst ovde'} price={priceText} badge={badgeText} cta={cta||'BUY'} primary={primaryColor} accent={accentColor} logoUrl={restaurant.logo_url} format={format} textSlots={textSlots} itemSlots={itemSlots} baseFont={baseFont} scriptFont={scriptFont} fontScale={fontScale}/>
         </div>
 
         <div className="dts-editor-tabs">
@@ -437,6 +443,7 @@ export function SimpleContentStudio({
         {editorPanel==='fonts'&&<div className="dts-editor-panel">
           <div className="dts-font-editor premium-box">
             <div className="dts-font-title"><span>TIPOGRAFIJA</span><small>Probrane kombinacije koje rade u restoran dizajnu.</small></div>
+            <div className="dts-font-scale-control"><div className="dts-font-scale-copy"><strong>Veličina teksta</strong><small>Čuva se posebno za svaku objavu.</small></div><div className="dts-font-scale-tools"><button type="button" onClick={()=>setFontScale(current=>Math.max(.85,Math.round((current-.05)*100)/100))} aria-label="Smanji tekst">−</button><input type="range" min="85" max="115" step="1" value={Math.round(fontScale*100)} onChange={e=>setFontScale(Number(e.target.value)/100)} aria-label="Veličina teksta"/><button type="button" onClick={()=>setFontScale(current=>Math.min(1.15,Math.round((current+.05)*100)/100))} aria-label="Povećaj tekst">+</button><b>{Math.round(fontScale*100)}%</b></div></div>
             <div className="dts-font-group"><strong>Osnovni font</strong><div className="dts-font-options">{baseFontOptions.map(font=><button type="button" key={font.id} className={baseFont===font.id?'active':''} onClick={()=>setBaseFont(font.id)}><b style={{fontFamily:baseFontStack(font.id)}}>{font.sample}</b><span>{font.name}</span></button>)}</div></div>
             <div className="dts-font-group"><strong>Pisani font</strong><div className="dts-font-options script">{scriptFontOptions.map(font=><button type="button" key={font.id} className={scriptFont===font.id?'active':''} onClick={()=>setScriptFont(font.id)}><b style={{fontFamily:scriptFontStack(font.id)}}>{font.sample}</b><span>{font.name}</span></button>)}</div></div>
           </div>
@@ -448,8 +455,8 @@ export function SimpleContentStudio({
 
     {tab==='posts'&&<section className="dts-posts">
       <div className="dts-section-head"><div><span>MOJE OBJAVE</span><h2>Sačuvani dizajni</h2></div><button className="dts-primary compact" onClick={()=>setTab('dishes')}><Plus size={15}/> Nova objava</button></div>
-      {recentPosts.length?<div className="dts-post-grid">{recentPosts.map(post=>{const image=resolvePostImage(post);const tpl=(post.generation_meta?.visual_design?.template as TemplateId)||'editorial';const manual=(post.generation_meta?.manual_fields||{}) as Record<string,unknown>;const design=post.generation_meta?.visual_design;const postPrimary=design?.primary_color||restaurant.primary_color||'#073c38';const postAccent=design?.accent_color||restaurant.secondary_color||'#ef7d3a';const postBaseFont=(design?.base_font as BaseFontId)||baseFontFromLegacyPair(design?.font_pair);const postScriptFont=(design?.script_font as ScriptFontId)||'signature';return <article key={post.id}>
-        <div className="dts-post-art"><RestaurantTemplateCanvas template={tpl} image={image} headline={post.title||'Objava'} text={post.caption||''} price={typeof manual.price==='string'?manual.price:''} badge={typeof manual.badge==='string'?manual.badge:''} cta={post.cta||'BUY'} primary={postPrimary} accent={postAccent} textSlots={design?.text_slots||{}} itemSlots={design?.item_slots||[]} baseFont={postBaseFont} scriptFont={postScriptFont}/></div>
+      {recentPosts.length?<div className="dts-post-grid">{recentPosts.map(post=>{const image=resolvePostImage(post);const tpl=(post.generation_meta?.visual_design?.template as TemplateId)||'editorial';const manual=(post.generation_meta?.manual_fields||{}) as Record<string,unknown>;const design=post.generation_meta?.visual_design;const postPrimary=design?.primary_color||restaurant.primary_color||'#073c38';const postAccent=design?.accent_color||restaurant.secondary_color||'#ef7d3a';const postBaseFont=(design?.base_font as BaseFontId)||baseFontFromLegacyPair(design?.font_pair);const postScriptFont=(design?.script_font as ScriptFontId)||'signature';const postFontScale=normalizeFontScale(design?.font_scale);return <article key={post.id}>
+        <div className="dts-post-art"><RestaurantTemplateCanvas template={tpl} image={image} headline={post.title||'Objava'} text={post.caption||''} price={typeof manual.price==='string'?manual.price:''} badge={typeof manual.badge==='string'?manual.badge:''} cta={post.cta||'BUY'} primary={postPrimary} accent={postAccent} textSlots={design?.text_slots||{}} itemSlots={design?.item_slots||[]} baseFont={postBaseFont} scriptFont={postScriptFont} fontScale={postFontScale}/></div>
         <div className="dts-post-info"><div><span className={`status ${post.status}`}>{post.status==='draft'?'Draft':post.status==='approved'?'Spremno':post.status==='published'?'Objavljeno':'Za doradu'}</span><strong>{post.title||'Bez naslova'}</strong></div><div className="dts-post-actions"><button onClick={()=>editPost(post)}><Pencil size={14}/> Izmeni</button><button onClick={()=>void duplicatePost(post)}><Copy size={14}/> Dupliraj</button><button className="schedule" onClick={()=>onNavigate('publish')}><CalendarClock size={14}/> Zakaži</button><button className="danger icon-only" onClick={()=>void deletePost(post)} title="Obriši"><Trash2 size={14}/></button></div></div>
       </article>})}</div>:<div className="dts-empty"><ImageIcon size={34}/><strong>Još nema objava.</strong><span>Dodaj jelo i izaberi prvi šablon.</span><button className="dts-primary compact" onClick={()=>setTab('dishes')}>Kreni od jela</button></div>}
     </section>}

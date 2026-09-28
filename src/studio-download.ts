@@ -21,10 +21,10 @@ function applyFontScale(value:number){
   const safe=Math.min(115,Math.max(85,Math.round(value)))
   window.localStorage.setItem(FONT_SCALE_KEY,String(safe))
   const scale=String(safe/100)
-  document.querySelectorAll<HTMLElement>('.restaurant-template-canvas').forEach(canvas=>{
+  document.querySelectorAll<HTMLElement>('.demo-shell .restaurant-template-canvas').forEach(canvas=>{
     canvas.style.setProperty('--rt-user-font-scale',scale)
   })
-  document.querySelectorAll<HTMLElement>(`.${FONT_SCALE_CLASS}`).forEach(control=>{
+  document.querySelectorAll<HTMLElement>(`.demo-shell .${FONT_SCALE_CLASS}`).forEach(control=>{
     const range=control.querySelector<HTMLInputElement>('input[type="range"]')
     const valueLabel=control.querySelector<HTMLElement>('[data-font-scale-value]')
     if(range&&range.value!==String(safe))range.value=String(safe)
@@ -34,7 +34,7 @@ function applyFontScale(value:number){
 
 function attachFontScaleControls(){
   const current=storedFontScale()
-  document.querySelectorAll<HTMLElement>('.dts-font-editor').forEach(editor=>{
+  document.querySelectorAll<HTMLElement>('.demo-shell .dts-font-editor').forEach(editor=>{
     if(editor.querySelector(`.${FONT_SCALE_CLASS}`))return
 
     const control=document.createElement('div')
