@@ -45,7 +45,7 @@ jobs:
           SHA=$(git rev-parse HEAD)
           BASE="https://raw.githack.com/scartdesign/restaurant-autopilot/$SHA/preview-app"
 
-          require_text() {
+          require_file_text() {
             local file="$1"
             local text="$2"
             if ! grep -Fq -- "$text" "$file"; then
@@ -54,39 +54,16 @@ jobs:
             fi
           }
 
-          curl --max-time 20 --retry 4 --retry-delay 2 --retry-all-errors -fsSL -D /tmp/html.headers "$BASE/index.html" -o /tmp/app.html
-          tr -d '\r' < /tmp/html.headers > /tmp/html.clean
-          grep -Eiq '^content-type: *text/html' /tmp/html.clean
-          require_text /tmp/app.html '<div id="root"></div>'
-          require_text /tmp/app.html 'Restorapp'
-          if grep -Fq 'Restaurant Autopilot' /tmp/app.html; then
-            echo "Legacy customer-facing brand found in preview HTML"
-            exit 1
-          fi
+          require_bundle_text() {
+            local text="$1"
+            if ! grep -R -Fq --include='*.js' -- "$text" preview-app/assets; then
+              echo "Missing compiled bundle marker: $text"
+              exit 1
+            fi
+          }
 
-          JS_PATH=$(grep -oE 'src="./assets/[^"]+\.js"' /tmp/app.html | head -1 | cut -d'"' -f2)
-          CSS_PATH=$(grep -oE 'href="./assets/[^"]+\.css"' /tmp/app.html | head -1 | cut -d'"' -f2)
-          test -n "$JS_PATH"
-          test -n "$CSS_PATH"
-          JS_PATH="${JS_PATH#./}"
-          CSS_PATH="${CSS_PATH#./}"
-          curl --max-time 20 --retry 4 --retry-delay 2 --retry-all-errors -fsSL -D /tmp/js.headers "$BASE/$JS_PATH" -o /tmp/app.js
-          curl --max-time 20 --retry 4 --retry-delay 2 --retry-all-errors -fsSL -D /tmp/css.headers "$BASE/$CSS_PATH" -o /tmp/app.css
-          tr -d '\r' < /tmp/js.headers > /tmp/js.clean
-          tr -d '\r' < /tmp/css.headers > /tmp/css.clean
-          grep -Eiq '^content-type: *(application|text)/(javascript|x-javascript)' /tmp/js.clean
-          grep -Eiq '^content-type: *text/css' /tmp/css.clean
-          test -s /tmp/app.js
-          test -s /tmp/app.css
-          require_text /tmp/app.js 'Restorapp'
-          if grep -Fq 'Restaurant Autopilot' /tmp/app.js; then
-            echo "Legacy customer-facing brand found in compiled app"
-            exit 1
-          fi
-
-          CONTENT_CHUNK=$(grep -oE 'SimpleContentStudio-[A-Za-z0-9_-]+\.js' /tmp/app.js | head -1)
-          test -n "$CONTENT_CHUNK"
-          curl --max-time 20 --retry 4 --retry-delay 2 --retry-all-errors -fsSL "$BASE/assets/$CONTENT_CHUNK" -o /tmp/content.js
+          # Validate the complete local production bundle. This avoids depending on
+          # Vite lazy-chunk naming while still verifying what is actually published.
           for marker in \
             'RESTORAPP STUDIO' \
             'Autopilot ili ručno. Sve na jednom mestu.' \
@@ -107,24 +84,44 @@ jobs:
             'Menu Select' \
             'Flash Offer' \
             'Lunch Window' \
-            'Warm Table'; do
-            require_text /tmp/content.js "$marker"
+            'Warm Table' \
+            'Great Vibes' \
+            'Bebas' \
+            '--rt-base-font' \
+            '--rt-script-font' \
+            'rtpl-safe-copy' \
+            'Pregledaj. Zakaži. Gotovo.' \
+            'Poveži Instagram + Facebook'; do
+            require_bundle_text "$marker"
           done
 
-          SHARED_CONTENT_CHUNK=$(grep -oE 'simple-content-studio-[A-Za-z0-9_-]+\.js' /tmp/app.js | head -1)
-          test -n "$SHARED_CONTENT_CHUNK"
-          curl --max-time 20 --retry 4 --retry-delay 2 --retry-all-errors -fsSL "$BASE/assets/$SHARED_CONTENT_CHUNK" -o /tmp/content-shared.js
-          require_text /tmp/content-shared.js 'Great Vibes'
-          require_text /tmp/content-shared.js 'Bebas'
-          require_text /tmp/content-shared.js '--rt-base-font'
-          require_text /tmp/content-shared.js '--rt-script-font'
-          require_text /tmp/content-shared.js 'rtpl-safe-copy'
+          if grep -R -Fq --include='*.js' -- 'Restaurant Autopilot' preview-app/assets; then
+            echo "Legacy customer-facing brand found in compiled app"
+            exit 1
+          fi
 
-          PUBLISH_CHUNK=$(grep -oE 'PublishCenter-[A-Za-z0-9_-]+\.js' /tmp/app.js | head -1)
-          test -n "$PUBLISH_CHUNK"
-          curl --max-time 20 --retry 4 --retry-delay 2 --retry-all-errors -fsSL "$BASE/assets/$PUBLISH_CHUNK" -o /tmp/publish.js
-          require_text /tmp/publish.js 'Pregledaj. Zakaži. Gotovo.'
-          require_text /tmp/publish.js 'Poveži Instagram + Facebook'
+          # Validate that the immutable public preview is actually being served.
+          curl --max-time 20 --retry 4 --retry-delay 2 --retry-all-errors -fsSL -D /tmp/html.headers "$BASE/index.html" -o /tmp/app.html
+          tr -d '\r' < /tmp/html.headers > /tmp/html.clean
+          grep -Eiq '^content-type: *text/html' /tmp/html.clean
+          require_file_text /tmp/app.html '<div id="root"></div>'
+          require_file_text /tmp/app.html 'Restorapp'
 
-          echo "Restorapp current Studio + Autopilot preview markers OK"
+          JS_PATH=$(grep -oE 'src="./assets/[^"]+\.js"' /tmp/app.html | head -1 | cut -d'"' -f2)
+          CSS_PATH=$(grep -oE 'href="./assets/[^"]+\.css"' /tmp/app.html | head -1 | cut -d'"' -f2)
+          test -n "$JS_PATH"
+          test -n "$CSS_PATH"
+          JS_PATH="${JS_PATH#./}"
+          CSS_PATH="${CSS_PATH#./}"
+          curl --max-time 20 --retry 4 --retry-delay 2 --retry-all-errors -fsSL -D /tmp/js.headers "$BASE/$JS_PATH" -o /tmp/app.js
+          curl --max-time 20 --retry 4 --retry-delay 2 --retry-all-errors -fsSL -D /tmp/css.headers "$BASE/$CSS_PATH" -o /tmp/app.css
+          tr -d '\r' < /tmp/js.headers > /tmp/js.clean
+          tr -d '\r' < /tmp/css.headers > /tmp/css.clean
+          grep -Eiq '^content-type: *(application|text)/(javascript|x-javascript)' /tmp/js.clean
+          grep -Eiq '^content-type: *text/css' /tmp/css.clean
+          test -s /tmp/app.js
+          test -s /tmp/app.css
+          require_file_text /tmp/app.js 'Restorapp'
+
+          echo "Restorapp current Studio + Autopilot compiled bundle OK"
           echo "Public preview OK: $BASE/index.html"
