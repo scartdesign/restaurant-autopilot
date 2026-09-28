@@ -17,9 +17,12 @@ MVP web aplikacija koja pretvara meni, fotografije, brend i ponude restorana u n
 - discovery score i pre-publish quality check
 - odobravanje, ručna izmena, regeneracija i ponovno discovery optimizovanje
 - Campaign Autopilot sa presetima: lunch, happy hour, vikend, dostava i večera za dvoje
-- **Visual Studio** sa Editorial / Bold / Minimal template-ima
-- 12 gotovih restoranskih šablona sa odvojenim 1:1 i pravim 9:16 Story prikazom
-- izbor osnovnog i pisanog fonta + veličina teksta 85–115% koja se čuva posebno za svaku objavu
+- **Visual Studio** sa potpuno novim premium art-direction sistemom
+- 6 glavnih premium pravaca za nove objave: Editorial Luxe, Full Bleed, Clean Editorial, Minimal Product, Bold Campaign i Modern Split
+- stari template ID-jevi ostaju podržani za ranije sačuvane objave
+- dizajn je food-first: fotografija i naziv jela vode kompoziciju, cena i CTA su sekundarni, logo je diskretan
+- 1:1 i pravi 9:16 Story prikaz sa zasebnim responsive kompozicijama
+- izbor osnovnog fonta + veličina teksta 85–115% koja se čuva posebno za svaku objavu
 - jednostavna kontrola fokusa fotografije levo / centar / desno koja se čuva posebno za svaku objavu
 - sačuvani Story dizajni zadržavaju pravi 9:16 prikaz i u listi objava
 - brzi Content Studio tok: na mobilnom se šabloni listaju horizontalno, a objava može odmah da se sačuva ispod finalnog preview-a bez prolaska kroz napredne kontrole
