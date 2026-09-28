@@ -367,14 +367,14 @@ export function SimpleContentStudio({
   return <div className="dish-template-studio">
     <span hidden aria-hidden="true">Od jela do objave za minut. | Sačuvaj objavu | Zakaži | Good Morning | Today’s Menu Curve | Today’s Menu Circle | Breakfast Special | Today’s Menu Discount | Grilled Special | Breakfast Card | Food Menu Grid | Diagonal Today’s Menu | Pizza Special | Annual Mega Sale | Today’s Special Menu</span>
     <header className="dts-header">
-      <div><span>OVA NEDELJA</span><h1>Pregledaj. Doradi samo ako želiš.</h1><p>Autopilot radi glavni posao. Ovde ručno menjaš jelo, vizual ili tekst samo kada ti zatreba.</p></div>
+      <div><span>RESTORAPP STUDIO</span><h1>Autopilot ili ručno. Sve na jednom mestu.</h1><p>Pregledaj gotovu nedelju ili napravi novu objavu iz menija i premium dizajna.</p></div>
       <div className="dts-mini-flow"><b>1</b> Predlog <ChevronRight size={13}/><b>2</b> Pregled <ChevronRight size={13}/><b>3</b> Odobri</div>
     </header>
 
     <nav className="dts-tabs dts-autopilot-tabs">
       <button className={tab==='posts'?'active':''} onClick={()=>setTab('posts')}><CalendarClock size={17}/><span>Ova nedelja</span><b>{recentPosts.length}</b></button>
       <button className={tab==='dishes'?'active':''} onClick={()=>setTab('dishes')}><UtensilsCrossed size={17}/><span>Meni</span><b>{menuItems.length}</b></button>
-      <button className={tab==='templates'?'active':''} onClick={()=>setTab('templates')}><LayoutTemplate size={17}/><span>Uredi ručno</span><b>{templates.length}</b></button>
+      <button className={tab==='templates'?'active':''} onClick={()=>setTab('templates')}><LayoutTemplate size={17}/><span>Kreiraj objavu</span><b>{templates.length}</b></button>
     </nav>
 
     {tab==='dishes'&&<section className="dts-dishes">
@@ -405,7 +405,7 @@ export function SimpleContentStudio({
 
     {tab==='templates'&&<section className="dts-template-screen">
       <div className="dts-template-main">
-        <div className="dts-section-head"><div><span>RUČNA DORADA</span><h2>Promeni izgled samo ako želiš</h2></div><small>{selectedDish?<>Za: <strong>{selectedDish.name}</strong></>:'Prvo izaberi jelo.'}</small></div>
+        <div className="dts-section-head"><div><span>DIZAJN OBJAVE</span><h2>Izaberi pravac i napravi objavu</h2></div><small>{selectedDish?<>Za: <strong>{selectedDish.name}</strong></>:'Prvo izaberi jelo.'}</small></div>
         {!selectedDish&&<div className="dts-choose-dish">{menuItems.map(item=><button key={item.id} onClick={()=>startFromDish(item)}>{item.image_url?<img src={item.image_url} alt=""/>:<ImageIcon size={20}/>}<span>{item.name}</span><ChevronRight size={14}/></button>)}</div>}
         {selectedDish&&<div className="dts-template-gallery">{templates.map((item,index)=><article key={item.id} className={template===item.id?'selected':''}>
           <div className="dts-template-art"><RestaurantTemplateCanvas template={item.id} image={composerImage} headline={headline||selectedDish.name} text={text||selectedDish.description||'Tvoj tekst ovde'} price={priceText} badge={badgeText} cta={cta||'BUY'} primary={primaryColor} accent={accentColor} textSlots={item.id===template?textSlots:seedTextSlots(item.id,headline||selectedDish.name,text||selectedDish.description||'',cta||'BUY')} itemSlots={item.id===template?itemSlots:seedItemSlots(item.id,menuItems,selectedDish)} baseFont={item.id===template?baseFont:defaultBaseFont(item.id)} scriptFont={item.id===template?scriptFont:'signature'} fontScale={item.id===template?fontScale:1} photoPosition={item.id===template?photoPosition:'center'}/></div>
