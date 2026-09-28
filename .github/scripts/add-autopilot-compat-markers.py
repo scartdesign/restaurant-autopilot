@@ -1,5 +1,6 @@
 from pathlib import Path
 
+# Triggered after the compatibility workflow was installed.
 # Dashboard: keep old smoke/source marker without showing it to users.
 p=Path('src/components/RestorappDashboardV2.tsx')
 s=p.read_text()
