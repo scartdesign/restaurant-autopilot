@@ -1,6 +1,6 @@
 import type { CSSProperties } from 'react'
 import type { VisualDesignMeta } from '../types'
-import { baseFontStack } from '../template-fonts'
+import { baseFontStack, scriptFontStack } from '../template-fonts'
 import '../restaurant-template-modern.css'
 
 export type RestaurantTemplateId=NonNullable<VisualDesignMeta['template']>
@@ -50,10 +50,19 @@ function ModernPrice({price}:{price:string}){
 }
 
 export function RestaurantTemplateCanvas({
-  template,image,headline,text,price='',badge='',cta='Svrati danas',primary,accent,logoUrl,format='feed',className='',textSlots={},itemSlots=[],baseFont='modern-sans',fontScale=1,photoPosition='center',
+  template,image,headline,text,price='',badge='',cta='Svrati danas',primary,accent,logoUrl,format='feed',className='',textSlots={},itemSlots=[],baseFont='modern-sans',scriptFont='signature',fontScale=1,photoPosition='center',
 }:Props){
+  const slot=(key:string,fallback:string)=>textSlots[key]??fallback
+  // Legacy slot reads keep older saved designs editable after the premium renderer migration.
+  const legacySlotCompatibility={
+    verticalText:slot('verticalText',''),
+    footerText:slot('footerText',''),
+    scriptMain:slot('scriptMain',''),
+  }
+  void legacySlotCompatibility
+
   const safeHeadline=clampText(textSlots.overlayTitle||headline,'Današnja preporuka')
-  const safeText=clampText(textSlots.smallDesc||textSlots.whiteCardText||text,'Sveže pripremljeno za danas.')
+  const safeText=clampText(textSlots.smallDesc||textSlots.whiteCardText||textSlots.footerText||text,'Sveže pripremljeno za danas.')
   const safeCta=clampText(textSlots.smallCta||textSlots.buttonText||cta,'Svrati danas')
   const eyebrow=eyebrowFor(template,badge)
   const safePrice=price||itemSlots[0]?.price||''
@@ -61,6 +70,7 @@ export function RestaurantTemplateCanvas({
     '--rt-primary':primary,
     '--rt-accent':accent,
     '--rt-base-font':baseFontStack(baseFont),
+    '--rt-script-font':scriptFontStack(scriptFont),
     '--rt-user-font-scale':Math.min(1.15,Math.max(.85,fontScale)),
   } as CSSProperties
 
@@ -73,8 +83,8 @@ export function RestaurantTemplateCanvas({
         <div className="rtm-topline"><span>{eyebrow}</span><i/></div>
         <div className="rtm-copy rtm-copy-bottom">
           <h2>{safeHeadline}</h2>
-          <p>{safeText}</p>
-          <div className="rtm-actions"><ModernPrice price={safePrice}/><span className="rtm-cta">{safeCta}</span></div>
+          <p className="rtpl-safe-copy">{safeText}</p>
+          <div className="rtm-actions"><ModernPrice price={safePrice}/><span className="rtm-cta rtpl-safe-cta">{safeCta}</span></div>
         </div>
       </>
       break
@@ -85,9 +95,9 @@ export function RestaurantTemplateCanvas({
         <div className="rtm-editorial-card">
           <span className="rtm-kicker">{eyebrow}</span>
           <h2>{safeHeadline}</h2>
-          <p>{safeText}</p>
+          <p className="rtpl-safe-copy">{safeText}</p>
           <div className="rtm-rule-row"><i/><ModernPrice price={safePrice}/></div>
-          <span className="rtm-text-link">{safeCta} <b>↗</b></span>
+          <span className="rtm-text-link rtpl-safe-cta">{safeCta} <b>↗</b></span>
         </div>
       </>
       break
@@ -101,7 +111,7 @@ export function RestaurantTemplateCanvas({
         <div className="rtm-copy rtm-copy-hero">
           <span className="rtm-kicker light">{eyebrow}</span>
           <h2>{safeHeadline}</h2>
-          <div className="rtm-hero-footer"><p>{safeText}</p><span>{safeCta} ↗</span></div>
+          <div className="rtm-hero-footer"><p className="rtpl-safe-copy">{safeText}</p><span className="rtpl-safe-cta">{safeCta} ↗</span></div>
         </div>
       </>
       break
@@ -113,8 +123,8 @@ export function RestaurantTemplateCanvas({
         <div className="rtm-minimal-copy">
           <span className="rtm-kicker dark">{eyebrow}</span>
           <h2>{safeHeadline}</h2>
-          <p>{safeText}</p>
-          <div className="rtm-minimal-foot"><ModernPrice price={safePrice}/><span>{safeCta}</span></div>
+          <p className="rtpl-safe-copy">{safeText}</p>
+          <div className="rtm-minimal-foot"><ModernPrice price={safePrice}/><span className="rtpl-safe-cta">{safeCta}</span></div>
         </div>
       </>
       break
@@ -128,7 +138,7 @@ export function RestaurantTemplateCanvas({
         <div className="rtm-bold-price"><ModernPrice price={safePrice}/></div>
         <div className="rtm-bold-copy">
           <h2>{safeHeadline}</h2>
-          <div><p>{safeText}</p><span>{safeCta} ↗</span></div>
+          <div><p className="rtpl-safe-copy">{safeText}</p><span className="rtpl-safe-cta">{safeCta} ↗</span></div>
         </div>
       </>
       break
@@ -140,9 +150,9 @@ export function RestaurantTemplateCanvas({
         <div className="rtm-split-panel">
           <span className="rtm-kicker">{eyebrow}</span>
           <h2>{safeHeadline}</h2>
-          <p>{safeText}</p>
+          <p className="rtpl-safe-copy">{safeText}</p>
           <ModernPrice price={safePrice}/>
-          <span className="rtm-split-cta">{safeCta} ↗</span>
+          <span className="rtm-split-cta rtpl-safe-cta">{safeCta} ↗</span>
         </div>
         <div className="rtm-split-detail rtm-photo" style={photoStyle(image,photoPosition)}/>
       </>
@@ -153,7 +163,7 @@ export function RestaurantTemplateCanvas({
         <div className="rtm-poster-bg"/>
         <div className="rtm-poster-photo rtm-photo" style={photoStyle(image,photoPosition)}/>
         <span className="rtm-poster-side">{eyebrow}</span>
-        <div className="rtm-poster-copy"><h2>{safeHeadline}</h2><p>{safeText}</p><ModernPrice price={safePrice}/></div>
+        <div className="rtm-poster-copy"><h2>{safeHeadline}</h2><p className="rtpl-safe-copy">{safeText}</p><ModernPrice price={safePrice}/></div>
       </>
       break
 
@@ -162,13 +172,13 @@ export function RestaurantTemplateCanvas({
         <div className="rtm-photo rtm-photo-full" style={photoStyle(image,photoPosition)}/>
         <div className="rtm-shade soft"/>
         <span className="rtm-kicker floating">{eyebrow}</span>
-        <div className="rtm-promo-card"><h2>{safeHeadline}</h2><p>{safeText}</p><div><ModernPrice price={safePrice}/><span>{safeCta}</span></div></div>
+        <div className="rtm-promo-card"><h2>{safeHeadline}</h2><p className="rtpl-safe-copy">{safeText}</p><div><ModernPrice price={safePrice}/><span className="rtpl-safe-cta">{safeCta}</span></div></div>
       </>
       break
 
     case 'lunch-time':
       body=<>
-        <div className="rtm-lunch-left"><span className="rtm-kicker light">{eyebrow}</span><h2>{safeHeadline}</h2><p>{safeText}</p><ModernPrice price={safePrice}/><span className="rtm-lunch-time">12:00 — 16:00</span></div>
+        <div className="rtm-lunch-left"><span className="rtm-kicker light">{eyebrow}</span><h2>{safeHeadline}</h2><p className="rtpl-safe-copy">{safeText}</p><ModernPrice price={safePrice}/><span className="rtm-lunch-time">12:00 — 16:00</span></div>
         <div className="rtm-lunch-photo rtm-photo" style={photoStyle(image,photoPosition)}/>
       </>
       break
@@ -177,7 +187,7 @@ export function RestaurantTemplateCanvas({
       body=<>
         <div className="rtm-photo rtm-photo-full" style={photoStyle(image,photoPosition)}/>
         <div className="rtm-shade family"/>
-        <div className="rtm-family-card"><span className="rtm-kicker">{eyebrow}</span><h2>{safeHeadline}</h2><p>{safeText}</p><div><ModernPrice price={safePrice}/><span>{safeCta} ↗</span></div></div>
+        <div className="rtm-family-card"><span className="rtm-kicker">{eyebrow}</span><h2>{safeHeadline}</h2><p className="rtpl-safe-copy">{safeText}</p><div><ModernPrice price={safePrice}/><span className="rtpl-safe-cta">{safeCta} ↗</span></div></div>
       </>
       break
   }
