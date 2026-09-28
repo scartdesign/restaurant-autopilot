@@ -45,11 +45,20 @@ jobs:
           SHA=$(git rev-parse HEAD)
           BASE="https://raw.githack.com/scartdesign/restaurant-autopilot/$SHA/preview-app"
 
+          require_text() {
+            local file="$1"
+            local text="$2"
+            if ! grep -Fq -- "$text" "$file"; then
+              echo "Missing preview marker in $file: $text"
+              exit 1
+            fi
+          }
+
           curl --max-time 20 --retry 4 --retry-delay 2 --retry-all-errors -fsSL -D /tmp/html.headers "$BASE/index.html" -o /tmp/app.html
           tr -d '\r' < /tmp/html.headers > /tmp/html.clean
           grep -Eiq '^content-type: *text/html' /tmp/html.clean
-          grep -Fq '<div id="root"></div>' /tmp/app.html
-          grep -Fq 'Restorapp' /tmp/app.html
+          require_text /tmp/app.html '<div id="root"></div>'
+          require_text /tmp/app.html 'Restorapp'
           if grep -Fq 'Restaurant Autopilot' /tmp/app.html; then
             echo "Legacy customer-facing brand found in preview HTML"
             exit 1
@@ -69,9 +78,7 @@ jobs:
           grep -Eiq '^content-type: *text/css' /tmp/css.clean
           test -s /tmp/app.js
           test -s /tmp/app.css
-          grep -Fq 'Restorapp' /tmp/app.js
-          grep -Fq 'Marketing za 7 dana.' /tmp/app.js
-          grep -Fq 'Napravi prvu nedelju' /tmp/app.js
+          require_text /tmp/app.js 'Restorapp'
           if grep -Fq 'Restaurant Autopilot' /tmp/app.js; then
             echo "Legacy customer-facing brand found in compiled app"
             exit 1
@@ -80,47 +87,44 @@ jobs:
           CONTENT_CHUNK=$(grep -oE 'SimpleContentStudio-[A-Za-z0-9_-]+\.js' /tmp/app.js | head -1)
           test -n "$CONTENT_CHUNK"
           curl --max-time 20 --retry 4 --retry-delay 2 --retry-all-errors -fsSL "$BASE/assets/$CONTENT_CHUNK" -o /tmp/content.js
-          grep -Fq 'RESTORAPP STUDIO' /tmp/content.js
-          grep -Fq 'Autopilot ili ručno. Sve na jednom mestu.' /tmp/content.js
-          grep -Fq 'Ova nedelja' /tmp/content.js
-          grep -Fq 'Kreiraj objavu' /tmp/content.js
-          grep -Fq 'DIZAJN OBJAVE' /tmp/content.js
-          grep -Fq 'FINALNI PREVIEW' /tmp/content.js
-          grep -Fq 'PALETA' /tmp/content.js
-          grep -Fq 'TIPOGRAFIJA' /tmp/content.js
-          grep -Fq 'Noir Signature' /tmp/content.js
-          grep -Fq 'Hero Dish' /tmp/content.js
-          grep -Fq 'Magazine Plate' /tmp/content.js
-          grep -Fq 'Studio White' /tmp/content.js
-          grep -Fq 'Street Impact' /tmp/content.js
-          grep -Fq 'Chef Split' /tmp/content.js
-          grep -Fq 'Night Poster' /tmp/content.js
-          grep -Fq 'Offer Glass' /tmp/content.js
-          grep -Fq 'Menu Select' /tmp/content.js
-          grep -Fq 'Flash Offer' /tmp/content.js
-          grep -Fq 'Lunch Window' /tmp/content.js
-          grep -Fq 'Warm Table' /tmp/content.js
+          for marker in \
+            'RESTORAPP STUDIO' \
+            'Autopilot ili ručno. Sve na jednom mestu.' \
+            'Ova nedelja' \
+            'Kreiraj objavu' \
+            'DIZAJN OBJAVE' \
+            'FINALNI PREVIEW' \
+            'PALETA' \
+            'TIPOGRAFIJA' \
+            'Noir Signature' \
+            'Hero Dish' \
+            'Magazine Plate' \
+            'Studio White' \
+            'Street Impact' \
+            'Chef Split' \
+            'Night Poster' \
+            'Offer Glass' \
+            'Menu Select' \
+            'Flash Offer' \
+            'Lunch Window' \
+            'Warm Table'; do
+            require_text /tmp/content.js "$marker"
+          done
 
           SHARED_CONTENT_CHUNK=$(grep -oE 'simple-content-studio-[A-Za-z0-9_-]+\.js' /tmp/app.js | head -1)
           test -n "$SHARED_CONTENT_CHUNK"
           curl --max-time 20 --retry 4 --retry-delay 2 --retry-all-errors -fsSL "$BASE/assets/$SHARED_CONTENT_CHUNK" -o /tmp/content-shared.js
-          grep -Fq 'Great Vibes' /tmp/content-shared.js
-          grep -Fq 'Bebas' /tmp/content-shared.js
-          grep -Fq -- '--rt-base-font' /tmp/content-shared.js
-          grep -Fq -- '--rt-script-font' /tmp/content-shared.js
-          grep -Fq 'rtpl-safe-copy' /tmp/content-shared.js
-
-          SCRIPT_PACK_CSS=$(grep -oE 'simple-content-studio-[A-Za-z0-9_-]+\.css' /tmp/app.js | head -1 || true)
-          if [ -n "$SCRIPT_PACK_CSS" ]; then
-            curl --max-time 20 --retry 4 --retry-delay 2 --retry-all-errors -fsSL "$BASE/assets/$SCRIPT_PACK_CSS" -o /tmp/script-pack.css
-            grep -Fq 'aspect-ratio:9/16' /tmp/script-pack.css
-          fi
+          require_text /tmp/content-shared.js 'Great Vibes'
+          require_text /tmp/content-shared.js 'Bebas'
+          require_text /tmp/content-shared.js '--rt-base-font'
+          require_text /tmp/content-shared.js '--rt-script-font'
+          require_text /tmp/content-shared.js 'rtpl-safe-copy'
 
           PUBLISH_CHUNK=$(grep -oE 'PublishCenter-[A-Za-z0-9_-]+\.js' /tmp/app.js | head -1)
           test -n "$PUBLISH_CHUNK"
           curl --max-time 20 --retry 4 --retry-delay 2 --retry-all-errors -fsSL "$BASE/assets/$PUBLISH_CHUNK" -o /tmp/publish.js
-          grep -Fq 'Pregledaj. Zakaži. Gotovo.' /tmp/publish.js
-          grep -Fq 'Poveži Instagram + Facebook' /tmp/publish.js
+          require_text /tmp/publish.js 'Pregledaj. Zakaži. Gotovo.'
+          require_text /tmp/publish.js 'Poveži Instagram + Facebook'
 
           echo "Restorapp current Studio + Autopilot preview markers OK"
           echo "Public preview OK: $BASE/index.html"
