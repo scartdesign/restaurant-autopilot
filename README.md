@@ -18,7 +18,9 @@ MVP web aplikacija koja pretvara meni, fotografije, brend i ponude restorana u n
 - odobravanje, ručna izmena, regeneracija i ponovno discovery optimizovanje
 - Campaign Autopilot sa presetima: lunch, happy hour, vikend, dostava i večera za dvoje
 - **Visual Studio** sa Editorial / Bold / Minimal template-ima
-- pravi browser-side PNG export u 1080×1350 i 1080×1920
+- 12 gotovih restoranskih šablona sa odvojenim 1:1 i pravim 9:16 Story prikazom
+- izbor osnovnog i pisanog fonta + veličina teksta 85–115% koja se čuva posebno za svaku objavu
+- pravi browser-side PNG export za post i Story u punoj rezoluciji
 - **Publish Center** sa content queue pregledom
 - CSV export cele nedelje
 - ICS calendar export za Google / Apple / Outlook
