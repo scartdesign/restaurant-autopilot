@@ -1,4 +1,5 @@
 from pathlib import Path
+# Trigger after workflow installation.
 p=Path('src/components/SimpleContentStudio.tsx')
 s=p.read_text()
 replacements={
