@@ -1,5 +1,6 @@
 from pathlib import Path
 
+# Trigger after workflow installation.
 # ---------- Production weekly view ----------
 p=Path('src/components/SimpleContentStudio.tsx')
 s=p.read_text()
