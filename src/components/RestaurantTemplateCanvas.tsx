@@ -37,11 +37,21 @@ function clampText(value:string,fallback:string){
 
 function eyebrowFor(template:RestaurantTemplateId,badge:string){
   if(badge.trim())return badge.trim()
-  if(template==='lunch-time')return 'LUNCH · TODAY'
-  if(template==='bold'||template==='bold-offer')return 'SPECIAL DROP'
-  if(template==='minimal')return 'FRESH · SIMPLE · GOOD'
-  if(template==='split'||template==='premium-grid')return 'TODAY’S SELECTION'
-  return 'CHEF’S PICK'
+  const labels:Record<RestaurantTemplateId,string>={
+    luxe:'CHEF’S SIGNATURE',
+    'hero-menu':'HOUSE FAVORITE',
+    editorial:'TODAY’S SELECTION',
+    minimal:'FRESH TODAY',
+    bold:'NEW DROP',
+    split:'CHEF’S PICK',
+    poster:'TONIGHT',
+    'promo-badge':'LIMITED OFFER',
+    'premium-grid':'CURATED MENU',
+    'bold-offer':'TODAY ONLY',
+    'lunch-time':'LUNCH · TODAY',
+    family:'AT THE TABLE',
+  }
+  return labels[template]
 }
 
 function ModernPrice({price}:{price:string}){
