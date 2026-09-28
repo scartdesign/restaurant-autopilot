@@ -1,5 +1,6 @@
 from pathlib import Path
 
+# Reposition Restorapp around the outcome restaurant owners actually buy: a ready weekly marketing plan.
 # 1) Dashboard: sell the outcome, not the editor.
 p=Path('src/components/RestorappDashboardV2.tsx')
 s=p.read_text()
