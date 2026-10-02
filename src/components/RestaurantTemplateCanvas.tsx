@@ -47,59 +47,59 @@ export function RestaurantTemplateCanvas({
     case 'luxe':
       body=<><div className="rtm-photo rtm-photo-full" style={photoStyle(image,photoPosition)}/><div className="rtm-shade luxe"/>
         <div className="rtm-topline"><span>{label}</span><i/></div><div className="rtm-luxe-copy">
-          <span className="rtm-luxe-index">01 / SIGNATURE</span><h2 className={`rtm-title ${titleFit}`}>{title}</h2><p className="rtpl-safe-copy">{description}</p>
+          <span className="rtm-luxe-index">01 / SIGNATURE</span><h2 className={`rtm-title ${titleFit}`}><span className="rtm-title-text">{title}</span></h2><p className="rtpl-safe-copy">{description}</p>
           <div className="rtm-actions"><Price price={finalPrice}/><span className="rtm-cta rtpl-safe-cta">{action}</span></div></div></>
       break
     case 'editorial':
       body=<><div className="rtm-editorial-photo rtm-photo" style={photoStyle(image,photoPosition)}/>
-        <div className="rtm-editorial-card"><span className="rtm-kicker">{label}</span><h2 className={`rtm-title ${titleFit}`}>{title}</h2>
+        <div className="rtm-editorial-card"><span className="rtm-kicker">{label}</span><h2 className={`rtm-title ${titleFit}`}><span className="rtm-title-text">{title}</span></h2>
           <p className="rtpl-safe-copy">{description}</p><div className="rtm-rule-row"><i/><Price price={finalPrice}/></div>
           <span className="rtm-text-link rtpl-safe-cta">{action} <b>↗</b></span></div></>
       break
     case 'hero-menu':
       body=<><div className="rtm-photo rtm-photo-full" style={photoStyle(image,photoPosition)}/><div className="rtm-shade hero"/>
         <span className="rtm-index">01</span><Price price={finalPrice}/><div className="rtm-copy-hero">
-          <span className="rtm-kicker light">{label}</span><h2 className={`rtm-title ${titleFit}`}>{title}</h2>
+          <span className="rtm-kicker light">{label}</span><h2 className={`rtm-title ${titleFit}`}><span className="rtm-title-text">{title}</span></h2>
           <div className="rtm-hero-footer"><p className="rtpl-safe-copy">{description}</p><span className="rtpl-safe-cta">{action} ↗</span></div></div></>
       break
     case 'minimal':
       body=<><div className="rtm-minimal-bg"/><div className="rtm-minimal-photo rtm-photo" style={photoStyle(image,photoPosition)}/>
-        <div className="rtm-minimal-copy"><span className="rtm-kicker dark">{label}</span><h2 className={`rtm-title ${titleFit}`}>{title}</h2>
+        <div className="rtm-minimal-copy"><span className="rtm-kicker dark">{label}</span><h2 className={`rtm-title ${titleFit}`}><span className="rtm-title-text">{title}</span></h2>
           <p className="rtpl-safe-copy">{description}</p><div className="rtm-minimal-foot"><Price price={finalPrice}/><span className="rtpl-safe-cta">{action}</span></div></div></>
       break
     case 'bold':
       body=<><div className="rtm-photo rtm-photo-full" style={photoStyle(image,photoPosition)}/><div className="rtm-shade bold"/>
         <span className="rtm-bold-label">{label}</span><div className="rtm-bold-price"><Price price={finalPrice}/></div>
-        <div className="rtm-bold-copy"><h2 className={`rtm-title ${titleFit}`}>{title}</h2><div><p className="rtpl-safe-copy">{description}</p><span className="rtpl-safe-cta">{action} ↗</span></div></div></>
+        <div className="rtm-bold-copy"><h2 className={`rtm-title ${titleFit}`}><span className="rtm-title-text">{title}</span></h2><div><p className="rtpl-safe-copy">{description}</p><span className="rtpl-safe-cta">{action} ↗</span></div></div></>
       break
     case 'split':
       body=<><div className="rtm-split-photo rtm-photo" style={photoStyle(image,photoPosition)}/><div className="rtm-split-panel">
-        <span className="rtm-kicker">{label}</span><h2 className={`rtm-title ${titleFit}`}>{title}</h2><p className="rtpl-safe-copy">{description}</p>
+        <span className="rtm-kicker">{label}</span><h2 className={`rtm-title ${titleFit}`}><span className="rtm-title-text">{title}</span></h2><p className="rtpl-safe-copy">{description}</p>
         <Price price={finalPrice}/><span className="rtm-split-cta rtpl-safe-cta">{action} ↗</span></div>
         <div className="rtm-split-detail rtm-photo" style={photoStyle(image,photoPosition)}/></>
       break
     case 'poster':
       body=<><div className="rtm-poster-bg"/><div className="rtm-poster-photo rtm-photo" style={photoStyle(image,photoPosition)}/>
         <span className="rtm-poster-side">{label}</span><div className="rtm-poster-copy"><span className="rtm-poster-number">TONIGHT’S TABLE</span>
-        <h2 className={`rtm-title ${titleFit}`}>{title}</h2><p className="rtpl-safe-copy">{description}</p><Price price={finalPrice}/><span className="rtpl-safe-cta">{action} ↗</span></div></>
+        <h2 className={`rtm-title ${titleFit}`}><span className="rtm-title-text">{title}</span></h2><p className="rtpl-safe-copy">{description}</p><Price price={finalPrice}/><span className="rtpl-safe-cta">{action} ↗</span></div></>
       break
     case 'promo-badge':
       body=<><div className="rtm-photo rtm-photo-full" style={photoStyle(image,photoPosition)}/><div className="rtm-shade soft"/>
-        <span className="rtm-kicker floating">{label}</span><div className="rtm-promo-card"><h2 className={`rtm-title ${titleFit}`}>{title}</h2>
+        <span className="rtm-kicker floating">{label}</span><div className="rtm-promo-card"><h2 className={`rtm-title ${titleFit}`}><span className="rtm-title-text">{title}</span></h2>
         <p className="rtpl-safe-copy">{description}</p><div><Price price={finalPrice}/><span className="rtpl-safe-cta">{action}</span></div></div></>
       break
     case 'premium-grid':
       body=<><div className="rtm-grid-photo rtm-photo" style={photoStyle(image,photoPosition)}/><div className="rtm-grid-panel">
-        <span className="rtm-grid-index">MENU / 01</span><span className="rtm-kicker">{label}</span><h2 className={`rtm-title ${titleFit}`}>{title}</h2>
+        <span className="rtm-grid-index">MENU / 01</span><span className="rtm-kicker">{label}</span><h2 className={`rtm-title ${titleFit}`}><span className="rtm-title-text">{title}</span></h2>
         <p className="rtpl-safe-copy">{description}</p><div className="rtm-grid-bottom"><Price price={finalPrice}/><span className="rtpl-safe-cta">{action} ↗</span></div></div></>
       break
     case 'bold-offer':
       body=<><div className="rtm-offer-photo rtm-photo" style={photoStyle(image,photoPosition)}/><div className="rtm-offer-wash"/>
         <span className="rtm-offer-tag">{label}</span><div className="rtm-offer-copy"><span className="rtm-offer-kicker">SPECIAL DROP</span>
-        <h2 className={`rtm-title ${titleFit}`}>{title}</h2><p className="rtpl-safe-copy">{description}</p><div><Price price={finalPrice}/><span className="rtpl-safe-cta">{action} →</span></div></div></>
+        <h2 className={`rtm-title ${titleFit}`}><span className="rtm-title-text">{title}</span></h2><p className="rtpl-safe-copy">{description}</p><div><Price price={finalPrice}/><span className="rtpl-safe-cta">{action} →</span></div></div></>
       break
     case 'lunch-time':
-      body=<><div className="rtm-lunch-left"><span className="rtm-kicker light">{label}</span><h2 className={`rtm-title ${titleFit}`}>{title}</h2>
+      body=<><div className="rtm-lunch-left"><span className="rtm-kicker light">{label}</span><h2 className={`rtm-title ${titleFit}`}><span className="rtm-title-text">{title}</span></h2>
         <p className="rtpl-safe-copy">{description}</p><Price price={finalPrice}/><span className="rtm-lunch-time">{slot('lunchHours','12:00 — 16:00')}</span>
         <span className="rtm-lunch-cta rtpl-safe-cta">{action} ↗</span></div>
         <div className="rtm-lunch-photo rtm-photo" style={photoStyle(image,photoPosition)}/></>
@@ -107,7 +107,7 @@ export function RestaurantTemplateCanvas({
     case 'family':
       body=<><div className="rtm-photo rtm-photo-full" style={photoStyle(image,photoPosition)}/><div className="rtm-shade family"/>
         <span className="rtm-family-ribbon">{label}</span><div className="rtm-family-card"><span className="rtm-family-script">{slot('familyNote','Made with love')}</span>
-        <h2 className={`rtm-title ${titleFit}`}>{title}</h2><p className="rtpl-safe-copy">{description}</p><div><Price price={finalPrice}/><span className="rtpl-safe-cta">{action} ↗</span></div></div></>
+        <h2 className={`rtm-title ${titleFit}`}><span className="rtm-title-text">{title}</span></h2><p className="rtpl-safe-copy">{description}</p><div><Price price={finalPrice}/><span className="rtpl-safe-cta">{action} ↗</span></div></div></>
       break
   }
   return <div className={`restaurant-template-canvas rtm rtm-${template} ${format} ${className}`} style={rootStyle}>
