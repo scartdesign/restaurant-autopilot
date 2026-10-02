@@ -276,7 +276,7 @@ export function VisualStudio({ restaurant, posts, menuItems, setNotice, onChange
           logoSize={design.logoSize}
           logoBadge={design.logoBadge}
         />
-        <div className="studio-below-preview"><div><CheckCircle2 size={17}/><span>PNG export koristi isti logo, poziciju, boje, veličine slova i layout kao preview.</span></div><div><ImageIcon size={17}/><span>{design.imageUrl?'Koristi se realna fotografija iz menija.':'Dodaj fotografiju za maksimalan kvalitet.'}</span></div></div>
+        <div className="studio-below-preview"><div><CheckCircle2 size={17}/><span>PNG export čuva izabrani format, fotografiju, brend boje i sadržaj objave.</span></div><div><ImageIcon size={17}/><span>{design.imageUrl?'Koristi se realna fotografija iz menija.':'Dodaj fotografiju za maksimalan kvalitet.'}</span></div></div>
       </section>
     </div>
   </>
