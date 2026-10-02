@@ -9,6 +9,7 @@ type Props={
   primary:string; accent:string; logoUrl?:string|null; format?:'feed'|'story'; className?:string
   textSlots?:Record<string,string>; itemSlots?:Array<{title:string;price:string}>; baseFont?:string; scriptFont?:string
   fontScale?:number; photoPosition?:'left'|'center'|'right'
+  logoPosition?:'top-left'|'top-center'|'top-right'|'bottom-left'|'bottom-right'; logoSize?:'s'|'m'|'l'; logoBadge?:'none'|'white'|'dark'|'blur'
 }
 function photoStyle(image:string,position:'left'|'center'|'right'='center'):CSSProperties{
   return image?{backgroundImage:`url("${image.replace(/"/g,'\\"')}")`,backgroundPosition:position}:{}
@@ -26,7 +27,7 @@ function eyebrowFor(template:RestaurantTemplateId,badge:string){
 function Price({price}:{price:string}){return price.trim()?<span className="rtm-price">{price}</span>:null}
 export function RestaurantTemplateCanvas({
   template,image,headline,text,price='',badge='',cta='Svrati danas',primary,accent,logoUrl,format='feed',className='',
-  textSlots={},itemSlots=[],baseFont='modern-sans',scriptFont='signature',fontScale=1,photoPosition='center',
+  textSlots={},itemSlots=[],baseFont='modern-sans',scriptFont='signature',fontScale=1,photoPosition='center',logoPosition='top-right',logoSize='m',logoBadge='white',
 }:Props){
   const slot=(key:string,fallback:string)=>clean(textSlots[key],fallback)
   // Keep older saved layouts readable even when their legacy slots are not rendered.
@@ -38,9 +39,16 @@ export function RestaurantTemplateCanvas({
   const action=clean(textSlots.smallCta||textSlots.buttonText||cta,'Svrati danas')
   const label=eyebrowFor(template,badge)
   const finalPrice=price||itemSlots[0]?.price||''
+  const logoBottom=logoPosition.startsWith('bottom')
+  const logoCentered=logoPosition==='top-center'
   const rootStyle={
     '--rt-primary':primary,'--rt-accent':accent,'--rt-base-font':baseFontStack(baseFont),
     '--rt-script-font':scriptFontStack(scriptFont),'--rt-user-font-scale':Math.min(1.15,Math.max(.85,fontScale)),
+    '--rt-logo-top':logoBottom?'auto':'4.5%','--rt-logo-bottom':logoBottom?'4.5%':'auto',
+    '--rt-logo-left':logoPosition==='top-left'||logoPosition==='bottom-left'?'4.5%':logoCentered?'50%':'auto',
+    '--rt-logo-right':logoPosition==='top-right'||logoPosition==='bottom-right'?'4.5%':'auto',
+    '--rt-logo-width':logoSize==='s'?'8%':logoSize==='l'?'13%':'10%',
+    '--rt-logo-transform':logoCentered?'translateX(-50%)':'none',
   } as CSSProperties
   let body
   switch(template){
@@ -111,6 +119,6 @@ export function RestaurantTemplateCanvas({
       break
   }
   return <div className={`restaurant-template-canvas rtm rtm-${template} ${format} ${className}`} style={rootStyle}>
-    {body}{logoUrl&&<img className="rtm-logo" src={logoUrl} alt=""/>}<span className="rtpl-accessible-headline">{headline}</span>
+    {body}{logoUrl&&<img className={`rtm-logo rtm-logo-badge-${logoBadge}`} src={logoUrl} alt=""/>}<span className="rtpl-accessible-headline">{headline}</span>
   </div>
 }
