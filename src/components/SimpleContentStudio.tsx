@@ -38,11 +38,13 @@ const templates:TemplateOption[]=[
 ]
 
 const colorPalettes=[
-  {name:'Teal',primary:'#073c38',accent:'#ef7d3a'},
   {name:'Black Gold',primary:'#171411',accent:'#d4ad63'},
-  {name:'Burgundy',primary:'#561f2b',accent:'#f0d1b1'},
-  {name:'Olive',primary:'#455039',accent:'#e7c98a'},
+  {name:'Cream / Olive',primary:'#37402f',accent:'#e7dfca'},
+  {name:'Dark Luxury',primary:'#111615',accent:'#c1a06a'},
+  {name:'Burgundy',primary:'#561f2b',accent:'#efcfb4'},
   {name:'Navy',primary:'#16334a',accent:'#ef8169'},
+  {name:'Fresh / Green',primary:'#173c2f',accent:'#a8c58a'},
+  {name:'Red / Fast Food',primary:'#791f21',accent:'#f5ca55'},
 ]
 
 function defaultTemplate(restaurant:Restaurant):TemplateId{
@@ -92,6 +94,54 @@ function seedItemSlots(template:TemplateId,items:MenuItem[],primary:MenuItem|nul
     const item=ordered[index]
     return item?{title:item.name,price:money(item)||fallback.price}:fallback
   })
+}
+
+type FoodImageDirection='recommend'|'top-view'|'hero'|'editorial'
+function fileAsDataUrl(file:File):Promise<string>{
+  return new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(String(reader.result||''));reader.onerror=()=>reject(new Error('Fotografija ne može da se pročita.'));reader.readAsDataURL(file)})
+}
+function FoodImageTool({sourceFile,sourceUrl,restaurantId,menuItemId,format,template,primary,accent,onImage,onNotice}:{
+  sourceFile:File|null;sourceUrl:string;restaurantId:string;menuItemId:string;format:Format;template:TemplateId;primary:string;accent:string;
+  onImage:(url:string)=>void;onNotice:(message:string)=>void
+}){
+  const[direction,setDirection]=useState<FoodImageDirection>('recommend')
+  const[working,setWorking]=useState(false)
+  async function createImage(){
+    if(!sourceFile&&!sourceUrl){onNotice('Prvo ubaci fotografiju jela.');return}
+    setWorking(true)
+    try{
+      let file=sourceFile
+      if(!file){
+        const response=await fetch(sourceUrl)
+        if(!response.ok)throw new Error('Fotografija nije dostupna za AI obradu. Ponovo je dodaj sa uređaja.')
+        const blob=await response.blob()
+        if(!['image/jpeg','image/png','image/webp'].includes(blob.type))throw new Error('Izvor mora biti JPG, PNG ili WEBP.')
+        file=new File([blob],`food-photo.${blob.type.split('/')[1]==='jpeg'?'jpg':blob.type.split('/')[1]}`,{type:blob.type})
+      }
+      const optimized=await optimizeImage(file,{maxSide:1600,quality:.84})
+      const imageDataUrl=await fileAsDataUrl(optimized)
+      if(imageDataUrl.length>12_000_000)throw new Error('Fotografija je prevelika za obradu. Probaj manju sliku.')
+      const{data,error}=await supabase.functions.invoke('creative-image',{body:{action:'edit_upload',restaurantId,menuItemId:menuItemId||null,imageDataUrl,direction,format,template,primary,accent}})
+      if(error)throw error
+      if(!data?.ok||!data.image_url)throw new Error(data?.error||'AI nije vratio obrađenu fotografiju.')
+      onImage(data.image_url)
+      onNotice('AI fotografija je spremna. Originalna fotografija jelovnika je sačuvana.')
+    }catch(error){onNotice(error instanceof Error?error.message:'AI obrada nije uspela.')}
+    finally{setWorking(false)}
+  }
+  return <div className="dts-food-ai-tool">
+    <div className="dts-food-ai-heading"><Sparkles size={16}/><div><strong>AI food studio</strong><small>Ulepšaj kadar, pa izaberi dizajn objave.</small></div></div>
+    <select aria-label="Način AI obrade fotografije" value={direction} onChange={event=>setDirection(event.target.value as FoodImageDirection)}>
+      <option value="recommend">Predloži kadar prema izabranom dizajnu</option>
+      <option value="top-view">Top view — snimak odozgo</option>
+      <option value="hero">Kampanjski hero kadar</option>
+      <option value="editorial">Editorial flat lay</option>
+    </select>
+    <button type="button" className="dts-food-ai-button" disabled={working||(!sourceFile&&!sourceUrl)} onClick={createImage}>
+      <Sparkles size={15}/>{working?'Pripremam fotografiju…':'Generiši AI fotografiju'}
+    </button>
+    <small className="dts-food-ai-note">Bez automatskog teksta ili logotipa. Rezultat ulazi kao nova pozadina objave.</small>
+  </div>
 }
 
 export function SimpleContentStudio({
@@ -437,6 +487,7 @@ export function SimpleContentStudio({
 
         {editorPanel==='text'&&<div className="dts-editor-panel">
           <label className="dts-composer-photo compact-photo">{composerImage?<img src={composerImage} alt=""/>:<ImageIcon size={28}/>}<input type="file" accept="image/jpeg,image/png,image/webp" onChange={chooseComposerImage}/><span><Upload size={13}/> Promeni fotografiju</span></label>
+          <FoodImageTool sourceFile={composerFile} sourceUrl={composerImage} restaurantId={restaurant.id} menuItemId={selectedDishId} format={format} template={template} primary={primaryColor} accent={accentColor} onImage={url=>{clearComposerPreview();setComposerExistingImage(url)}} onNotice={setNotice}/>
           <label>Naslov<input maxLength={56} value={headline} onChange={e=>setHeadline(e.target.value)} placeholder="Današnja preporuka"/></label>
           <label>Opis<textarea rows={3} maxLength={360} value={text} onChange={e=>setText(e.target.value)} placeholder="Kratka poruka gostima…"/></label>
           <div className="dts-two"><label>Cena<input value={priceText} onChange={e=>setPriceText(e.target.value)} placeholder="890 RSD"/></label><label>Popust / badge<input value={badgeText} onChange={e=>setBadgeText(e.target.value)} placeholder="20% OFF"/></label></div>
