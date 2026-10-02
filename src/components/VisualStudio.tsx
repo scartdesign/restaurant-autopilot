@@ -1,6 +1,7 @@
 import { type CSSProperties, useEffect, useMemo, useState } from 'react'
 import { AlignLeft, CheckCircle2, Copy, Download, Eye, EyeOff, Image as ImageIcon, LayoutTemplate, Minus, Move, Palette, Plus, Redo2, RotateCcw, Save, Sparkles, Undo2, WandSparkles } from 'lucide-react'
 import { supabase } from '../lib/supabase'
+import { RestaurantTemplateCanvas } from './RestaurantTemplateCanvas'
 import type { LogoBadge, LogoPosition, LogoSize, MenuItem, Post, Restaurant } from '../types'
 
 type Format = 'feed' | 'square' | 'story'
@@ -20,7 +21,7 @@ type DesignState = {
   headlineTracking: number; headlineLineHeight: number; textAlign: TextAlign
 }
 
-const templateNames: Record<Template, string> = { editorial:'Editorial', bold:'Bold', minimal:'Minimal', split:'Split', poster:'Poster', luxe:'Luxe', 'premium-grid':'Premium Grid', 'hero-menu':'Hero Menu', 'bold-offer':'Bold Offer', 'lunch-time':'Lunch Time', family:'Family', 'promo-badge':'Promo Badge' }
+const templateNames: Record<Template, string> = { luxe:'Noir Signature', 'hero-menu':'Hero Dish', editorial:'Magazine Plate', minimal:'Studio White', bold:'Street Impact', split:'Chef Split', poster:'Night Poster', 'promo-badge':'Offer Glass', 'premium-grid':'Menu Select', 'bold-offer':'Flash Offer', 'lunch-time':'Lunch Window', family:'Warm Table' }
 
 export function VisualStudio({ restaurant, posts, menuItems, setNotice, onChanged }: { restaurant:Restaurant; posts:Post[]; menuItems:MenuItem[]; setNotice:(value:string)=>void; onChanged:()=>Promise<void>|void }) {
   const usablePosts = useMemo(() => posts.filter(p => p.status !== 'rejected'), [posts])
@@ -192,7 +193,7 @@ export function VisualStudio({ restaurant, posts, menuItems, setNotice, onChange
   async function downloadPng() {
     setWorking(true); setNotice('Renderujem finalni PNG u punoj rezoluciji…')
     try {
-      const width = 1080, height = design.format === 'story' ? 1920 : design.format === 'square' ? 1080 : 1350
+      const width = 1080, height = design.format === 'story' ? 1920 : 1080
       const backgroundData = design.imageUrl ? await urlToDataUrl(design.imageUrl) : null
       const logoData = design.logoVisible && restaurant.logo_url ? await urlToDataUrl(restaurant.logo_url).catch(() => null) : null
       const promoData = design.template==='premium-grid'
@@ -215,21 +216,15 @@ export function VisualStudio({ restaurant, posts, menuItems, setNotice, onChange
     } catch(error) { setNotice(error instanceof Error ? error.message : 'Greška pri izvozu.'); setWorking(false) }
   }
 
-  const headlinePreviewStyle:CSSProperties={fontSize:`clamp(${34*design.headlineScale}px,${5.8*design.headlineScale}vw,${84*design.headlineScale}px)`,letterSpacing:`${design.headlineTracking}em`,lineHeight:design.headlineLineHeight}
-  const sublinePreviewStyle:CSSProperties={fontSize:`clamp(${11*design.sublineScale}px,${1.55*design.sublineScale}vw,${21*design.sublineScale}px)`,marginLeft:design.textAlign==='left'?undefined:'auto',marginRight:design.textAlign==='right'?undefined:'auto'}
-  const ctaPreviewStyle:CSSProperties={fontSize:`${12*design.ctaScale}px`,padding:`${11*design.ctaScale}px ${16*design.ctaScale}px`}
-  const pricePreviewStyle:CSSProperties={fontSize:`${11*design.priceScale}px`,padding:`${7*design.priceScale}px ${11*design.priceScale}px`}
-  const copyPreviewStyle:CSSProperties={textAlign:design.textAlign,marginLeft:design.textAlign==='left'?undefined:'auto',marginRight:design.textAlign==='right'?undefined:'auto'}
-
   return <>
-    <header className="page-header studio-header studio-header-pro"><div><p className="eyebrow">VISUAL STUDIO</p><h1>Objava mora da izgleda kao da ju je radio dizajner.</h1><p className="muted">Realna fotografija, logo, brend boje, hijerarhija i CTA — sve menjaš uživo.</p></div><div className="studio-header-actions"><span className={`studio-autosave ${autosaveState}`}>{autosaveState==='saving'?'Čuvam izmene…':autosaveState==='error'?'Greška pri čuvanju':dirty?'Izmene nisu sačuvane':'Automatski sačuvano'}</span><button className="secondary" onClick={()=>void saveDesign(false)} disabled={saving}><Save size={17}/>{saving?'Čuvam…':dirty?'Sačuvaj sada':'Sačuvano'}</button><button className="primary" onClick={downloadPng} disabled={working}><Download size={18}/>{working?'Renderujem…':`Preuzmi ${design.format==='story'?'1080×1920':design.format==='square'?'1080×1080':'1080×1350'}`}</button></div></header>
+    <header className="page-header studio-header studio-header-pro"><div><p className="eyebrow">VISUAL STUDIO</p><h1>Objava mora da izgleda kao da ju je radio dizajner.</h1><p className="muted">Realna fotografija, logo, brend boje, hijerarhija i CTA — sve menjaš uživo.</p></div><div className="studio-header-actions"><span className={`studio-autosave ${autosaveState}`}>{autosaveState==='saving'?'Čuvam izmene…':autosaveState==='error'?'Greška pri čuvanju':dirty?'Izmene nisu sačuvane':'Automatski sačuvano'}</span><button className="secondary" onClick={()=>void saveDesign(false)} disabled={saving}><Save size={17}/>{saving?'Čuvam…':dirty?'Sačuvaj sada':'Sačuvano'}</button><button className="primary" onClick={downloadPng} disabled={working}><Download size={18}/>{working?'Renderujem…':`Preuzmi ${design.format==='story'?'1080×1920':'1080×1080'}`}</button></div></header>
     <div className="studio-shell studio-shell-pro">
       <aside className="studio-controls panel studio-controls-pro">
         <div className="studio-score-row"><div className="studio-control-head"><LayoutTemplate size={19}/><div><strong>Finalni dizajn</strong><span>Sve izmene se vide odmah.</span></div></div><div className={`design-score ${designScore>=85?'great':designScore>=70?'good':''}`}><strong>{designScore}</strong><span>/100</span></div></div><div className="studio-history"><button type="button" className="secondary" disabled={!undoStack.length} onClick={undoDesign}><Undo2 size={14}/> Poništi</button><button type="button" className="secondary" disabled={!redoStack.length} onClick={redoDesign}><Redo2 size={14}/> Ponovi</button><span title="Ctrl/Cmd+Z · Shift+Ctrl/Cmd+Z · Ctrl/Cmd+S">{undoStack.length?`${undoStack.length} koraka`:'Prečice: Ctrl+Z / Ctrl+S'}</span></div>
         <label>Objava<select value={selected.id} onChange={e=>setSelectedId(e.target.value)}>{usablePosts.map(p=><option key={p.id} value={p.id}>{p.title||'Objava'} · {p.post_type}</option>)}</select></label>
         <button type="button" className="magic-design-button" onClick={autoDesign}><WandSparkles size={18}/><div><strong>Auto Design</strong><span>Layout + kadar + logo pozicija</span></div></button>
         <div className="studio-fieldset preset-library"><span><LayoutTemplate size={14}/> Moji dizajn preseti</span><div className="preset-save-row"><input value={presetName} onChange={e=>setPresetName(e.target.value)} placeholder="npr. Vikend promo" maxLength={60}/><button type="button" className="secondary" onClick={()=>void savePreset()} disabled={presetWorking}><Save size={14}/>{presetWorking?'Čuvam…':'Sačuvaj'}</button></div>{presets.length?<div className="preset-list">{presets.map(preset=><div key={preset.id} className="preset-chip"><button type="button" onClick={()=>applyPreset(preset)}><span>{preset.name}</span><small>{templateNames[(preset.design.template as Template)||'editorial']||'Preset'}</small></button><button type="button" className="preset-delete" title="Obriši preset" onClick={()=>void deletePreset(preset)}><Minus size={13}/></button></div>)}</div>:<small className="preset-empty">Sačuvaj omiljeni stil i primeni ga na bilo koju objavu jednim klikom.</small>}</div>
-        <div className="studio-fieldset"><span>Format</span><div className="segmented segmented-three"><button type="button" className={design.format==='feed'?'active':''} onClick={()=>patch({format:'feed'})}>Feed 4:5</button><button type="button" className={design.format==='square'?'active':''} onClick={()=>patch({format:'square'})}>Kvadrat 1:1</button><button type="button" className={design.format==='story'?'active':''} onClick={()=>patch({format:'story'})}>Story 9:16</button></div></div>
+        <div className="studio-fieldset"><span>Format</span><div className="segmented segmented-three"><button type="button" className={design.format!=='story'?'active':''} onClick={()=>patch({format:'square'})}>Post 1:1</button><button type="button" className={design.format==='square'?'active':''} onClick={()=>patch({format:'square'})}>Kvadrat 1:1</button><button type="button" className={design.format==='story'?'active':''} onClick={()=>patch({format:'story'})}>Story 9:16</button></div></div>
         <div className="studio-fieldset"><span><Palette size={14}/> Stil</span><div className="template-picker template-picker-six">{(Object.keys(templateNames) as Template[]).map(value=><button type="button" key={value} className={design.template===value?'active':''} onClick={()=>patch({template:value})}><i className={`template-dot ${value}`}/><span>{templateNames[value]}</span></button>)}</div></div>
         <div className="studio-fieldset typography-controls"><span><AlignLeft size={14}/> Tipografija i raspored</span><div className="studio-brand-grid"><label>Font<select value={design.fontPair} onChange={e=>patch({fontPair:e.target.value as FontPair})}><option value="modern">Modern Sans</option><option value="editorial">Editorial Serif</option><option value="impact">Impact / Promo</option></select></label><label>Pozicija teksta<select value={design.copyPosition} onChange={e=>patch({copyPosition:e.target.value as CopyPosition})}><option value="top">Gore</option><option value="center">Centar</option><option value="bottom">Dole</option></select></label></div><div className="segmented segmented-three text-align-control">{(['left','center','right'] as TextAlign[]).map(value=><button type="button" key={value} className={design.textAlign===value?'active':''} onClick={()=>patch({textAlign:value})}>{value==='left'?'Levo':value==='center'?'Centar':'Desno'}</button>)}</div>
           <div className="typography-size-stack">
@@ -262,16 +257,22 @@ export function VisualStudio({ restaurant, posts, menuItems, setNotice, onChange
       </aside>
 
       <section className="studio-stage studio-stage-pro">
-        <div className="stage-toolbar"><span><Sparkles size={14}/> FINAL PREVIEW</span><span>{design.format==='story'?'9:16 · 1080×1920':design.format==='square'?'1:1 · 1080×1080':'4:5 · 1080×1350'} · {templateNames[design.template]}</span></div>
-        {design.template==='premium-grid'
-          ? <PremiumGridPreview design={design} restaurant={restaurant} items={promoItems} location={location}/>
-          : <div className={`studio-artboard ${design.format} template-${design.template} copy-${design.copyPosition} font-${design.fontPair}`} style={{'--brand':design.primaryColor,'--accent':design.accentColor,'--overlay':String(design.overlay),'--photo-pos':design.photoPosition==='left'?'left center':design.photoPosition==='right'?'right center':'center center',backgroundImage:design.imageUrl?`url(${design.imageUrl})`:undefined} as CSSProperties}>
-            <div className="artboard-photo-shade"/>
-            {design.logoVisible&&<div className={`floating-brand-logo pos-${design.logoPosition} size-${design.logoSize} badge-${design.logoBadge}`}>{restaurant.logo_url?<img src={restaurant.logo_url} alt={restaurant.name}/>:<span>{restaurant.name.slice(0,1).toUpperCase()}</span>}</div>}
-            <div className="artboard-brandline"><strong>{restaurant.name}</strong><span>{location}</span></div>
-            <div className="artboard-copy" style={copyPreviewStyle}>{price&&design.priceVisible&&<span className="visual-price" style={pricePreviewStyle}>{price}</span>}<h2 style={headlinePreviewStyle}>{design.headline||'Naslov objave'}</h2><p style={sublinePreviewStyle}>{design.subline||'Kratka poruka koja prodaje iskustvo, ne samo jelo.'}</p><div className="visual-cta" style={ctaPreviewStyle}>{design.cta||'Svrati danas'} <span>→</span></div></div>
-            <div className="artboard-footer"><span>{restaurant.instagram||restaurant.name}</span><span>{design.format==='story'?'STORY':'FEED'}</span></div>
-          </div>}
+        <div className="stage-toolbar"><span><Sparkles size={14}/> FINAL PREVIEW</span><span>{design.format==='story'?'9:16 · 1080×1920':'1:1 · 1080×1080'} · {templateNames[design.template]}</span></div>
+        <RestaurantTemplateCanvas
+          template={design.template}
+          image={design.imageUrl||''}
+          headline={design.headline||'Naziv jela'}
+          text={design.subline||'Kratak opis jela.'}
+          price={price&&design.priceVisible?price:''}
+          cta={design.cta||'Poruči odmah'}
+          primary={design.primaryColor}
+          accent={design.accentColor}
+          logoUrl={design.logoVisible?restaurant.logo_url:null}
+          format={design.format==='story'?'story':'feed'}
+          baseFont={design.fontPair==='editorial'?'elegant-serif':design.fontPair==='impact'?'bold-display':'modern-sans'}
+          fontScale={Math.min(1.15,design.headlineScale)}
+          photoPosition={design.photoPosition}
+        />
         <div className="studio-below-preview"><div><CheckCircle2 size={17}/><span>PNG export koristi isti logo, poziciju, boje, veličine slova i layout kao preview.</span></div><div><ImageIcon size={17}/><span>{design.imageUrl?'Koristi se realna fotografija iz menija.':'Dodaj fotografiju za maksimalan kvalitet.'}</span></div></div>
       </section>
     </div>
@@ -290,20 +291,6 @@ function FontScaleControl({label,value,min,max,onChange,onMinus,onPlus}:{label:s
     <input aria-label={`${label} veličina`} type="range" min={Math.round(min*100)} max={Math.round(max*100)} step="5" value={Math.round(value*100)} onChange={e=>onChange(Number(e.target.value)/100)} style={{width:'100%',accentColor:'#7ea445'}}/>
     <span style={{fontSize:10,fontWeight:900,textAlign:'center',color:'#536057'}}>{Math.round(value*100)}%</span>
     <button type="button" style={buttonStyle} onClick={onPlus} title="Povećaj slova"><Plus size={14}/></button>
-  </div>
-}
-
-function PremiumGridPreview({design,restaurant,items,location}:{design:DesignState;restaurant:Restaurant;items:MenuItem[];location:string}){
-  const cards=items.length?Array.from({length:5},(_,i)=>items[i%items.length]):[]
-  return <div className={`studio-artboard ${design.format} template-premium-grid promo-grid-artboard`} style={{'--brand':design.primaryColor,'--accent':design.accentColor,'--overlay':String(design.overlay)} as CSSProperties}>
-    <div className="promo-grid-header"><div><strong>{restaurant.name}</strong><span>{location}</span></div>{design.logoVisible&&<div className={`promo-grid-logo badge-${design.logoBadge}`}>{restaurant.logo_url?<img src={restaurant.logo_url} alt={restaurant.name}/>:<span>{restaurant.name.slice(0,1).toUpperCase()}</span>}</div>}</div>
-    <div className="promo-grid-canvas">
-      {cards.length?<>{cards.map((menuItem,index)=><article key={index} className={index===0?'promo-grid-hero':'promo-grid-small'} style={{backgroundImage:menuItem.image_url?`url(${menuItem.image_url})`:undefined}}>
-        <div className="promo-grid-shade"/>
-        <div className="promo-grid-card-copy"><span>{index===0?'CHEF PICK':index===1?'LUNCH':index===2?'DINNER':index===3?'FRESH':'SWEET'}</span><strong style={{letterSpacing:`${design.headlineTracking}em`,lineHeight:design.headlineLineHeight}}>{menuItem.name}</strong>{design.priceVisible&&menuItem.price?<b style={{fontSize:`${10*design.priceScale}px`,padding:`${5*design.priceScale}px ${8*design.priceScale}px`}}>{menuItem.price} {menuItem.currency||'RSD'}</b>:null}</div>
-      </article>)}</>:<div className="promo-grid-empty"><ImageIcon size={28}/><span>Dodaj jela u meni da Premium Grid prikaže više kartica.</span></div>}
-    </div>
-    <div className="promo-grid-footer"><div style={{textAlign:design.textAlign}}><span>PREMIUM MENU</span><h2 style={{fontSize:`clamp(${18*design.headlineScale}px,${3.2*design.headlineScale}vw,${38*design.headlineScale}px)`,letterSpacing:`${design.headlineTracking}em`,lineHeight:design.headlineLineHeight}}>{design.headline||'Ukus koji se pamti.'}</h2><p style={{fontSize:`clamp(${7*design.sublineScale}px,${.9*design.sublineScale}vw,${13*design.sublineScale}px)`}}>{shorten(design.subline||'Izaberi favorita i svrati danas.',76)}</p></div><div className="promo-grid-cta" style={{fontSize:`${11*design.ctaScale}px`,padding:`${9*design.ctaScale}px ${13*design.ctaScale}px`}}>{design.cta||'Svrati danas'} <span>→</span></div></div>
   </div>
 }
 
