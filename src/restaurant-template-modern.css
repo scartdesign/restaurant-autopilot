@@ -274,9 +274,10 @@
 
 
 /* Responsive title-fit tiers shared by Feed and Story */
-.rtm h2.rtm-title-medium{font-size:calc(1em * .9);letter-spacing:-.045em}
-.rtm h2.rtm-title-long{font-size:calc(1em * .78);line-height:1.02;letter-spacing:-.04em}
-.rtm h2.rtm-title-xlong{font-size:calc(1em * .68);line-height:1.04;letter-spacing:-.035em}
-.restaurant-template-canvas.rtm.story h2.rtm-title-medium{font-size:calc(1em * .91)}
-.restaurant-template-canvas.rtm.story h2.rtm-title-long{font-size:calc(1em * .8)}
-.restaurant-template-canvas.rtm.story h2.rtm-title-xlong{font-size:calc(1em * .7)}
+.rtm h2 .rtm-title-text{display:inline;line-height:1}
+.rtm h2.rtm-title-medium .rtm-title-text{font-size:.9em;letter-spacing:-.045em}
+.rtm h2.rtm-title-long .rtm-title-text{font-size:.78em;letter-spacing:-.04em}
+.rtm h2.rtm-title-xlong .rtm-title-text{font-size:.68em;letter-spacing:-.035em}
+.restaurant-template-canvas.rtm.story h2.rtm-title-medium .rtm-title-text{font-size:.91em}
+.restaurant-template-canvas.rtm.story h2.rtm-title-long .rtm-title-text{font-size:.8em}
+.restaurant-template-canvas.rtm.story h2.rtm-title-xlong .rtm-title-text{font-size:.7em}
