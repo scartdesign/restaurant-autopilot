@@ -271,3 +271,12 @@
 @media(max-width:540px){
   .rtm-logo{border-radius:7px}
 }
+
+
+/* Responsive title-fit tiers shared by Feed and Story */
+.rtm h2.rtm-title-medium{font-size:calc(1em * .9);letter-spacing:-.045em}
+.rtm h2.rtm-title-long{font-size:calc(1em * .78);line-height:1.02;letter-spacing:-.04em}
+.rtm h2.rtm-title-xlong{font-size:calc(1em * .68);line-height:1.04;letter-spacing:-.035em}
+.restaurant-template-canvas.rtm.story h2.rtm-title-medium{font-size:calc(1em * .91)}
+.restaurant-template-canvas.rtm.story h2.rtm-title-long{font-size:calc(1em * .8)}
+.restaurant-template-canvas.rtm.story h2.rtm-title-xlong{font-size:calc(1em * .7)}
