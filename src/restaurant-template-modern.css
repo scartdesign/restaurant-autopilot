@@ -63,3 +63,211 @@
   .rtm-logo{border-radius:7px}
   .rtm .rtm-price{min-height:27px;padding:0 9px}
 }
+
+
+/* Distinct food-agency art directions — designed compositions for each stable template ID */
+.restaurant-template-canvas.rtm{container-type:inline-size}
+.rtm .rtm-price{flex:0 0 auto;max-width:100%;min-height:clamp(28px,7cqw,42px);padding-inline:clamp(10px,3cqw,18px);white-space:nowrap;font-size:clamp(11px,3.2cqw,17px)}
+.rtm h2{max-width:100%;overflow-wrap:anywhere;line-height:.98;-webkit-line-clamp:3;display:-webkit-box;-webkit-box-orient:vertical;overflow:hidden;transform:scale(var(--rt-user-font-scale,1))}
+.rtm p{overflow-wrap:anywhere}
+.rtm .rtpl-safe-cta{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* 01 Noir Signature — quiet dark luxury with a fine brass rule */
+.rtm-luxe{background:#11100e}
+.rtm-luxe .rtm-shade.luxe{background:linear-gradient(180deg,rgba(8,8,8,.02) 20%,rgba(8,8,8,.04) 42%,rgba(8,8,8,.9) 100%)}
+.rtm-luxe .rtm-topline{left:7%;right:7%;top:7%}
+.rtm-luxe .rtm-topline span{color:#f8f3e9;letter-spacing:.2em}
+.rtm-luxe .rtm-topline i{background:var(--rt-accent);max-width:34%}
+.rtm-luxe-copy{position:absolute;z-index:5;left:7%;right:7%;bottom:7%;padding-top:7%;border-top:1px solid color-mix(in srgb,var(--rt-accent) 72%,transparent)}
+.rtm-luxe .rtm-luxe-index{display:block;margin-bottom:2.5%;font-size:clamp(8px,1.5cqw,12px);letter-spacing:.2em;color:var(--rt-accent)}
+.rtm-luxe h2{max-width:86%;font-family:"DM Serif Display",Georgia,serif;font-size:clamp(40px,10cqw,92px);font-weight:400;letter-spacing:-.035em;line-height:.97}
+.rtm-luxe p{max-width:66%;margin-top:2.5%;font-size:clamp(10px,2cqw,16px)}
+.rtm-luxe .rtm-actions{display:flex;align-items:center;gap:3%;margin-top:3.5%}
+.rtm-luxe .rtm-cta{border:0;border-bottom:1px solid var(--rt-accent);border-radius:0;padding:9px 0;color:#fff;font-size:clamp(8px,1.7cqw,12px);letter-spacing:.12em}
+
+/* 02 Hero Dish — uninterrupted photograph and oversized food title */
+.rtm-hero-menu .rtm-index{font-family:"DM Serif Display",Georgia,serif;font-size:clamp(26px,7cqw,64px);font-weight:400}
+.rtm-hero-menu>.rtm-price{right:6%;top:6%}
+.rtm-hero-menu .rtm-copy-hero{left:6%;right:6%;bottom:6%}
+.rtm-hero-menu h2{max-width:84%;font-size:clamp(42px,11cqw,108px);line-height:.9;letter-spacing:-.065em}
+.rtm-hero-menu .rtm-hero-footer{grid-template-columns:minmax(0,1fr) auto;gap:5%;margin-top:4%;padding-top:3%;border-top:1px solid rgba(255,255,255,.48)}
+.rtm-hero-menu .rtm-hero-footer p{max-width:95%;font-size:clamp(10px,2cqw,16px)}
+.rtm-hero-menu .rtm-hero-footer span{font-size:clamp(8px,1.7cqw,13px)}
+
+/* 03 Magazine Plate — cream editorial column with a tall, unmasked photograph */
+.rtm-editorial{background:#f2efe8}
+.rtm-editorial .rtm-editorial-photo{left:43%;right:4%;top:4%;bottom:4%;border-radius:0 38% 0 0}
+.rtm-editorial .rtm-editorial-card{left:6%;width:41%;top:8%;bottom:8%;padding-right:3%}
+.rtm-editorial .rtm-kicker{font-size:clamp(8px,1.6cqw,12px);letter-spacing:.15em}
+.rtm-editorial h2{margin-top:6%;font-family:"Playfair Display",Georgia,serif;font-size:clamp(34px,8.5cqw,78px);line-height:1.02;letter-spacing:-.045em}
+.rtm-editorial p{margin-top:5%;font-size:clamp(10px,1.9cqw,15px)}
+.rtm-editorial .rtm-rule-row{gap:4%;margin-top:7%}
+.rtm-editorial .rtm-text-link{margin-top:6%;font-size:clamp(8px,1.6cqw,12px);letter-spacing:.12em}
+
+/* 04 Studio White — isolated dish on a soft warm paper field */
+.rtm-minimal{background:#f6f4ef}
+.rtm-minimal .rtm-minimal-bg{background:linear-gradient(145deg,#f8f7f2 0 61%,color-mix(in srgb,var(--rt-accent) 13%,#eee9de) 61% 100%)}
+.rtm-minimal .rtm-minimal-photo{right:5%;top:8%;bottom:8%;width:46%;border-radius:48% 48% 4px 4px;box-shadow:0 22px 64px rgba(31,27,19,.13)}
+.rtm-minimal .rtm-minimal-copy{left:7%;width:41%;top:9%;bottom:9%}
+.rtm-minimal h2{margin-top:5%;font-family:"DM Serif Display",Georgia,serif;font-size:clamp(36px,9cqw,82px);font-weight:400;line-height:.98;letter-spacing:-.04em}
+.rtm-minimal p{margin-top:5%;font-size:clamp(10px,1.9cqw,15px)}
+.rtm-minimal .rtm-minimal-foot{flex-wrap:wrap;gap:3%;margin-top:7%}
+.rtm-minimal .rtm-minimal-foot>span:last-child{font-size:clamp(8px,1.55cqw,12px);letter-spacing:.08em}
+
+/* 05 Street Impact — high-contrast campaign block */
+.rtm-bold .rtm-shade.bold{background:linear-gradient(180deg,rgba(0,0,0,.12),rgba(0,0,0,.03) 42%,rgba(0,0,0,.85) 100%)}
+.rtm-bold-label{left:6%;top:7%;padding:9px 13px;font-size:clamp(8px,1.7cqw,13px);letter-spacing:.16em}
+.rtm-bold-price{right:6%;top:7%}
+.rtm-bold-copy{left:6%;right:6%;bottom:7%}
+.rtm-bold-copy h2{max-width:96%;font-family:var(--rt-base-font,Arial,sans-serif);font-size:clamp(44px,12cqw,116px);line-height:.86;letter-spacing:-.07em}
+.rtm-bold-copy>div{grid-template-columns:minmax(0,1fr) auto;gap:4%;margin-top:4%}
+.rtm-bold-copy p{max-width:100%;font-size:clamp(10px,1.9cqw,15px)}
+.rtm-bold-copy span{font-size:clamp(8px,1.6cqw,12px)}
+
+/* 06 Chef Split — restrained asymmetry, full-height food image */
+.rtm-split{background:#171b18}
+.rtm-split .rtm-split-photo{left:0;top:0;bottom:0;width:59%}
+.rtm-split .rtm-split-panel{right:0;width:41%;padding:9% 6%;background:#171b18}
+.rtm-split h2{margin-top:6%;font-size:clamp(34px,8.3cqw,76px);line-height:.98}
+.rtm-split p{margin-top:5%;font-size:clamp(10px,1.8cqw,14px)}
+.rtm-split .rtm-price{margin-top:7%}
+.rtm-split-cta{margin-top:5%;font-size:clamp(8px,1.55cqw,12px);letter-spacing:.12em}
+.rtm-split-detail{left:52%;bottom:7%;width:14%;border:3px solid #fff}
+
+/* 07 Night Poster — event typography over a cinematic image */
+.rtm-poster{background:#141311}
+.rtm-poster .rtm-poster-bg{background:linear-gradient(120deg,#181512 0 31%,color-mix(in srgb,var(--rt-primary) 85%,#17120f) 31% 100%)}
+.rtm-poster .rtm-poster-photo{right:4%;top:4%;bottom:4%;width:61%;border-radius:2px}
+.rtm-poster-side{left:4%;top:7%;font-size:clamp(8px,1.55cqw,12px);letter-spacing:.2em}
+.rtm-poster-copy{left:7%;bottom:8%;width:43%;padding:5% 4%;background:color-mix(in srgb,#171512 91%,transparent);border-left:2px solid var(--rt-accent)}
+.rtm-poster-number{display:block;margin-bottom:5%;font-size:clamp(8px,1.4cqw,11px);letter-spacing:.16em;color:var(--rt-accent)}
+.rtm-poster h2{font-family:"DM Serif Display",Georgia,serif;font-size:clamp(34px,8.2cqw,76px);font-weight:400;line-height:.98}
+.rtm-poster p{margin-top:4%;font-size:clamp(10px,1.75cqw,14px)}
+.rtm-poster .rtm-price{margin-top:5%}
+.rtm-poster-copy>.rtpl-safe-cta{margin-top:4%;font-size:clamp(8px,1.5cqw,11px);letter-spacing:.12em}
+
+/* 08 Offer Glass — floating translucent offer card */
+.rtm-promo-badge .rtm-shade.soft{background:linear-gradient(180deg,rgba(0,0,0,.02) 30%,rgba(0,0,0,.3))}
+.rtm-promo-badge .rtm-kicker.floating{left:6%;top:6%;padding:9px 13px;font-size:clamp(8px,1.55cqw,12px);letter-spacing:.13em}
+.rtm-promo-badge .rtm-promo-card{left:6%;right:6%;bottom:6%;padding:5% 6%;border-radius:4px;background:rgba(249,247,242,.94);box-shadow:0 18px 54px rgba(0,0,0,.2)}
+.rtm-promo-badge h2{font-size:clamp(32px,8.2cqw,76px);line-height:1.02}
+.rtm-promo-badge p{margin-top:3%;font-size:clamp(10px,1.8cqw,14px)}
+.rtm-promo-badge .rtm-promo-card>div{gap:4%;margin-top:4%}
+.rtm-promo-badge .rtm-promo-card>div>span:last-child{font-size:clamp(8px,1.55cqw,12px);letter-spacing:.1em}
+
+/* 09 Menu Select — image window and numbered menu editorial panel */
+.rtm-premium-grid{background:#eeece5;color:#191a18}
+.rtm-premium-grid .rtm-grid-photo{left:5%;top:5%;bottom:5%;width:54%;border-radius:2px}
+.rtm-grid-panel{position:absolute;z-index:4;right:0;top:0;bottom:0;width:43%;padding:8% 7%;display:flex;flex-direction:column;justify-content:center;background:#eeece5;color:#191a18}
+.rtm-grid-index{display:block;margin-bottom:13%;font-family:"DM Serif Display",Georgia,serif;font-size:clamp(13px,2.5cqw,20px);letter-spacing:.05em;color:var(--rt-primary)}
+.rtm-premium-grid .rtm-kicker{color:var(--rt-primary);font-size:clamp(8px,1.45cqw,11px)}
+.rtm-premium-grid h2{margin-top:6%;font-family:"Playfair Display",Georgia,serif;font-size:clamp(31px,7.5cqw,68px);line-height:1;letter-spacing:-.04em;color:#191a18}
+.rtm-premium-grid p{margin-top:5%;font-size:clamp(10px,1.7cqw,13px);color:#575650}
+.rtm-grid-bottom{display:flex;flex-direction:column;align-items:flex-start;gap:5%;margin-top:7%}
+.rtm-grid-bottom .rtm-price{background:#1b2923;color:#fff}
+.rtm-grid-bottom .rtpl-safe-cta{font-size:clamp(8px,1.45cqw,11px);letter-spacing:.1em}
+
+/* 10 Flash Offer — angled campaign geometry, price-forward */
+.rtm-bold-offer{background:#f1e63c;color:#13130f}
+.rtm-offer-photo{left:0;top:0;bottom:0;width:68%;clip-path:polygon(0 0,100% 0,82% 100%,0 100%)}
+.rtm-offer-wash{position:absolute;z-index:2;inset:0;background:linear-gradient(125deg,transparent 34%,rgba(15,15,12,.07) 34% 100%);pointer-events:none}
+.rtm-offer-tag{position:absolute;z-index:5;right:5%;top:7%;padding:8px 11px;background:#13130f;color:#fff;font-size:clamp(8px,1.5cqw,12px);font-weight:900;letter-spacing:.14em}
+.rtm-offer-copy{position:absolute;z-index:5;right:5%;top:25%;bottom:7%;width:39%;display:flex;flex-direction:column;justify-content:center}
+.rtm-offer-kicker{margin-bottom:6%;font-size:clamp(8px,1.4cqw,11px);font-weight:900;letter-spacing:.17em}
+.rtm-bold-offer h2{font-size:clamp(34px,8.1cqw,74px);font-weight:900;line-height:.92;letter-spacing:-.065em;color:#13130f}
+.rtm-offer-copy p{margin-top:6%;font-size:clamp(10px,1.7cqw,13px);color:#35352e}
+.rtm-offer-copy>div{display:flex;flex-direction:column;align-items:flex-start;gap:4%;margin-top:8%}
+.rtm-bold-offer .rtm-price{background:#13130f;color:#f8ed4d}
+.rtm-offer-copy .rtpl-safe-cta{font-size:clamp(8px,1.5cqw,12px);font-weight:900;letter-spacing:.08em}
+
+/* 11 Lunch Window — warm split panel with schedule cue */
+.rtm-lunch-time{background:#263c31}
+.rtm-lunch-left{width:44%;padding:8% 6%}
+.rtm-lunch-time h2{font-family:"DM Serif Display",Georgia,serif;font-size:clamp(35px,8.5cqw,78px);font-weight:400;line-height:.97}
+.rtm-lunch-time p{margin-top:5%;font-size:clamp(10px,1.75cqw,14px)}
+.rtm-lunch-time .rtm-price{margin-top:6%}
+.rtm-lunch-time .rtm-lunch-time{margin-top:5%;font-size:clamp(9px,1.6cqw,12px)}
+.rtm-lunch-cta{margin-top:5%;font-size:clamp(8px,1.5cqw,11px);letter-spacing:.1em}
+.rtm-lunch-photo{width:56%;background-position:center}
+
+/* 12 Warm Table — inviting photography with soft ivory hospitality card */
+.rtm-family .rtm-shade.family{background:linear-gradient(180deg,rgba(29,20,12,.04),rgba(29,20,12,.16) 40%,rgba(29,20,12,.55))}
+.rtm-family-ribbon{position:absolute;z-index:4;left:6%;top:6%;padding:9px 13px;background:#f6efe2;color:#49352c;font-size:clamp(8px,1.5cqw,12px);font-weight:800;letter-spacing:.13em;text-transform:uppercase}
+.rtm-family-card{left:6%;bottom:6%;width:66%;padding:5% 6%;border-radius:2px;background:#f6efe8;color:#392b24;box-shadow:0 14px 44px rgba(35,22,14,.19)}
+.rtm-family-script{display:block;margin-bottom:3%;font-family:var(--rt-script-font,"Segoe Script",cursive);font-size:clamp(18px,4.2cqw,34px);color:#916648}
+.rtm-family h2{font-family:"DM Serif Display",Georgia,serif;font-size:clamp(34px,8cqw,74px);line-height:1;color:#392b24}
+.rtm-family p{margin-top:3%;font-size:clamp(10px,1.8cqw,14px);color:#66564c}
+.rtm-family-card>div{gap:4%;margin-top:4%}
+.rtm-family-card>div>span:last-child{font-size:clamp(8px,1.5cqw,11px);letter-spacing:.08em;color:#49352c}
+
+/* Story is composed separately for every direction, with copy protected from UI overlays */
+.restaurant-template-canvas.rtm.story .rtm-logo{width:11%;right:7%;top:4%;border-radius:7px}
+.restaurant-template-canvas.rtm.story h2{-webkit-line-clamp:4;font-size:clamp(32px,11cqw,74px)}
+.restaurant-template-canvas.rtm.story .rtm-price{min-height:clamp(28px,8cqw,42px)}
+.restaurant-template-canvas.rtm.story .rtm-topline{left:7%;right:22%;top:5%}
+.restaurant-template-canvas.rtm.story.rtm-luxe .rtm-shade.luxe{background:linear-gradient(180deg,rgba(0,0,0,.06) 20%,rgba(0,0,0,.03) 46%,rgba(0,0,0,.92) 100%)}
+.restaurant-template-canvas.rtm.story.rtm-luxe .rtm-luxe-copy{left:7%;right:7%;bottom:7%;padding-top:5%}
+.restaurant-template-canvas.rtm.story.rtm-luxe h2{max-width:100%;font-size:clamp(38px,12cqw,82px)}
+.restaurant-template-canvas.rtm.story.rtm-luxe p{max-width:95%;font-size:clamp(11px,3cqw,17px)}
+.restaurant-template-canvas.rtm.story.rtm-editorial .rtm-editorial-photo{left:5%;right:5%;top:5%;bottom:43%;border-radius:45% 45% 2px 2px}
+.restaurant-template-canvas.rtm.story.rtm-editorial .rtm-editorial-card{left:7%;right:7%;top:auto;bottom:5%;width:auto;height:35%;padding:0;justify-content:center}
+.restaurant-template-canvas.rtm.story.rtm-editorial h2{font-size:clamp(34px,10cqw,68px)}
+.restaurant-template-canvas.rtm.story.rtm-editorial p{max-width:100%;font-size:clamp(10px,2.7cqw,16px)}
+.restaurant-template-canvas.rtm.story.rtm-hero-menu .rtm-index{left:6%;top:5%;font-size:clamp(24px,8cqw,52px)}
+.restaurant-template-canvas.rtm.story.rtm-hero-menu>.rtm-price{right:6%;top:5%}
+.restaurant-template-canvas.rtm.story.rtm-hero-menu .rtm-copy-hero{left:6%;right:6%;bottom:7%}
+.restaurant-template-canvas.rtm.story.rtm-hero-menu h2{max-width:100%;font-size:clamp(40px,12cqw,82px)}
+.restaurant-template-canvas.rtm.story.rtm-hero-menu .rtm-hero-footer{display:block;margin-top:4%;padding-top:4%}
+.restaurant-template-canvas.rtm.story.rtm-hero-menu .rtm-hero-footer p{max-width:100%;font-size:clamp(10px,2.8cqw,16px)}
+.restaurant-template-canvas.rtm.story.rtm-hero-menu .rtm-hero-footer span{margin-top:4%}
+.restaurant-template-canvas.rtm.story.rtm-minimal .rtm-minimal-bg{background:linear-gradient(180deg,#f7f5ef 0 52%,color-mix(in srgb,var(--rt-accent) 12%,#eee9de) 52% 100%)}
+.restaurant-template-canvas.rtm.story.rtm-minimal .rtm-minimal-photo{left:7%;right:7%;top:6%;bottom:49%;width:auto;border-radius:45% 45% 3px 3px}
+.restaurant-template-canvas.rtm.story.rtm-minimal .rtm-minimal-copy{left:8%;right:8%;top:auto;bottom:6%;width:auto;height:38%;justify-content:center}
+.restaurant-template-canvas.rtm.story.rtm-minimal h2{font-size:clamp(34px,10cqw,70px)}
+.restaurant-template-canvas.rtm.story.rtm-minimal p{font-size:clamp(10px,2.7cqw,16px)}
+.restaurant-template-canvas.rtm.story.rtm-bold .rtm-bold-copy{left:6%;right:6%;bottom:7%}
+.restaurant-template-canvas.rtm.story.rtm-bold .rtm-bold-copy h2{max-width:100%;font-size:clamp(42px,13cqw,88px)}
+.restaurant-template-canvas.rtm.story.rtm-bold .rtm-bold-copy>div{display:block;margin-top:4%}
+.restaurant-template-canvas.rtm.story.rtm-bold .rtm-bold-copy p{font-size:clamp(10px,2.7cqw,16px)}
+.restaurant-template-canvas.rtm.story.rtm-bold .rtm-bold-copy span{margin-top:3%}
+.restaurant-template-canvas.rtm.story.rtm-split .rtm-split-photo{left:0;right:0;top:0;bottom:48%;width:auto}
+.restaurant-template-canvas.rtm.story.rtm-split .rtm-split-panel{left:0;right:0;top:52%;bottom:0;width:auto;padding:7% 8%;justify-content:center}
+.restaurant-template-canvas.rtm.story.rtm-split h2{font-size:clamp(34px,10cqw,68px)}
+.restaurant-template-canvas.rtm.story.rtm-split p{font-size:clamp(10px,2.6cqw,15px)}
+.restaurant-template-canvas.rtm.story.rtm-split .rtm-price{margin-top:4%}
+.restaurant-template-canvas.rtm.story.rtm-poster .rtm-poster-bg{background:linear-gradient(180deg,#171512 0 42%,color-mix(in srgb,var(--rt-primary) 85%,#17120f) 42% 100%)}
+.restaurant-template-canvas.rtm.story.rtm-poster .rtm-poster-photo{left:5%;right:5%;top:5%;bottom:42%;width:auto;border-radius:48% 48% 2px 2px}
+.restaurant-template-canvas.rtm.story.rtm-poster .rtm-poster-side{left:6%;top:6%;writing-mode:horizontal-tb;transform:none}
+.restaurant-template-canvas.rtm.story.rtm-poster .rtm-poster-copy{left:7%;right:7%;bottom:6%;width:auto;padding:0;background:transparent;border:0}
+.restaurant-template-canvas.rtm.story.rtm-poster h2{font-size:clamp(36px,11cqw,74px)}
+.restaurant-template-canvas.rtm.story.rtm-poster p{font-size:clamp(10px,2.6cqw,15px)}
+.restaurant-template-canvas.rtm.story.rtm-promo-badge .rtm-kicker.floating{left:6%;top:5%}
+.restaurant-template-canvas.rtm.story.rtm-promo-badge .rtm-promo-card{left:6%;right:6%;bottom:6%;padding:6%}
+.restaurant-template-canvas.rtm.story.rtm-promo-badge h2{font-size:clamp(34px,10cqw,70px)}
+.restaurant-template-canvas.rtm.story.rtm-promo-badge p{max-width:100%;font-size:clamp(10px,2.6cqw,15px)}
+.restaurant-template-canvas.rtm.story.rtm-premium-grid .rtm-grid-photo{left:6%;right:6%;top:5%;bottom:46%;width:auto;border-radius:2px}
+.restaurant-template-canvas.rtm.story.rtm-premium-grid .rtm-grid-panel{left:0;right:0;top:54%;bottom:0;width:auto;padding:6% 8%;justify-content:center}
+.restaurant-template-canvas.rtm.story.rtm-premium-grid .rtm-grid-index{margin-bottom:3%;font-size:clamp(12px,3cqw,18px)}
+.restaurant-template-canvas.rtm.story.rtm-premium-grid h2{font-size:clamp(32px,9.5cqw,66px)}
+.restaurant-template-canvas.rtm.story.rtm-premium-grid p{margin-top:3%;font-size:clamp(10px,2.5cqw,15px)}
+.restaurant-template-canvas.rtm.story.rtm-premium-grid .rtm-grid-bottom{flex-direction:row;align-items:center;justify-content:space-between;margin-top:4%}
+.restaurant-template-canvas.rtm.story.rtm-bold-offer .rtm-offer-photo{left:5%;right:5%;top:5%;bottom:38%;width:auto;clip-path:polygon(0 0,100% 0,92% 100%,8% 100%)}
+.restaurant-template-canvas.rtm.story.rtm-bold-offer .rtm-offer-wash{background:linear-gradient(180deg,transparent 0 49%,#f1e63c 49% 100%)}
+.restaurant-template-canvas.rtm.story.rtm-bold-offer .rtm-offer-tag{right:7%;top:52%}
+.restaurant-template-canvas.rtm.story.rtm-bold-offer .rtm-offer-copy{left:7%;right:7%;top:62%;bottom:6%;width:auto;display:block}
+.restaurant-template-canvas.rtm.story.rtm-bold-offer h2{font-size:clamp(34px,10cqw,70px)}
+.restaurant-template-canvas.rtm.story.rtm-bold-offer .rtm-offer-copy p{font-size:clamp(10px,2.6cqw,15px)}
+.restaurant-template-canvas.rtm.story.rtm-bold-offer .rtm-offer-copy>div{flex-direction:row;align-items:center;justify-content:space-between;margin-top:4%}
+.restaurant-template-canvas.rtm.story.rtm-lunch-time .rtm-lunch-photo{left:0;right:0;top:0;bottom:48%;width:auto}
+.restaurant-template-canvas.rtm.story.rtm-lunch-time .rtm-lunch-left{left:0;right:0;top:auto;bottom:0;width:auto;height:49%;padding:6% 8%;justify-content:center}
+.restaurant-template-canvas.rtm.story.rtm-lunch-time h2{font-size:clamp(34px,10cqw,68px)}
+.restaurant-template-canvas.rtm.story.rtm-lunch-time p{font-size:clamp(10px,2.5cqw,15px)}
+.restaurant-template-canvas.rtm.story.rtm-lunch-time .rtm-lunch-time{margin-top:3%}
+.restaurant-template-canvas.rtm.story.rtm-family .rtm-family-ribbon{left:6%;top:5%}
+.restaurant-template-canvas.rtm.story.rtm-family .rtm-family-card{left:6%;right:6%;bottom:6%;width:auto;padding:6%}
+.restaurant-template-canvas.rtm.story.rtm-family h2{font-size:clamp(34px,10cqw,68px)}
+.restaurant-template-canvas.rtm.story.rtm-family p{font-size:clamp(10px,2.6cqw,15px)}
+.restaurant-template-canvas.rtm.story.rtm-family .rtm-family-card>div{margin-top:4%}
+@media(max-width:540px){
+  .rtm-logo{border-radius:7px}
+}
