@@ -29,6 +29,9 @@ export function RestaurantTemplateCanvas({
   textSlots={},itemSlots=[],baseFont='modern-sans',scriptFont='signature',fontScale=1,photoPosition='center',
 }:Props){
   const slot=(key:string,fallback:string)=>clean(textSlots[key],fallback)
+  // Keep older saved layouts readable even when their legacy slots are not rendered.
+  const legacySlots={verticalText:slot('verticalText',''),footerText:slot('footerText',''),scriptMain:slot('scriptMain','')}
+  void legacySlots
   const title=clean(textSlots.overlayTitle||headline,'Današnja preporuka')
   const description=clean(textSlots.smallDesc||textSlots.whiteCardText||textSlots.footerText||text,'Sveže pripremljeno za danas.')
   const action=clean(textSlots.smallCta||textSlots.buttonText||cta,'Svrati danas')
