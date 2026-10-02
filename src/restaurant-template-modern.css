@@ -281,3 +281,11 @@
 .restaurant-template-canvas.rtm.story h2.rtm-title-medium .rtm-title-text{font-size:.91em}
 .restaurant-template-canvas.rtm.story h2.rtm-title-long .rtm-title-text{font-size:.8em}
 .restaurant-template-canvas.rtm.story h2.rtm-title-xlong .rtm-title-text{font-size:.7em}
+
+
+/* Preserve the legacy Visual Studio's existing safe logo controls */
+.rtm .rtm-logo{top:var(--rt-logo-top,4.5%);right:var(--rt-logo-right,4.5%);bottom:var(--rt-logo-bottom,auto);left:var(--rt-logo-left,auto);width:var(--rt-logo-width,10%);transform:var(--rt-logo-transform,none)}
+.restaurant-template-canvas.rtm.story .rtm-logo{top:var(--rt-logo-top,4%);right:var(--rt-logo-right,6%);bottom:var(--rt-logo-bottom,auto);left:var(--rt-logo-left,auto);width:var(--rt-logo-width,11%);transform:var(--rt-logo-transform,none)}
+.rtm .rtm-logo-badge-none{background:transparent;box-shadow:none}
+.rtm .rtm-logo-badge-dark{background:rgba(17,20,18,.9)}
+.rtm .rtm-logo-badge-blur{background:rgba(255,255,255,.55);backdrop-filter:blur(10px)}
