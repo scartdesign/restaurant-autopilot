@@ -89,7 +89,7 @@ Deno.serve(async (req: Request) => {
         editorial: "Create an elegant overhead editorial flat lay with refined negative space, art-directed but still realistic and appetizing.",
       };
       const artDirections: Record<string,string> = {
-        luxe: "noir fine-dining photography, deep shadow, restrained gold-toned details", "hero-menu": "bold best-seller hero photography, tight appetizing crop",
+        luxe: "noir fine-dining photography, deep shadow, restrained gold-toned details; keep the whole plated dish prominent on the left and leave clear clean negative space on the right for an emerald torn-edge poster panel", "hero-menu": "bold best-seller hero photography, tight appetizing crop",
         editorial: "premium food magazine art direction", minimal: "bright clean studio food photography", bold: "energetic modern street-food campaign", split: "fresh chef's-special restaurant photography",
         poster: "dramatic evening restaurant poster photography", "promo-badge": "high-impact offer campaign food photography", "premium-grid": "curated upscale menu photography",
         "bold-offer": "punchy discount campaign food photography", "lunch-time": "bright natural lunch-hour food photography", family: "warm traditional shared-table food photography",

@@ -289,3 +289,31 @@
 .rtm .rtm-logo-badge-none{background:transparent;box-shadow:none}
 .rtm .rtm-logo-badge-dark{background:rgba(17,20,18,.9)}
 .rtm .rtm-logo-badge-blur{background:rgba(255,255,255,.55);backdrop-filter:blur(10px)}
+
+/* Noir Signature: torn emerald campaign composition inspired by the supplied art direction. */
+.rtm-luxe{background:var(--rt-primary);color:#f7f1e6}
+.rtm-luxe::before{content:"";position:absolute;z-index:2;inset:0;background:var(--rt-primary);pointer-events:none;clip-path:polygon(55% 0,100% 0,100% 100%,0 100%,3% 95%,0 91%,4% 86%,2% 81%,7% 76%,5% 71%,11% 66%,9% 60%,15% 55%,13% 50%,19% 45%,17% 40%,24% 35%,22% 30%,30% 25%,28% 20%,37% 15%,35% 11%,45% 7%,43% 3%,52% 1%)}
+.rtm-luxe .rtm-shade.luxe{background:linear-gradient(180deg,rgba(0,0,0,.08),rgba(0,0,0,0) 54%)}
+.rtm-luxe .rtm-topline{left:5.5%;right:18%;top:5%;z-index:6}
+.rtm-luxe .rtm-topline span{color:var(--rt-accent)}
+.rtm-luxe .rtm-luxe-copy{position:absolute;z-index:6;left:auto;right:6%;bottom:7%;width:54%;max-width:none;display:flex;flex-direction:column;align-items:flex-start}
+.rtm-luxe .rtm-luxe-index{color:var(--rt-accent);font-size:clamp(7px,1.15cqw,12px);font-weight:850;letter-spacing:.17em}
+.rtm-luxe .rtm-luxe-script{margin:3% 0 2%;font-family:var(--rt-script-font,"Brush Script MT",cursive);font-size:clamp(16px,3.1cqw,34px);line-height:1;color:var(--rt-accent)}
+.rtm-luxe h2{max-width:100%;font-family:"DM Serif Display",Georgia,serif;font-size:clamp(38px,6.8cqw,78px);font-weight:400;line-height:.88;letter-spacing:-.045em;color:var(--rt-primary-ink,#f7f1e6)}
+.rtm-luxe h2.rtm-title-medium .rtm-title-text{font-size:.9em}
+.rtm-luxe h2.rtm-title-long .rtm-title-text{font-size:.78em}
+.rtm-luxe h2.rtm-title-xlong .rtm-title-text{font-size:.68em}
+.rtm-luxe p{width:100%;max-width:96%;margin-top:3%;font-size:clamp(10px,1.25cqw,16px);line-height:1.42;color:var(--rt-primary-ink,#f7f1e6);opacity:.9}
+.rtm-luxe .rtm-actions{display:flex;align-items:center;gap:3%;margin-top:4%}
+.rtm-luxe .rtm-price{background:var(--rt-accent);color:var(--rt-accent-ink,#181813);min-height:clamp(30px,4.4cqw,48px);padding:0 4%;font-size:clamp(10px,1.45cqw,16px)}
+.rtm-luxe .rtm-cta{display:inline-flex;align-items:center;justify-content:center;min-height:clamp(30px,4.4cqw,48px);padding:0 4%;border:1px solid rgba(255,255,255,.58);border-radius:999px;background:rgba(255,255,255,.08);color:var(--rt-primary-ink,#fff);font-size:clamp(8px,1.15cqw,13px);font-weight:850;letter-spacing:.05em;text-transform:uppercase}
+.rtm-luxe.story::before{clip-path:polygon(0 58%,6% 55%,3% 52%,12% 49%,9% 45%,20% 42%,17% 38%,29% 35%,26% 31%,39% 28%,36% 24%,51% 21%,100% 21%,100% 100%,0 100%)}
+.rtm-luxe.story .rtm-topline{left:7%;right:20%;top:4%}
+.rtm-luxe.story .rtm-luxe-copy{left:7%;right:7%;bottom:5%;width:86%;max-width:none}
+.rtm-luxe.story h2{font-size:clamp(38px,8.2cqw,88px)}
+.rtm-luxe.story p{font-size:clamp(11px,2.2cqw,17px);max-width:100%}
+.rtm-luxe.story .rtm-actions{margin-top:4%}
+@media(max-width:540px){
+  .rtm-luxe .rtm-luxe-copy{right:5%;bottom:6%;width:58%}
+  .rtm-luxe.story .rtm-luxe-copy{left:7%;right:7%;width:86%}
+}

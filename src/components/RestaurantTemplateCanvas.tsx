@@ -14,6 +14,13 @@ type Props={
 function photoStyle(image:string,position:'left'|'center'|'right'='center'):CSSProperties{
   return image?{backgroundImage:`url("${image.replace(/"/g,'\\"')}")`,backgroundPosition:position}:{}
 }
+function contrastInk(color:string){
+  const hex=color.trim().match(/^#([0-9a-f]{6})$/i)?.[1]
+  if(!hex)return '#fff'
+  const channels=[0,2,4].map(i=>parseInt(hex.slice(i,i+2),16)/255).map(v=>v<=.04045?v/12.92:Math.pow((v+.055)/1.055,2))
+  const luminance=.2126*channels[0]+.7152*channels[1]+.0722*channels[2]
+  return luminance>.42?'#17211b':'#fff'
+}
 function clean(value:string|undefined,fallback:string){return (value||'').trim()||fallback}
 function eyebrowFor(template:RestaurantTemplateId,badge:string){
   if(badge.trim())return badge.trim()
@@ -42,7 +49,7 @@ export function RestaurantTemplateCanvas({
   const logoBottom=logoPosition.startsWith('bottom')
   const logoCentered=logoPosition==='top-center'
   const rootStyle={
-    '--rt-primary':primary,'--rt-accent':accent,'--rt-base-font':baseFontStack(baseFont),
+    '--rt-primary':primary,'--rt-accent':accent,'--rt-primary-ink':contrastInk(primary),'--rt-accent-ink':contrastInk(accent),'--rt-base-font':baseFontStack(baseFont),
     '--rt-script-font':scriptFontStack(scriptFont),'--rt-user-font-scale':Math.min(1.15,Math.max(.85,fontScale)),
     '--rt-logo-top':logoBottom?'auto':'4.5%','--rt-logo-bottom':logoBottom?'4.5%':'auto',
     '--rt-logo-left':logoPosition==='top-left'||logoPosition==='bottom-left'?'4.5%':logoCentered?'50%':'auto',
@@ -55,7 +62,7 @@ export function RestaurantTemplateCanvas({
     case 'luxe':
       body=<><div className="rtm-photo rtm-photo-full" style={photoStyle(image,photoPosition)}/><div className="rtm-shade luxe"/>
         <div className="rtm-topline"><span>{label}</span><i/></div><div className="rtm-luxe-copy">
-          <span className="rtm-luxe-index">01 / SIGNATURE</span><h2 className={`rtm-title ${titleFit}`}><span className="rtm-title-text">{title}</span></h2><p className="rtpl-safe-copy">{description}</p>
+          <span className="rtm-luxe-index">01 / SIGNATURE</span><span className="rtm-luxe-script">{slot('scriptMain','Sveže iz kuhinje')}</span><h2 className={`rtm-title ${titleFit}`}><span className="rtm-title-text">{title}</span></h2><p className="rtpl-safe-copy">{description}</p>
           <div className="rtm-actions"><Price price={finalPrice}/><span className="rtm-cta rtpl-safe-cta">{action}</span></div></div></>
       break
     case 'editorial':
