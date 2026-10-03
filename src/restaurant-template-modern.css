@@ -384,3 +384,10 @@
 .rtm.story .rtm-lunch-left{width:auto}
 .rtm.story .rtm-poster-copy{width:auto}
 .rtm.story .rtm-offer-copy{width:auto}
+
+
+/* Explicit stack order keeps the photograph behind the torn paper and the copy above it. */
+.rtm.restaurant-template-canvas .rtm-photo:not(.rtm-split-detail){z-index:0!important}
+.rtm.restaurant-template-canvas .rtm-shade{z-index:1!important}
+.rtm.restaurant-template-canvas::after{z-index:3!important}
+.rtm.restaurant-template-canvas .rtm-luxe-copy,.rtm.restaurant-template-canvas .rtm-copy-hero,.rtm.restaurant-template-canvas .rtm-editorial-card,.rtm.restaurant-template-canvas .rtm-minimal-copy,.rtm.restaurant-template-canvas .rtm-bold-copy,.rtm.restaurant-template-canvas .rtm-split-panel,.rtm.restaurant-template-canvas .rtm-poster-copy,.rtm.restaurant-template-canvas .rtm-promo-card,.rtm.restaurant-template-canvas .rtm-grid-panel,.rtm.restaurant-template-canvas .rtm-offer-copy,.rtm.restaurant-template-canvas .rtm-lunch-left,.rtm.restaurant-template-canvas .rtm-family-card{z-index:5!important;visibility:visible!important;opacity:1!important}
