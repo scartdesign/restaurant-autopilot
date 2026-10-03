@@ -682,3 +682,10 @@
  .rtm.rtm-editorial .rtm-editorial-card{right:64%}
  .rtm.rtm-lunch-time .rtm-lunch-left{left:68%;right:5%}
 }
+
+
+/* Keep the hero price clear of the configurable corner logo. */
+.rtm.rtm-hero-menu>.rtm-price{top:15%!important;right:6%!important}
+.rtm.story.rtm-hero-menu>.rtm-price{top:12%!important;right:7%!important}
+.rtm.rtm-hero-menu .rtm-index{font-size:clamp(27px,6cqw,54px)}
+.rtm.rtm-hero-menu .rtm-copy-hero{max-height:38%}
