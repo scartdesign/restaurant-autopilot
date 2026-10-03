@@ -395,3 +395,204 @@
 
 /* Keep the bold campaign CTA microtype rule off the headline span. */
 .rtm .rtm-bold-copy h2 .rtm-title-text{font-size:inherit!important;letter-spacing:inherit}
+
+
+/* Agency art direction v2 — one photographic canvas, twelve distinct campaign layouts. */
+.rtm.restaurant-template-canvas{isolation:isolate;container-type:inline-size;background:#111;color:#fff}
+.rtm.restaurant-template-canvas::after,.rtm.restaurant-template-canvas::before{content:none!important}
+.rtm .rtm-photo:not(.rtm-split-detail){position:absolute!important;inset:0!important;width:100%!important;height:100%!important;z-index:0!important;clip-path:none!important;border-radius:0!important;background-size:cover!important;background-repeat:no-repeat!important}
+.rtm .rtm-shade{z-index:1!important;pointer-events:none}
+.rtm .rtm-split-detail,.rtm .rtm-minimal-bg,.rtm .rtm-poster-bg,.rtm .rtm-offer-wash{display:none!important}
+.rtm .rtm-luxe-copy,.rtm .rtm-copy-hero,.rtm .rtm-editorial-card,.rtm .rtm-minimal-copy,.rtm .rtm-bold-copy,.rtm .rtm-split-panel,.rtm .rtm-poster-copy,.rtm .rtm-promo-card,.rtm .rtm-grid-panel,.rtm .rtm-offer-copy,.rtm .rtm-lunch-left,.rtm .rtm-family-card{position:absolute;z-index:5;display:flex;flex-direction:column;justify-content:center;min-height:0;max-height:none;margin:0;transform:none}
+.rtm h2,.rtm .rtm-title{max-width:100%;font-size:clamp(30px,7cqw,72px);line-height:.94;letter-spacing:-.045em;text-wrap:balance;overflow-wrap:anywhere}
+.rtm h2 .rtm-title-text{font-size:inherit!important;letter-spacing:inherit!important;line-height:inherit}
+.rtm p{max-width:100%;font-size:clamp(10px,1.65cqw,15px);line-height:1.42;overflow-wrap:anywhere}
+.rtm .rtm-price{min-height:clamp(32px,6cqw,52px);padding:0 clamp(12px,2.5cqw,20px);border-radius:999px;background:var(--rt-accent);color:var(--rt-accent-ink,#17211b);font-size:clamp(13px,2.4cqw,21px);font-weight:900;box-shadow:0 8px 22px rgba(0,0,0,.2)}
+.rtm .rtpl-safe-cta{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;letter-spacing:.1em}
+.rtm .rtm-kicker,.rtm .rtm-kicker.dark,.rtm .rtm-kicker.light{color:var(--rt-accent)!important}
+.rtm .rtm-logo{z-index:30!important;width:7%!important;min-width:28px;max-width:64px;right:5%!important;top:5%!important;left:auto!important;bottom:auto!important;padding:3px!important;border:1px solid color-mix(in srgb,var(--rt-accent) 65%,transparent);border-radius:50%!important;background:rgba(18,26,21,.82)!important;box-shadow:0 6px 18px rgba(0,0,0,.18)!important}
+.rtm .rtm-topline,.rtm .rtm-index,.rtm .rtm-bold-label,.rtm .rtm-bold-price,.rtm .rtm-poster-side,.rtm .rtm-poster-number,.rtm .rtm-offer-tag,.rtm .rtm-family-ribbon{z-index:7}
+.rtm .rtm-topline i{background:var(--rt-accent)}
+.rtm .rtm-cta,.rtm .rtm-split-cta,.rtm .rtm-text-link,.rtm .rtm-lunch-cta{color:inherit}
+.rtm .rtm-actions{display:flex;align-items:center;gap:3%;margin-top:4%}
+.rtm .rtm-hero-footer{display:flex;align-items:end;justify-content:space-between;gap:5%;margin-top:4%;padding-top:3%;border-top:1px solid rgba(255,255,255,.4)}
+.rtm .rtm-editorial-card .rtm-rule-row,.rtm .rtm-minimal-foot,.rtm .rtm-promo-card>div,.rtm .rtm-grid-bottom,.rtm .rtm-offer-copy>div,.rtm .rtm-family-card>div{display:flex;align-items:center;justify-content:space-between;gap:4%;margin-top:4%}
+
+/* 01 Noir Signature — photo wedge, emerald paper and gilt script. */
+.rtm.rtm-luxe{background:var(--rt-primary)}
+.rtm.rtm-luxe::before{content:""!important;display:block!important;position:absolute;z-index:2;inset:0 0 0 52%;background:var(--rt-primary);clip-path:polygon(15% 0,100% 0,100% 100%,0 100%,5% 93%,0 87%,7% 80%,2% 74%,10% 66%,5% 59%,14% 52%,9% 45%,19% 38%,14% 31%,25% 24%,20% 17%,32% 10%,27% 4%);pointer-events:none}
+.rtm.rtm-luxe .rtm-photo-full{clip-path:polygon(0 0,70% 0,58% 6%,66% 12%,54% 19%,61% 26%,49% 33%,57% 40%,45% 48%,52% 55%,41% 63%,47% 70%,36% 77%,43% 84%,32% 92%,38% 100%,0 100%)!important}
+.rtm.rtm-luxe .rtm-shade.luxe{background:linear-gradient(90deg,rgba(6,8,6,.02) 28%,rgba(6,8,6,.28) 53%,transparent 65%)}
+.rtm.rtm-luxe .rtm-topline{left:58%;right:8%;top:10%;z-index:8}
+.rtm.rtm-luxe .rtm-topline span{color:var(--rt-accent)!important;font-size:clamp(8px,1.35cqw,12px)}
+.rtm.rtm-luxe .rtm-luxe-copy{left:59%;right:7%;top:21%;bottom:8%;width:auto;height:auto;max-width:none;padding:4% 0 0;border:0;align-items:flex-start;justify-content:center}
+.rtm.rtm-luxe .rtm-luxe-index{margin-bottom:5%;font-size:clamp(8px,1.25cqw,12px);letter-spacing:.2em;color:var(--rt-accent)}
+.rtm.rtm-luxe .rtm-luxe-script{display:block;margin:0 0 3%;font-family:var(--rt-script-font,"Segoe Script",cursive);font-size:clamp(21px,5cqw,44px);line-height:1;color:var(--rt-accent)}
+.rtm.rtm-luxe h2{font-family:"DM Serif Display",Georgia,serif;font-weight:400;font-size:clamp(31px,6.4cqw,64px);line-height:.98;color:var(--rt-primary-ink,#fff)}
+.rtm.rtm-luxe p{max-width:95%;margin-top:5%;font-size:clamp(10px,1.7cqw,15px);color:var(--rt-primary-ink,#fff);opacity:.86}
+.rtm.rtm-luxe .rtm-actions{flex-wrap:wrap;margin-top:7%}
+.rtm.rtm-luxe .rtm-cta{padding:12px 0;border-bottom:1px solid var(--rt-accent);font-size:clamp(8px,1.35cqw,12px);color:var(--rt-primary-ink,#fff)}
+
+/* 02 Hero Dish — cinematic full bleed with a clean title bar. */
+.rtm.rtm-hero-menu .rtm-shade.hero{background:linear-gradient(180deg,rgba(0,0,0,.12),transparent 38%,rgba(0,0,0,.08) 55%,rgba(0,0,0,.86) 100%)}
+.rtm.rtm-hero-menu .rtm-index{left:6%;top:6%;font-family:"DM Serif Display",Georgia,serif;font-size:clamp(34px,8cqw,74px);color:#fff}
+.rtm.rtm-hero-menu>.rtm-price{right:6%;top:6%;z-index:7}
+.rtm.rtm-hero-menu .rtm-copy-hero{left:7%;right:7%;bottom:7%;height:auto;max-height:34%;padding:0}
+.rtm.rtm-hero-menu h2{font-size:clamp(38px,9cqw,88px);font-weight:800;letter-spacing:-.06em;color:#fff}
+.rtm.rtm-hero-menu .rtm-kicker{color:var(--rt-accent)!important}
+.rtm.rtm-hero-menu .rtm-hero-footer p{max-width:72%;color:#fff}
+.rtm.rtm-hero-menu .rtm-hero-footer span{color:var(--rt-accent);font-size:clamp(9px,1.45cqw,13px)}
+
+/* 03 Magazine Plate — warm paper column, sculptural photo window. */
+.rtm.rtm-editorial{background:#eee8dc;color:#20231e}
+.rtm.rtm-editorial .rtm-editorial-photo{left:40%;right:0;top:0;bottom:0;width:60%;clip-path:polygon(12% 0,100% 0,100% 100%,0 100%,5% 91%,0 83%,7% 73%,2% 64%,9% 54%,3% 45%,11% 35%,6% 25%,14% 15%,9% 7%)!important}
+.rtm.rtm-editorial .rtm-editorial-card{left:7%;right:61%;top:10%;bottom:9%;width:auto;height:auto;padding:0;background:transparent!important;color:#20231e}
+.rtm.rtm-editorial .rtm-kicker{font-size:clamp(8px,1.3cqw,12px);letter-spacing:.18em}
+.rtm.rtm-editorial h2{margin-top:7%;font-family:"Playfair Display",Georgia,serif;font-size:clamp(32px,6.5cqw,62px);line-height:1.02;color:#20231e}
+.rtm.rtm-editorial p{margin-top:6%;font-size:clamp(10px,1.5cqw,14px);color:#5a5a50}
+.rtm.rtm-editorial .rtm-rule-row{justify-content:flex-start;margin-top:8%}
+.rtm.rtm-editorial .rtm-rule-row i{display:none}
+.rtm.rtm-editorial .rtm-text-link{margin-top:6%;font-size:clamp(8px,1.25cqw,11px);color:#20231e}
+
+/* 04 Studio White — isolated food portrait and precise studio typography. */
+.rtm.rtm-minimal{background:#f4f1e9;color:#1c211c}
+.rtm.rtm-minimal .rtm-minimal-bg{display:block!important;inset:0;background:linear-gradient(135deg,#f8f6ef 0 56%,color-mix(in srgb,var(--rt-accent) 24%,#e9e2d3) 56% 100%)}
+.rtm.rtm-minimal .rtm-minimal-photo{left:47%;right:4%;top:7%;bottom:7%;width:49%;clip-path:ellipse(48% 49% at 54% 50%)!important;box-shadow:0 22px 65px rgba(35,29,19,.2)}
+.rtm.rtm-minimal .rtm-minimal-copy{left:7%;right:52%;top:12%;bottom:11%;width:auto;height:auto;padding:0;background:transparent!important}
+.rtm.rtm-minimal .rtm-kicker{color:var(--rt-primary)!important}
+.rtm.rtm-minimal h2{margin-top:8%;font-family:"DM Serif Display",Georgia,serif;font-size:clamp(34px,7cqw,68px);font-weight:400;line-height:.98;color:#1c211c}
+.rtm.rtm-minimal p{margin-top:6%;font-size:clamp(10px,1.55cqw,14px);color:#5c6059}
+.rtm.rtm-minimal .rtm-minimal-foot{justify-content:flex-start;flex-wrap:wrap;margin-top:8%}
+.rtm.rtm-minimal .rtm-minimal-foot>span:last-child{font-size:clamp(8px,1.3cqw,12px);font-weight:800;letter-spacing:.08em;color:#1c211c}
+
+/* 05 Street Impact — electric condensed headline and floating price slug. */
+.rtm.rtm-bold .rtm-shade.bold{background:linear-gradient(180deg,rgba(0,0,0,.02) 25%,rgba(0,0,0,.15) 48%,rgba(0,0,0,.88) 100%)}
+.rtm.rtm-bold-label{left:6%;top:7%;padding:10px 14px;background:var(--rt-accent);color:var(--rt-accent-ink,#111);font-size:clamp(8px,1.25cqw,12px);letter-spacing:.16em}
+.rtm.rtm-bold-price{right:6%;top:7%}
+.rtm.rtm-bold-copy{left:6%;right:6%;bottom:7%;height:auto;max-height:38%;padding:0}
+.rtm.rtm-bold-copy h2{font-family:var(--rt-base-font,Arial,sans-serif);font-size:clamp(38px,9cqw,84px);line-height:.84;letter-spacing:-.07em;color:#fff;text-transform:uppercase}
+.rtm.rtm-bold-copy>div{display:flex;align-items:end;justify-content:space-between;gap:5%;margin-top:4%;padding-top:3%;border-top:1px solid rgba(255,255,255,.4)}
+.rtm.rtm-bold-copy p{max-width:70%;font-size:clamp(10px,1.55cqw,14px);color:#fff}
+.rtm.rtm-bold-copy>div>span{flex:none;font-size:clamp(8px,1.2cqw,11px);font-weight:900;color:var(--rt-accent)}
+.rtm.rtm-bold-copy .rtm-title-text{font-size:inherit!important}
+
+/* 06 Chef Split — deep ink service panel cut into an oversized plate image. */
+.rtm.rtm-split{background:var(--rt-primary);color:var(--rt-primary-ink,#fff)}
+.rtm.rtm-split .rtm-split-photo{left:0;right:0;top:0;bottom:0;width:100%;clip-path:polygon(0 0,66% 0,61% 8%,68% 17%,59% 27%,65% 37%,56% 48%,63% 58%,53% 69%,60% 79%,50% 90%,56% 100%,0 100%)!important}
+.rtm.rtm-split .rtm-split-panel{left:58%;right:5%;top:8%;bottom:8%;width:auto;height:auto;padding:6% 2% 6% 0;background:transparent!important;color:var(--rt-primary-ink,#fff)}
+.rtm.rtm-split .rtm-kicker{color:var(--rt-accent)!important}
+.rtm.rtm-split h2{margin-top:8%;font-family:"Playfair Display",Georgia,serif;font-size:clamp(30px,6cqw,58px);line-height:1;color:var(--rt-primary-ink,#fff)}
+.rtm.rtm-split p{margin-top:6%;color:var(--rt-primary-ink,#fff);opacity:.84}
+.rtm.rtm-split .rtm-price{margin-top:8%}
+.rtm.rtm-split .rtm-split-cta{margin-top:7%;font-size:clamp(8px,1.2cqw,11px);color:var(--rt-primary-ink,#fff)}
+
+/* 07 Night Poster — cinematic vertical title and restrained event stamp. */
+.rtm.rtm-poster{background:#11110f;color:#fff}
+.rtm.rtm-poster .rtm-poster-photo{left:23%;right:0;top:0;bottom:0;width:77%;clip-path:polygon(12% 0,100% 0,100% 100%,0 100%,5% 88%,0 76%,7% 64%,2% 52%,9% 40%,3% 28%,12% 16%,7% 7%)!important}
+.rtm.rtm-poster-side{left:6%;top:8%;writing-mode:vertical-rl;transform:none;font-size:clamp(8px,1.3cqw,12px);color:var(--rt-accent)}
+.rtm.rtm-poster-copy{left:6%;right:55%;bottom:8%;width:auto;height:auto;padding:0;background:transparent!important;border:0}
+.rtm.rtm-poster-number{margin-bottom:5%;font-size:clamp(8px,1.2cqw,11px);letter-spacing:.18em;color:var(--rt-accent)}
+.rtm.rtm-poster h2{font-family:"DM Serif Display",Georgia,serif;font-size:clamp(31px,6.2cqw,60px);font-weight:400;line-height:.98;color:#fff}
+.rtm.rtm-poster p{margin-top:5%;color:#fff}
+.rtm.rtm-poster .rtm-price{margin-top:6%}
+.rtm.rtm-poster-copy>.rtpl-safe-cta{margin-top:5%;font-size:clamp(8px,1.2cqw,11px);color:#fff}
+
+/* 08 Offer Glass — a frosted campaign card over a rich close-up. */
+.rtm.rtm-promo-badge .rtm-shade.soft{background:linear-gradient(180deg,rgba(0,0,0,.02),rgba(0,0,0,.08) 38%,rgba(0,0,0,.48))}
+.rtm.rtm-promo-badge .rtm-kicker.floating{left:6%;top:7%;padding:10px 15px;background:var(--rt-accent);color:var(--rt-accent-ink,#171717);font-size:clamp(8px,1.3cqw,12px);backdrop-filter:none}
+.rtm.rtm-promo-badge .rtm-promo-card{left:6%;right:6%;bottom:6%;height:auto;max-height:46%;padding:5% 6%;border:1px solid rgba(255,255,255,.44);border-radius:20px;background:color-mix(in srgb,var(--rt-primary) 88%,transparent)!important;backdrop-filter:blur(18px);color:var(--rt-primary-ink,#fff)}
+.rtm.rtm-promo-badge h2{font-family:"Playfair Display",Georgia,serif;font-size:clamp(31px,7cqw,65px);font-weight:600;color:var(--rt-primary-ink,#fff)}
+.rtm.rtm-promo-badge p{margin-top:3%;color:var(--rt-primary-ink,#fff);opacity:.88}
+.rtm.rtm-promo-badge .rtm-promo-card>div{justify-content:space-between;margin-top:4%}
+.rtm.rtm-promo-badge .rtm-promo-card>div>span:last-child{font-size:clamp(8px,1.25cqw,12px);font-weight:900;letter-spacing:.1em;color:var(--rt-accent)}
+
+/* 09 Menu Select — actual menu-board grid, generous dish window and price rail. */
+.rtm.rtm-premium-grid{background:#f1ebdf;color:#1a201b}
+.rtm.rtm-premium-grid .rtm-grid-photo{left:0;right:0;top:0;bottom:0;width:100%;clip-path:polygon(0 0,60% 0,56% 12%,63% 24%,55% 37%,62% 49%,53% 62%,60% 74%,51% 88%,56% 100%,0 100%)!important}
+.rtm.rtm-premium-grid .rtm-grid-panel{left:56%;right:6%;top:9%;bottom:7%;width:auto;height:auto;padding:0;background:transparent!important;color:#1a201b}
+.rtm.rtm-premium-grid .rtm-grid-index{margin:0 0 10%;font-family:"Playfair Display",Georgia,serif;font-size:clamp(16px,2.6cqw,24px);color:var(--rt-primary)}
+.rtm.rtm-premium-grid .rtm-kicker{color:var(--rt-primary)!important;font-size:clamp(8px,1.2cqw,11px)}
+.rtm.rtm-premium-grid h2{margin-top:7%;font-family:"Playfair Display",Georgia,serif;font-size:clamp(30px,6cqw,58px);line-height:1;color:#1a201b}
+.rtm.rtm-premium-grid p{margin-top:6%;font-size:clamp(10px,1.45cqw,13px);color:#5b5c53}
+.rtm.rtm-premium-grid .rtm-grid-bottom{flex-direction:column;align-items:flex-start;gap:10px;margin-top:8%}
+.rtm.rtm-premium-grid .rtm-grid-bottom .rtm-price{background:var(--rt-primary);color:var(--rt-primary-ink,#fff)}
+.rtm.rtm-premium-grid .rtpl-safe-cta{font-size:clamp(8px,1.2cqw,11px);color:#1a201b}
+
+/* 10 Flash Offer — strong sale price, warm color slab and cutout photo. */
+.rtm.rtm-bold-offer{background:var(--rt-accent);color:var(--rt-accent-ink,#171717)}
+.rtm.rtm-bold-offer .rtm-offer-photo{left:34%;right:0;top:0;bottom:0;width:66%;clip-path:polygon(15% 0,100% 0,100% 100%,0 100%,8% 87%,1% 74%,11% 61%,3% 48%,13% 35%,6% 22%,17% 10%)!important}
+.rtm.rtm-bold-offer .rtm-offer-tag{left:6%;right:auto;top:7%;padding:9px 12px;background:var(--rt-primary);color:var(--rt-primary-ink,#fff);font-size:clamp(8px,1.2cqw,11px);letter-spacing:.13em}
+.rtm.rtm-bold-offer .rtm-offer-copy{left:6%;right:60%;top:23%;bottom:8%;width:auto;height:auto;padding:0;background:transparent!important;color:var(--rt-accent-ink,#171717)}
+.rtm.rtm-bold-offer .rtm-offer-kicker{margin-bottom:6%;font-size:clamp(8px,1.2cqw,11px);font-weight:950;letter-spacing:.16em;color:var(--rt-accent-ink,#171717)}
+.rtm.rtm-bold-offer h2{font-size:clamp(32px,6.8cqw,66px);font-weight:950;line-height:.9;color:var(--rt-accent-ink,#171717)}
+.rtm.rtm-bold-offer p{margin-top:7%;font-size:clamp(10px,1.45cqw,13px);color:var(--rt-accent-ink,#171717)}
+.rtm.rtm-bold-offer .rtm-offer-copy>div{flex-direction:column;align-items:flex-start;gap:12px;margin-top:8%}
+.rtm.rtm-bold-offer .rtm-price{background:var(--rt-primary);color:var(--rt-primary-ink,#fff);font-size:clamp(16px,3.2cqw,29px)}
+.rtm.rtm-bold-offer .rtpl-safe-cta{font-size:clamp(8px,1.15cqw,11px);font-weight:950;color:var(--rt-accent-ink,#171717)}
+
+/* 11 Lunch Window — sunlit photo plus crisp service-time block. */
+.rtm.rtm-lunch-time{background:#efe3cb;color:#20241e}
+.rtm.rtm-lunch-time .rtm-lunch-photo{left:0;right:0;top:0;bottom:0;width:100%;clip-path:polygon(0 0,100% 0,100% 100%,44% 100%,50% 91%,39% 83%,46% 74%,35% 65%,43% 56%,31% 47%,39% 38%,28% 29%,36% 20%,24% 11%,32% 0)!important}
+.rtm.rtm-lunch-time .rtm-lunch-left{left:58%;right:5%;top:8%;bottom:8%;width:auto;height:auto;padding:0;background:transparent!important;color:#20241e}
+.rtm.rtm-lunch-time .rtm-kicker{color:var(--rt-primary)!important}
+.rtm.rtm-lunch-time h2{margin-top:8%;font-family:"DM Serif Display",Georgia,serif;font-size:clamp(31px,6cqw,58px);font-weight:400;line-height:1;color:#20241e}
+.rtm.rtm-lunch-time p{margin-top:6%;font-size:clamp(10px,1.5cqw,14px);color:#56564e}
+.rtm.rtm-lunch-time .rtm-price{margin-top:7%}
+.rtm.rtm-lunch-time .rtm-lunch-time{margin-top:6%;font-size:clamp(9px,1.25cqw,12px);font-weight:950;letter-spacing:.12em;color:var(--rt-primary)}
+.rtm.rtm-lunch-time .rtm-lunch-cta{margin-top:6%;font-size:clamp(8px,1.15cqw,11px);font-weight:900;color:#20241e}
+
+/* 12 Warm Table — honest hospitality, soft linen card and handwritten warmth. */
+.rtm.rtm-family .rtm-shade.family{background:linear-gradient(180deg,rgba(15,11,8,.02) 35%,rgba(15,11,8,.28) 65%,rgba(15,11,8,.62))}
+.rtm.rtm-family-ribbon{left:6%;top:7%;padding:10px 14px;border-radius:999px;background:#f4ead7;color:#4a3427;font-size:clamp(8px,1.2cqw,11px)}
+.rtm.rtm-family .rtm-family-card{left:6%;right:6%;bottom:6%;height:auto;max-height:44%;padding:5% 6%;border-radius:18px;background:#f4ead7!important;box-shadow:0 18px 50px rgba(30,17,10,.24);color:#392b24}
+.rtm.rtm-family-script{display:block;margin-bottom:2%;font-family:var(--rt-script-font,"Segoe Script",cursive);font-size:clamp(20px,4.5cqw,38px);color:#966b48}
+.rtm.rtm-family h2{font-family:"DM Serif Display",Georgia,serif;font-size:clamp(31px,6.7cqw,64px);font-weight:400;line-height:.98;color:#392b24}
+.rtm.rtm-family p{margin-top:3%;font-size:clamp(10px,1.55cqw,14px);color:#66564c}
+.rtm.rtm-family-card>div{margin-top:3%}
+.rtm.rtm-family-card>div>span:last-child{font-size:clamp(8px,1.2cqw,11px);font-weight:850;color:#49352c}
+
+/* Story gets its own tall layouts rather than a scaled square composition. */
+.rtm.story .rtm-photo:not(.rtm-split-detail){background-position:center 42%!important}
+.rtm.story h2,.rtm.story .rtm-title{font-size:clamp(34px,7.8cqw,68px);-webkit-line-clamp:2}
+.rtm.story p{font-size:clamp(11px,1.8cqw,15px)}
+.rtm.story.rtm-luxe::before{inset:57% 0 0;clip-path:polygon(0 8%,8% 5%,15% 0,23% 6%,33% 2%,42% 8%,52% 1%,62% 6%,72% 2%,83% 8%,92% 1%,100% 5%,100% 100%,0 100%)}
+.rtm.story.rtm-luxe .rtm-photo-full{clip-path:none!important}
+.rtm.story.rtm-luxe .rtm-shade.luxe{background:linear-gradient(180deg,transparent 34%,rgba(0,0,0,.3) 56%,transparent 64%)}
+.rtm.story.rtm-luxe .rtm-topline{left:7%;right:20%;top:5%}
+.rtm.story.rtm-luxe .rtm-luxe-copy{left:8%;right:8%;top:62%;bottom:5%;padding:2% 0 0}
+.rtm.story.rtm-luxe h2{font-size:clamp(35px,8cqw,70px)}
+.rtm.story.rtm-hero-menu .rtm-copy-hero{left:7%;right:7%;bottom:7%;max-height:34%}
+.rtm.story.rtm-hero-menu h2{font-size:clamp(42px,9cqw,80px)}
+.rtm.story.rtm-hero-menu .rtm-hero-footer{display:block}
+.rtm.story.rtm-hero-menu .rtm-hero-footer p{max-width:100%}
+.rtm.story.rtm-editorial .rtm-editorial-photo{left:0;right:0;top:0;bottom:42%;width:100%;clip-path:none!important}
+.rtm.story.rtm-editorial .rtm-editorial-card{left:8%;right:8%;top:auto;bottom:4%;height:34%;justify-content:center}
+.rtm.story.rtm-editorial h2{font-size:clamp(38px,8cqw,74px)}
+.rtm.story.rtm-minimal .rtm-minimal-photo{left:7%;right:7%;top:5%;bottom:45%;width:86%;clip-path:ellipse(48% 49% at 50% 50%)!important}
+.rtm.story.rtm-minimal .rtm-minimal-copy{left:8%;right:8%;top:auto;bottom:5%;height:37%;justify-content:center}
+.rtm.story.rtm-minimal h2{font-size:clamp(39px,8cqw,76px)}
+.rtm.story.rtm-bold .rtm-bold-copy{left:7%;right:7%;bottom:6%;max-height:38%}
+.rtm.story.rtm-bold .rtm-bold-copy h2{font-size:clamp(43px,9cqw,82px)}
+.rtm.story.rtm-split .rtm-split-photo{clip-path:polygon(0 0,100% 0,100% 55%,92% 59%,100% 63%,100% 100%,0 100%)!important}
+.rtm.story.rtm-split .rtm-split-panel{left:7%;right:7%;top:auto;bottom:4%;height:36%;justify-content:center}
+.rtm.story.rtm-poster .rtm-poster-photo{left:0;right:0;top:0;bottom:36%;width:100%;clip-path:none!important}
+.rtm.story.rtm-poster .rtm-poster-side{left:7%;top:4%;writing-mode:horizontal-tb}
+.rtm.story.rtm-poster .rtm-poster-copy{left:8%;right:8%;top:auto;bottom:4%;height:31%;justify-content:center}
+.rtm.story.rtm-promo-badge .rtm-promo-card{left:6%;right:6%;bottom:5%;max-height:40%;padding:6%}
+.rtm.story.rtm-premium-grid .rtm-grid-photo{left:0;right:0;top:0;bottom:41%;width:100%;clip-path:none!important}
+.rtm.story.rtm-premium-grid .rtm-grid-panel{left:8%;right:8%;top:auto;bottom:4%;height:36%;justify-content:center}
+.rtm.story.rtm-bold-offer .rtm-offer-photo{left:0;right:0;top:0;bottom:48%;width:100%;clip-path:none!important}
+.rtm.story.rtm-bold-offer .rtm-offer-copy{left:7%;right:7%;top:auto;bottom:4%;height:43%;justify-content:center}
+.rtm.story.rtm-lunch-time .rtm-lunch-photo{left:0;right:0;top:0;bottom:47%;width:100%;clip-path:none!important}
+.rtm.story.rtm-lunch-time .rtm-lunch-left{left:8%;right:8%;top:auto;bottom:4%;height:42%;justify-content:center}
+.rtm.story.rtm-family .rtm-family-card{left:6%;right:6%;bottom:5%;max-height:38%;padding:6%}
+.rtm.story.rtm-family h2{font-size:clamp(37px,8cqw,72px)}
+@media(max-width:560px){
+  .rtm .rtm-logo{width:9%!important;max-width:44px}
+  .rtm.rtm-luxe .rtm-luxe-copy{left:57%;right:6%}
+  .rtm.rtm-luxe h2{font-size:clamp(28px,6.1cqw,53px)}
+  .rtm.rtm-editorial .rtm-editorial-card{right:61%}
+  .rtm.rtm-split .rtm-split-panel{left:56%;right:4%}
+  .rtm.rtm-premium-grid .rtm-grid-panel{left:54%;right:5%}
+  .rtm.rtm-lunch-time .rtm-lunch-left{left:56%;right:4%}
+}
