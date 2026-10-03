@@ -789,3 +789,12 @@
  .rtm.rtm-luxe h2{font-size:clamp(27px,5.7cqw,49px)!important}
  .rtm.rtm-editorial .rtm-editorial-card,.rtm.rtm-lunch-time .rtm-lunch-left{right:48%!important}
 }
+
+/* Push the torn edge into a stronger brush-like diagonal and warm the call to action. */
+.rtm .rtm-cta,.rtm .rtm-split-cta,.rtm .rtm-text-link,.rtm .rtm-lunch-cta,
+.rtm .rtm-price,.rtm .rtm-offer-tag{background:color-mix(in srgb,var(--rt-accent,#d9a080) 18%,#b96f52)!important}
+.rtm.rtm-luxe .rtm-photo-full{clip-path:polygon(0 0,100% 0,96% 7%,98% 13%,89% 20%,92% 27%,80% 35%,84% 42%,70% 50%,75% 57%,60% 66%,65% 73%,50% 82%,55% 89%,39% 96%,43% 100%,0 100%)!important}
+.rtm.rtm-editorial .rtm-editorial-photo{clip-path:polygon(0 0,100% 0,97% 8%,99% 14%,88% 22%,92% 29%,78% 37%,83% 44%,68% 53%,73% 60%,57% 69%,62% 77%,46% 86%,52% 93%,37% 100%,0 100%)!important}
+.rtm.rtm-split .rtm-split-photo{clip-path:polygon(0 0,100% 0,96% 8%,98% 15%,86% 23%,90% 31%,76% 39%,81% 47%,65% 56%,70% 64%,54% 72%,59% 80%,43% 88%,48% 95%,34% 100%,0 100%)!important}
+.rtm.rtm-poster .rtm-poster-photo{clip-path:polygon(0 0,100% 0,97% 9%,99% 16%,87% 24%,92% 32%,77% 41%,82% 49%,66% 58%,71% 66%,55% 75%,60% 83%,45% 91%,50% 97%,37% 100%,0 100%)!important}
+.rtm.rtm-lunch-time .rtm-lunch-photo{clip-path:polygon(0 0,100% 0,97% 8%,99% 15%,88% 23%,92% 31%,78% 40%,83% 48%,68% 57%,73% 65%,59% 74%,64% 82%,50% 90%,55% 96%,43% 100%,0 100%)!important}
