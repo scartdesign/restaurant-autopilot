@@ -330,7 +330,7 @@
 .rtm .rtm-luxe-copy,.rtm .rtm-copy-hero,.rtm .rtm-editorial-card,.rtm .rtm-minimal-copy,.rtm .rtm-bold-copy,.rtm .rtm-split-panel,.rtm .rtm-poster-copy,.rtm .rtm-promo-card,.rtm .rtm-grid-panel,.rtm .rtm-offer-copy,.rtm .rtm-lunch-left,.rtm .rtm-family-card{position:absolute;z-index:5;left:5%;right:5%;top:auto;bottom:2%;width:auto;height:39%;min-height:0;max-height:42%;padding:8% 7% 3%;display:flex;flex-direction:column;justify-content:center;gap:0;background:transparent!important;border:0;border-radius:0;box-shadow:none;color:var(--rt-paper-ink)}
 .rtm .rtm-editorial-card,.rtm .rtm-minimal-copy,.rtm .rtm-split-panel,.rtm .rtm-grid-panel,.rtm .rtm-lunch-left{z-index:5}
 .rtm .rtm-luxe-copy{border-top:0;padding-top:8%}
-.rtm .rtm-luxe .rtm-luxe-index{margin-bottom:1%}
+.rtm-luxe .rtm-luxe-index{margin-bottom:1%}
 .rtm .rtm-editorial-card .rtm-rule-row,.rtm .rtm-minimal-foot,.rtm .rtm-promo-card>div,.rtm .rtm-grid-bottom,.rtm .rtm-offer-copy>div,.rtm .rtm-family-card>div{display:flex;flex-direction:row;align-items:center;justify-content:flex-start;gap:3%;margin-top:2%;flex-wrap:wrap}
 .rtm .rtm-editorial-card .rtm-rule-row i{display:none}
 .rtm .rtm-grid-index{margin-bottom:1%}
@@ -341,7 +341,7 @@
 .rtm .rtm-lunch-left{height:39%}
 .rtm .rtm-lunch-photo{z-index:0}
 .rtm h2,.rtm .rtm-title{color:var(--rt-paper-ink)!important;max-width:100%;font-size:clamp(29px,8.5cqw,76px);line-height:.96;letter-spacing:-.04em}
-.rtm .rtm-luxe h2,.rtm .rtm-editorial h2,.rtm .rtm-minimal h2,.rtm .rtm-poster h2,.rtm .rtm-family h2{font-family:"DM Serif Display",Georgia,serif;font-weight:400}
+.rtm-luxe h2,.rtm-editorial h2,.rtm-minimal h2,.rtm-poster h2,.rtm-family h2{font-family:"DM Serif Display",Georgia,serif;font-weight:400}
 .rtm p,.rtm .rtm-copy-hero p,.rtm .rtm-luxe-copy p{max-width:100%;margin-top:2%;font-size:clamp(9px,1.8cqw,14px);line-height:1.35;color:var(--rt-paper-ink);opacity:.86}
 .rtm .rtm-kicker,.rtm .rtm-kicker.dark,.rtm .rtm-kicker.light,.rtm .rtm-topline span,.rtm .rtm-luxe-index,.rtm .rtm-poster-number,.rtm .rtm-offer-kicker,.rtm .rtm-family-script{color:var(--rt-accent)!important}
 .rtm .rtm-kicker.floating,.rtm .rtm-family-ribbon,.rtm .rtm-offer-tag{background:var(--rt-accent);color:var(--rt-accent-ink,#17211b)}
