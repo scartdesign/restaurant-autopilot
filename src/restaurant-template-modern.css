@@ -860,3 +860,7 @@
 
 /* Put the whole copy block on the painted paper, clear of the featured dish. */
 .rtm:not(.story) .rtm-luxe-copy,.rtm:not(.story) .rtm-copy-hero,.rtm:not(.story) .rtm-editorial-card,.rtm:not(.story) .rtm-minimal-copy,.rtm:not(.story) .rtm-bold-copy,.rtm:not(.story) .rtm-split-panel,.rtm:not(.story) .rtm-poster-copy,.rtm:not(.story) .rtm-promo-card,.rtm:not(.story) .rtm-grid-panel,.rtm:not(.story) .rtm-offer-copy,.rtm:not(.story) .rtm-lunch-left,.rtm:not(.story) .rtm-family-card{transform:translateY(38%)!important}
+
+/* Story titles need their own uncropped line box after the brush composition. */
+.rtm.story h2,.rtm.story .rtm-title{display:block!important;flex:none!important;height:auto!important;min-height:2.25em!important;max-height:none!important;overflow:visible!important;-webkit-line-clamp:unset!important;line-clamp:unset!important}
+.rtm.story .rtm-luxe-copy,.rtm.story .rtm-copy-hero,.rtm.story .rtm-editorial-card,.rtm.story .rtm-minimal-copy,.rtm.story .rtm-bold-copy,.rtm.story .rtm-split-panel,.rtm.story .rtm-poster-copy,.rtm.story .rtm-promo-card,.rtm.story .rtm-grid-panel,.rtm.story .rtm-offer-copy,.rtm.story .rtm-lunch-left,.rtm.story .rtm-family-card{height:38%!important;max-height:38%!important}
