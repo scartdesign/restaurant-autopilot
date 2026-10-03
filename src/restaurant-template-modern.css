@@ -857,3 +857,11 @@
  .rtm h2,.rtm .rtm-title{font-size:clamp(28px,7.2cqw,70px)!important}
  .rtm.story h2,.rtm.story .rtm-title{font-size:clamp(32px,7.5cqw,76px)!important}
 }
+
+
+/* Keep the brush edge in the upper half so the food remains a real hero. */
+.rtm:not(.story).rtm-luxe::before,.rtm:not(.story).rtm-hero-menu::before,.rtm:not(.story).rtm-editorial::before,.rtm:not(.story).rtm-minimal::before,.rtm:not(.story).rtm-bold::before,.rtm:not(.story).rtm-split::before,.rtm:not(.story).rtm-poster::before,.rtm:not(.story).rtm-promo-badge::before,.rtm:not(.story).rtm-premium-grid::before,.rtm:not(.story).rtm-bold-offer::before,.rtm:not(.story).rtm-lunch-time::before,.rtm:not(.story).rtm-family::before{ -webkit-mask-size:100% 160%!important;mask-size:100% 160%!important;-webkit-mask-position:center top!important;mask-position:center top!important; }
+.rtm h2,.rtm .rtm-title{flex:0 0 auto!important;min-height:1em!important;height:auto!important;overflow:visible!important}
+.rtm .rtm-title-text{max-width:100%;text-wrap:balance}
+.rtm.rtm-luxe .rtm-luxe-index{display:none!important}
+.rtm.rtm-luxe .rtm-luxe-copy{height:40%!important;max-height:40%!important;bottom:4%!important}
