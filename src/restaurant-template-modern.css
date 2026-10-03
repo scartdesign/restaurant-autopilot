@@ -689,3 +689,103 @@
 .rtm.story.rtm-hero-menu>.rtm-price{top:12%!important;right:7%!important}
 .rtm.rtm-hero-menu .rtm-index{font-size:clamp(27px,6cqw,54px)}
 .rtm.rtm-hero-menu .rtm-copy-hero{max-height:38%}
+
+
+/* Reference-led restaurant art direction: deep green, torn food photography, editorial type. */
+.rtm.restaurant-template-canvas{background:var(--rt-primary,#0b453f)!important;color:#fff!important}
+.rtm h2,.rtm .rtm-title{font-family:"Playfair Display",Georgia,serif!important;font-weight:600!important;letter-spacing:-.045em!important;line-height:.94!important;color:#fff!important;text-wrap:balance}
+.rtm p{color:rgba(255,255,255,.88)!important;line-height:1.4!important}
+.rtm .rtm-kicker,.rtm .rtm-kicker.dark,.rtm .rtm-kicker.light{color:var(--rt-accent,#d9a080)!important}
+.rtm .rtm-price{background:color-mix(in srgb,var(--rt-accent,#d9a080) 46%,#ac644d)!important;color:#fff!important;border:0!important;border-radius:999px!important;box-shadow:0 6px 20px #0003!important}
+.rtm .rtm-cta,.rtm .rtm-split-cta,.rtm .rtm-text-link,.rtm .rtm-lunch-cta{display:inline-flex;align-items:center;justify-content:center;padding:10px 17px!important;border:0!important;border-radius:999px!important;background:color-mix(in srgb,var(--rt-accent,#d9a080) 46%,#ac644d)!important;color:#fff!important;font-size:clamp(9px,1.5cqw,14px)!important;font-weight:850!important;letter-spacing:.03em!important;text-decoration:none!important}
+.rtm .rtm-logo{width:7%!important;min-width:28px;max-width:58px;padding:3px!important;border-radius:50%!important;background:rgba(4,39,35,.74)!important;border:1px solid #ffffff30!important;box-shadow:none!important}
+.rtm .rtm-luxe-script,.rtm .rtm-family-script{font-family:var(--rt-script-font,"Segoe Script",cursive)!important;font-style:italic!important;color:var(--rt-accent,#d9a080)!important}
+.rtm .rtm-shade{background:linear-gradient(180deg,#00191610 15%,#0019161a 48%,#001916a6)!important}
+
+/* The paper edge is intentionally rough, matching the supplied reference. */
+.rtm.rtm-luxe{background:var(--rt-primary,#0b453f)!important}
+.rtm.rtm-luxe::before{inset:0 0 0 52%!important;clip-path:polygon(20% 0,100% 0,100% 100%,0 100%,13% 91%,6% 81%,18% 70%,8% 59%,20% 48%,11% 37%,24% 25%,16% 13%)!important;background:var(--rt-primary,#0b453f)!important;z-index:2!important}
+.rtm.rtm-luxe .rtm-photo-full{clip-path:polygon(0 0,100% 0,92% 10%,100% 18%,88% 29%,96% 38%,82% 50%,91% 61%,76% 72%,84% 82%,68% 92%,73% 100%,0 100%)!important}
+.rtm.rtm-luxe .rtm-luxe-copy{left:59%!important;right:7%!important;top:20%!important;bottom:7%!important;padding:0!important;border:0!important}
+.rtm.rtm-luxe h2{font-size:clamp(29px,6cqw,59px)!important}
+.rtm.rtm-luxe .rtm-luxe-script{font-size:clamp(20px,4.3cqw,40px)!important}
+.rtm.rtm-luxe .rtm-cta{border:0!important;border-radius:999px!important;padding:10px 16px!important}
+
+/* Hero image with the title sitting in a cinematic shadow. */
+.rtm.rtm-hero-menu .rtm-shade.hero{background:linear-gradient(180deg,#0002 8%,transparent 38%,#001916d9 100%)!important}
+.rtm.rtm-hero-menu .rtm-index{color:#fff!important;font-family:"Playfair Display",Georgia,serif!important}
+.rtm.rtm-hero-menu>.rtm-price{top:15%!important}
+.rtm.rtm-hero-menu .rtm-copy-hero{left:7%!important;right:7%!important;bottom:7%!important;max-height:38%!important;padding:0 0 0 4%!important;border-left:2px solid var(--rt-accent);background:linear-gradient(90deg,#00191655,transparent)!important}
+.rtm.rtm-hero-menu h2{font-size:clamp(38px,8.5cqw,82px)!important}
+
+/* Editorial / magazine cover: torn photograph above a green title field. */
+.rtm.rtm-editorial{background:var(--rt-primary)!important;color:#fff!important}
+.rtm.rtm-editorial .rtm-editorial-photo{left:0!important;right:0!important;top:0!important;bottom:0!important;width:100%!important;clip-path:polygon(0 0,100% 0,100% 55%,90% 61%,99% 67%,84% 74%,93% 82%,75% 91%,82% 100%,0 100%)!important}
+.rtm.rtm-editorial .rtm-shade{background:linear-gradient(90deg,#001916ad,#00191608 86%)!important}
+.rtm.rtm-editorial .rtm-editorial-card{left:7%!important;right:48%!important;top:12%!important;bottom:10%!important;width:auto!important;padding:0!important;background:transparent!important;color:white!important}
+.rtm.rtm-editorial h2{font-size:clamp(33px,6.7cqw,65px)!important;color:white!important}
+.rtm.rtm-editorial p{color:#ffffffdf!important}
+.rtm.rtm-minimal{background:var(--rt-primary)!important;color:white!important}
+.rtm.rtm-minimal .rtm-minimal-photo{left:0!important;right:0!important;top:0!important;bottom:31%!important;width:100%!important;clip-path:polygon(0 0,100% 0,100% 75%,91% 81%,98% 87%,81% 94%,87% 100%,0 100%)!important}
+.rtm.rtm-minimal .rtm-minimal-copy{left:8%!important;right:8%!important;top:auto!important;bottom:5%!important;height:27%!important;text-align:left!important;align-items:flex-start!important}
+.rtm.rtm-minimal h2{font-size:clamp(32px,6.7cqw,63px)!important}
+.rtm.rtm-minimal .rtm-minimal-foot{border-color:#ffffff60!important}
+.rtm.rtm-bold{background:var(--rt-primary)!important}
+.rtm.rtm-bold .rtm-bold-label{background:color-mix(in srgb,var(--rt-accent) 46%,#ac644d)!important;color:#fff!important;border-radius:999px!important;transform:none!important;padding:8px 13px!important}
+.rtm.rtm-bold .rtm-bold-copy{left:7%!important;right:7%!important;bottom:7%!important;max-height:42%!important}
+.rtm.rtm-bold h2,.rtm.rtm-bold .rtm-bold-copy h2{font-family:"Playfair Display",Georgia,serif!important;font-size:clamp(39px,8cqw,76px)!important;font-weight:600!important;letter-spacing:-.045em!important}
+.rtm.rtm-split{background:var(--rt-primary)!important}
+.rtm.rtm-split .rtm-split-photo{left:0!important;right:0!important;top:0!important;bottom:0!important;width:100%!important;clip-path:polygon(0 0,100% 0,100% 55%,90% 61%,99% 67%,85% 75%,93% 83%,75% 92%,81% 100%,0 100%)!important}
+.rtm.rtm-split .rtm-split-panel{left:7%!important;right:45%!important;top:12%!important;bottom:10%!important;width:auto!important;padding:0!important;background:transparent!important;color:#fff!important}
+.rtm.rtm-split h2{font-size:clamp(32px,6.7cqw,64px)!important}
+.rtm.rtm-poster{background:var(--rt-primary)!important}
+.rtm.rtm-poster .rtm-poster-photo{left:0!important;right:0!important;top:0!important;bottom:0!important;width:100%!important;clip-path:polygon(0 0,100% 0,100% 53%,88% 60%,98% 67%,82% 75%,91% 83%,73% 92%,80% 100%,0 100%)!important}
+.rtm.rtm-poster .rtm-shade{background:linear-gradient(90deg,#001916b8,#00191608 90%)!important}
+.rtm.rtm-poster .rtm-poster-copy{left:7%!important;right:48%!important;top:17%!important;bottom:15%!important;height:auto!important;align-items:flex-start!important;text-align:left!important}
+.rtm.rtm-poster h2{font-size:clamp(33px,6.8cqw,65px)!important}
+.rtm.rtm-promo-badge{background:var(--rt-primary)!important}
+.rtm.rtm-promo-badge .rtm-photo-full{clip-path:polygon(0 0,100% 0,100% 54%,89% 61%,98% 68%,82% 76%,90% 84%,73% 93%,80% 100%,0 100%)!important}
+.rtm.rtm-promo-badge .rtm-promo-card{left:7%!important;right:7%!important;bottom:7%!important;max-height:36%!important;padding:4% 5%!important;border:1px solid #ffffff40!important;border-radius:12px!important;background:rgba(5,56,49,.91)!important;backdrop-filter:blur(8px)}
+.rtm.rtm-promo-badge .rtm-offer-tag{background:color-mix(in srgb,var(--rt-accent) 46%,#ac644d)!important;color:white!important;border-radius:999px!important}
+.rtm.rtm-premium-grid{background:var(--rt-primary)!important;color:#fff!important}
+.rtm.rtm-premium-grid .rtm-grid-photo{left:0!important;right:0!important;top:0!important;bottom:32%!important;width:100%!important;clip-path:polygon(0 0,100% 0,100% 76%,90% 82%,98% 88%,81% 95%,87% 100%,0 100%)!important}
+.rtm.rtm-premium-grid .rtm-grid-panel{left:8%!important;right:8%!important;top:auto!important;bottom:5%!important;height:26%!important;color:#fff!important}
+.rtm.rtm-premium-grid h2{font-size:clamp(31px,6.5cqw,62px)!important;color:#fff!important}
+.rtm.rtm-premium-grid .rtm-grid-bottom{border-top:1px solid #ffffff55;padding-top:2%}
+.rtm.rtm-bold-offer{background:var(--rt-primary)!important}
+.rtm.rtm-bold-offer .rtm-offer-photo{left:0!important;right:0!important;top:0!important;bottom:34%!important;width:100%!important;clip-path:polygon(0 0,100% 0,100% 77%,90% 83%,98% 89%,82% 95%,88% 100%,0 100%)!important}
+.rtm.rtm-bold-offer .rtm-offer-copy{left:7%!important;right:7%!important;top:auto!important;bottom:5%!important;height:28%!important;color:#fff!important}
+.rtm.rtm-bold-offer h2{font-size:clamp(34px,7.4cqw,71px)!important;font-family:"Playfair Display",Georgia,serif!important}
+.rtm.rtm-lunch-time{background:var(--rt-primary)!important;color:#fff!important}
+.rtm.rtm-lunch-time .rtm-lunch-photo{left:0!important;right:0!important;top:0!important;bottom:0!important;width:100%!important;clip-path:polygon(0 0,100% 0,100% 55%,90% 61%,99% 68%,84% 76%,92% 84%,75% 93%,82% 100%,0 100%)!important}
+.rtm.rtm-lunch-time .rtm-lunch-left{left:7%!important;right:48%!important;top:14%!important;bottom:12%!important;width:auto!important;height:auto!important;color:white!important}
+.rtm.rtm-lunch-time h2{font-size:clamp(32px,6.5cqw,62px)!important;font-family:"Playfair Display",Georgia,serif!important}
+.rtm.rtm-family{background:var(--rt-primary)!important;color:#fff!important}
+.rtm.rtm-family .rtm-family-card{left:7%!important;right:7%!important;bottom:6%!important;max-height:38%!important;padding:4% 5%!important;border-radius:12px!important;background:rgba(5,56,49,.92)!important;box-shadow:none!important;color:#fff!important}
+.rtm.rtm-family h2{font-size:clamp(32px,6.7cqw,64px)!important;color:white!important}
+.rtm.rtm-family p{color:#ffffffdf!important}
+
+/* Story crop and copy zones are designed independently from square posts. */
+.rtm.story .rtm-logo{width:8%!important;max-width:52px}
+.rtm.story h2,.rtm.story .rtm-title{font-size:clamp(38px,8cqw,74px)!important}
+.rtm.story.rtm-luxe::before{inset:58% 0 0!important;clip-path:polygon(0 8%,13% 0,25% 7%,38% 0,51% 6%,64% 0,77% 7%,90% 0,100% 6%,100% 100%,0 100%)!important}
+.rtm.story.rtm-luxe .rtm-photo-full{clip-path:none!important}
+.rtm.story.rtm-luxe .rtm-luxe-copy{left:8%!important;right:8%!important;top:64%!important;bottom:4%!important}
+.rtm.story.rtm-luxe h2{font-size:clamp(40px,8.5cqw,80px)!important}
+.rtm.story.rtm-editorial .rtm-editorial-photo{top:0!important;bottom:42%!important;clip-path:polygon(0 0,100% 0,100% 86%,89% 92%,96% 100%,0 100%)!important}
+.rtm.story.rtm-editorial .rtm-editorial-card{left:8%!important;right:8%!important;top:auto!important;bottom:5%!important;height:34%!important}
+.rtm.story.rtm-minimal .rtm-minimal-photo{top:0!important;bottom:43%!important;clip-path:polygon(0 0,100% 0,100% 87%,89% 94%,96% 100%,0 100%)!important}
+.rtm.story.rtm-minimal .rtm-minimal-copy{left:8%!important;right:8%!important;bottom:4%!important;height:38%!important}
+.rtm.story.rtm-split .rtm-split-panel{left:8%!important;right:8%!important;top:auto!important;bottom:5%!important;height:34%!important}
+.rtm.story.rtm-poster .rtm-poster-copy{left:8%!important;right:8%!important;top:auto!important;bottom:5%!important;height:30%!important}
+.rtm.story.rtm-premium-grid .rtm-grid-photo{bottom:42%!important}
+.rtm.story.rtm-premium-grid .rtm-grid-panel{bottom:5%!important;height:34%!important}
+.rtm.story.rtm-bold-offer .rtm-offer-photo{bottom:43%!important}
+.rtm.story.rtm-bold-offer .rtm-offer-copy{bottom:5%!important;height:37%!important}
+.rtm.story.rtm-lunch-time .rtm-lunch-photo{bottom:43%!important}
+.rtm.story.rtm-lunch-time .rtm-lunch-left{left:8%!important;right:8%!important;top:auto!important;bottom:5%!important;height:36%!important}
+@media(max-width:560px){
+ .rtm.rtm-luxe .rtm-luxe-copy{left:58%!important;right:6%!important}
+ .rtm.rtm-luxe h2{font-size:clamp(27px,5.7cqw,49px)!important}
+ .rtm.rtm-editorial .rtm-editorial-card,.rtm.rtm-lunch-time .rtm-lunch-left{right:48%!important}
+}
