@@ -18,9 +18,7 @@
 @media(max-width:820px){
   .dts-template-gallery{display:flex!important;grid-template-columns:none!important;overflow-x:auto;overscroll-behavior-inline:contain;scroll-snap-type:x mandatory;gap:10px;padding:2px 2px 10px;scrollbar-width:thin;-webkit-overflow-scrolling:touch}
   .dts-template-gallery article{flex:0 0 min(76vw,285px);scroll-snap-align:start}
-  .dts-template-art{height:255px}
 }
 @media(max-width:540px){
   .dts-template-gallery article{flex-basis:min(84vw,300px)}
-  .dts-template-art{height:285px}
 }

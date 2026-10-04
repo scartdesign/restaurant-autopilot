@@ -50,7 +50,25 @@ export function RestaurantTemplateCanvas({template,image,headline,text,price='',
   },[title,description,action,kicker,finalPrice,d,H,fontScale,customFont,scriptFont,scale])
   const logoBottom=logoPosition.startsWith('bottom'),centered=logoPosition==='top-center'
   // Keep branding inside Instagram's safe zone as well.
-  const logoStyle:CSSProperties={width:logoSize==='s'?86:logoSize==='l'?140:108,top:logoBottom?undefined:format==='story'?270:48,bottom:logoBottom?(format==='story'?360:48):undefined,left:logoPosition.endsWith('left')?48:centered?'50%':undefined,right:logoPosition.endsWith('right')?48:undefined,transform:centered?'translateX(-50%)':undefined}
+  const logoWidth=logoSize==='s'?86:logoSize==='l'?140:108
+  const logoStyle:CSSProperties={width:logoWidth,top:logoBottom?undefined:format==='story'?270:48,bottom:logoBottom?(format==='story'?360:48):undefined,left:logoPosition.endsWith('left')?48:centered?'50%':undefined,right:logoPosition.endsWith('right')?48:undefined,transform:centered?'translateX(-50%)':undefined}
+  if(logoUrl){
+    const lx=logoPosition.endsWith('left')?48:centered?(1080-logoWidth)/2:1080-48-logoWidth
+    const ly=logoBottom?H-(format==='story'?360:48)-120:format==='story'?270:48
+    const [bx,by,bw,bh]=[L.t[0]*1080,L.t[1]*H,L.t[2]*1080,L.t[3]*H]
+    if(lx<bx+bw&&lx+logoWidth>bx&&ly<by+bh&&ly+120>by){
+      // Keep the requested corner near its original anchor while protecting copy.
+      // Side layouts place the logo in the photograph; top/bottom layouts shift it
+      // past the copy block, entirely inside the Story safe zone.
+      if(L.s==='l'||L.s==='r'){
+        logoStyle.left=L.s==='l'?bx+bw+24:bx-logoWidth-24
+        logoStyle.right=undefined;logoStyle.transform='none'
+      }else{
+        logoStyle.top=L.s==='t'?by+bh+24:by-144
+        logoStyle.bottom=undefined
+      }
+    }
+  }
   return <div ref={wrapper} className={`restaurant-template-canvas rtm ${format} ${className}`} data-template={d.id}>
     <div ref={stage} className="pe-stage" style={style} data-al={d.al} data-k={d.k} data-p={d.p} data-c={d.c} data-r={d.r} data-layout-clearance={layoutClearance(L,H)}>
       {image?<img className="pe-ph" src={image} alt="" style={photo} onLoad={event=>{const im=event.currentTarget;setDimensions({src:image,w:im.naturalWidth||1800,h:im.naturalHeight||1800})}}/>:<div className="pe-placeholder">Dodaj fotografiju jela</div>}

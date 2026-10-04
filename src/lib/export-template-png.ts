@@ -58,7 +58,7 @@ async function inlineAssets(source:HTMLElement,clone:HTMLElement){
     const copy=cloneNodes[i]
 
     if(original instanceof HTMLImageElement&&copy instanceof HTMLImageElement&&original.src){
-      try{copy.src=await urlToDataUrl(original.src)}catch{/* keep original if browser blocks it */}
+      copy.src=await urlToDataUrl(original.src)
     }
 
     const background=getComputedStyle(original).backgroundImage
@@ -68,7 +68,7 @@ async function inlineAssets(source:HTMLElement,clone:HTMLElement){
         try{
           const data=await urlToDataUrl(url)
           next=next.split(url).join(data)
-        }catch{/* keep original if browser blocks it */}
+        }catch{throw new Error('Fotografija nije dostupna za PNG izvoz. Dodaj je ponovo sa uređaja.')}
       }
       copy.style.backgroundImage=next
     }
