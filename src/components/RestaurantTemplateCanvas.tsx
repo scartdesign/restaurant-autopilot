@@ -1,6 +1,7 @@
-import type { CSSProperties } from 'react'
+import { useId, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import type { VisualDesignMeta } from '../types'
-import { baseFontStack, scriptFontStack } from '../template-fonts'
+import { baseFontStack, scriptFontStack, defaultBaseFont } from '../template-fonts'
+import { D, LF, LS, brush, contrast, fitPoster, layoutClearance, photoCrop, readableInk, safeColor } from '../lib/poster-engine'
 import '../restaurant-template-modern.css'
 
 export type RestaurantTemplateId=NonNullable<VisualDesignMeta['template']>
@@ -8,124 +9,60 @@ type Props={
   template:RestaurantTemplateId; image:string; headline:string; text:string; price?:string; badge?:string; cta?:string
   primary:string; accent:string; logoUrl?:string|null; format?:'feed'|'story'; className?:string
   textSlots?:Record<string,string>; itemSlots?:Array<{title:string;price:string}>; baseFont?:string; scriptFont?:string
-  fontScale?:number; photoPosition?:'left'|'center'|'right'
+  fontScale?:number; photoPosition?:'left'|'center'|'right'; photoFocusX?:number; photoFocusY?:number; photoZoom?:number
   logoPosition?:'top-left'|'top-center'|'top-right'|'bottom-left'|'bottom-right'; logoSize?:'s'|'m'|'l'; logoBadge?:'none'|'white'|'dark'|'blur'
 }
-function photoStyle(image:string,position:'left'|'center'|'right'='center'):CSSProperties{
-  return image?{backgroundImage:`url("${image.replace(/"/g,'\\"')}")`,backgroundPosition:position}:{}
-}
-function contrastInk(color:string){
-  const hex=color.trim().match(/^#([0-9a-f]{6})$/i)?.[1]
-  if(!hex)return '#fff'
-  const channels=[0,2,4].map(i=>parseInt(hex.slice(i,i+2),16)/255).map(v=>v<=.04045?v/12.92:Math.pow((v+.055)/1.055,2))
-  const luminance=.2126*channels[0]+.7152*channels[1]+.0722*channels[2]
-  return luminance>.42?'#17211b':'#fff'
-}
-function clean(value:string|undefined,fallback:string){return (value||'').trim()||fallback}
-function eyebrowFor(template:RestaurantTemplateId,badge:string){
-  if(badge.trim())return badge.trim()
-  const labels:Record<RestaurantTemplateId,string>={
-    luxe:'CHEF’S SIGNATURE','hero-menu':'HOUSE FAVORITE',editorial:'TODAY’S SELECTION',minimal:'FRESH TODAY',
-    bold:'NEW DROP',split:'CHEF’S PICK',poster:'TONIGHT','promo-badge':'LIMITED OFFER',
-    'premium-grid':'CURATED MENU','bold-offer':'TODAY ONLY','lunch-time':'LUNCH · TODAY',family:'AT THE TABLE',
-  }
-  return labels[template]
-}
-function Price({price}:{price:string}){return price.trim()?<span className="rtm-price">{price}</span>:null}
-export function RestaurantTemplateCanvas({
-  template,image,headline,text,price='',badge='',cta='Svrati danas',primary,accent,logoUrl,format='feed',className='',
-  textSlots={},itemSlots=[],baseFont='modern-sans',scriptFont='signature',fontScale=1,photoPosition='center',logoPosition='top-right',logoSize='m',logoBadge='white',
-}:Props){
+const labels:Record<RestaurantTemplateId,string>={luxe:'Iz kuhinje', 'hero-menu':'Najtraženije',editorial:'Danas izdvajamo',minimal:'',bold:'Sveže iz kuhinje',split:'Preporuka šefa',poster:'Danas u ponudi','promo-badge':'Posebna ponuda','premium-grid':'Naš izbor','bold-offer':'Samo danas','lunch-time':'Vreme za ručak',family:'Za našim stolom'}
+const clean=(value:string|undefined,fallback:string)=>(value||'').trim()||fallback
+export function RestaurantTemplateCanvas({template,image,headline,text,price='',badge='',cta='Svrati danas',primary,accent,logoUrl,format='feed',className='',textSlots={},itemSlots=[],baseFont,scriptFont='signature',fontScale=1,photoPosition='center',photoFocusX,photoFocusY=50,photoZoom=1,logoPosition='top-right',logoSize='m',logoBadge='white'}:Props){
+  const wrapper=useRef<HTMLDivElement>(null),stage=useRef<HTMLDivElement>(null)
+  const [scale,setScale]=useState(1),[dimensions,setDimensions]=useState({src:'',w:1800,h:1800})
+  const id=useId().replace(/[^a-zA-Z0-9]/g,'')
+  const d=D.find(entry=>entry.id===template)||D[0],H=format==='story'?1920:1080
+  const L=(format==='story'?LS:LF)[format==='story'?d.S:d.F]
   const slot=(key:string,fallback:string)=>clean(textSlots[key],fallback)
-  // Keep older saved layouts readable even when their legacy slots are not rendered.
-  const legacySlots={verticalText:slot('verticalText',''),footerText:slot('footerText',''),scriptMain:slot('scriptMain','')}
-  void legacySlots
-  const title=clean(textSlots.overlayTitle||headline,'Današnja preporuka')
-  const titleFit=title.length>36?'rtm-title-xlong':title.length>26?'rtm-title-long':title.length>18?'rtm-title-medium':''
-  const description=clean(textSlots.smallDesc||textSlots.whiteCardText||textSlots.footerText||text,'Sveže pripremljeno za danas.')
-  const action=clean(textSlots.smallCta||textSlots.buttonText||cta,'Svrati danas')
-  const label=eyebrowFor(template,badge)
-  const finalPrice=price||itemSlots[0]?.price||''
-  const logoBottom=logoPosition.startsWith('bottom')
-  const logoCentered=logoPosition==='top-center'
-  const rootStyle={
-    '--rt-primary':primary,'--rt-accent':accent,'--rt-primary-ink':contrastInk(primary),'--rt-accent-ink':contrastInk(accent),'--rt-base-font':baseFontStack(baseFont),
-    '--rt-script-font':scriptFontStack(scriptFont),'--rt-user-font-scale':Math.min(1.15,Math.max(.85,fontScale)),
-    '--rt-logo-top':logoBottom?'auto':'4.5%','--rt-logo-bottom':logoBottom?'4.5%':'auto',
-    '--rt-logo-left':logoPosition==='top-left'||logoPosition==='bottom-left'?'4.5%':logoCentered?'50%':'auto',
-    '--rt-logo-right':logoPosition==='top-right'||logoPosition==='bottom-right'?'4.5%':'auto',
-    '--rt-logo-width':logoSize==='s'?'8%':logoSize==='l'?'13%':'10%',
-    '--rt-logo-transform':logoCentered?'translateX(-50%)':'none',
-  } as CSSProperties
-  let body
-  switch(template){
-    case 'luxe':
-      body=<><div className="rtm-photo rtm-photo-full" style={photoStyle(image,photoPosition)}/><div className="rtm-shade luxe"/>
-        <div className="rtm-topline"><span>{label}</span><i/></div><div className="rtm-luxe-copy">
-          <span className="rtm-luxe-index">01 / SIGNATURE</span><span className="rtm-luxe-script">{slot('scriptMain','Sveže iz kuhinje')}</span><h2 className={`rtm-title ${titleFit}`}><span className="rtm-title-text">{title}</span></h2><p className="rtpl-safe-copy">{description}</p>
-          <div className="rtm-actions"><Price price={finalPrice}/><span className="rtm-cta rtpl-safe-cta">{action}</span></div></div></>
-      break
-    case 'editorial':
-      body=<><div className="rtm-editorial-photo rtm-photo" style={photoStyle(image,photoPosition)}/>
-        <div className="rtm-editorial-card"><span className="rtm-kicker">{label}</span><h2 className={`rtm-title ${titleFit}`}><span className="rtm-title-text">{title}</span></h2>
-          <p className="rtpl-safe-copy">{description}</p><div className="rtm-rule-row"><i/><Price price={finalPrice}/></div>
-          <span className="rtm-text-link rtpl-safe-cta">{action} <b>↗</b></span></div></>
-      break
-    case 'hero-menu':
-      body=<><div className="rtm-photo rtm-photo-full" style={photoStyle(image,photoPosition)}/><div className="rtm-shade hero"/>
-        <span className="rtm-index">01</span><Price price={finalPrice}/><div className="rtm-copy-hero">
-          <span className="rtm-kicker light">{label}</span><h2 className={`rtm-title ${titleFit}`}><span className="rtm-title-text">{title}</span></h2>
-          <div className="rtm-hero-footer"><p className="rtpl-safe-copy">{description}</p><span className="rtpl-safe-cta">{action} ↗</span></div></div></>
-      break
-    case 'minimal':
-      body=<><div className="rtm-minimal-bg"/><div className="rtm-minimal-photo rtm-photo" style={photoStyle(image,photoPosition)}/>
-        <div className="rtm-minimal-copy"><span className="rtm-kicker dark">{label}</span><h2 className={`rtm-title ${titleFit}`}><span className="rtm-title-text">{title}</span></h2>
-          <p className="rtpl-safe-copy">{description}</p><div className="rtm-minimal-foot"><Price price={finalPrice}/><span className="rtpl-safe-cta">{action}</span></div></div></>
-      break
-    case 'bold':
-      body=<><div className="rtm-photo rtm-photo-full" style={photoStyle(image,photoPosition)}/><div className="rtm-shade bold"/>
-        <span className="rtm-bold-label">{label}</span><div className="rtm-bold-price"><Price price={finalPrice}/></div>
-        <div className="rtm-bold-copy"><h2 className={`rtm-title ${titleFit}`}><span className="rtm-title-text">{title}</span></h2><div><p className="rtpl-safe-copy">{description}</p><span className="rtpl-safe-cta">{action} ↗</span></div></div></>
-      break
-    case 'split':
-      body=<><div className="rtm-split-photo rtm-photo" style={photoStyle(image,photoPosition)}/><div className="rtm-split-panel">
-        <span className="rtm-kicker">{label}</span><h2 className={`rtm-title ${titleFit}`}><span className="rtm-title-text">{title}</span></h2><p className="rtpl-safe-copy">{description}</p>
-        <Price price={finalPrice}/><span className="rtm-split-cta rtpl-safe-cta">{action} ↗</span></div>
-        <div className="rtm-split-detail rtm-photo" style={photoStyle(image,photoPosition)}/></>
-      break
-    case 'poster':
-      body=<><div className="rtm-poster-bg"/><div className="rtm-poster-photo rtm-photo" style={photoStyle(image,photoPosition)}/>
-        <span className="rtm-poster-side">{label}</span><div className="rtm-poster-copy"><span className="rtm-poster-number">TONIGHT’S TABLE</span>
-        <h2 className={`rtm-title ${titleFit}`}><span className="rtm-title-text">{title}</span></h2><p className="rtpl-safe-copy">{description}</p><Price price={finalPrice}/><span className="rtpl-safe-cta">{action} ↗</span></div></>
-      break
-    case 'promo-badge':
-      body=<><div className="rtm-photo rtm-photo-full" style={photoStyle(image,photoPosition)}/><div className="rtm-shade soft"/>
-        <span className="rtm-kicker floating">{label}</span><div className="rtm-promo-card"><h2 className={`rtm-title ${titleFit}`}><span className="rtm-title-text">{title}</span></h2>
-        <p className="rtpl-safe-copy">{description}</p><div><Price price={finalPrice}/><span className="rtpl-safe-cta">{action}</span></div></div></>
-      break
-    case 'premium-grid':
-      body=<><div className="rtm-grid-photo rtm-photo" style={photoStyle(image,photoPosition)}/><div className="rtm-grid-panel">
-        <span className="rtm-grid-index">MENU / 01</span><span className="rtm-kicker">{label}</span><h2 className={`rtm-title ${titleFit}`}><span className="rtm-title-text">{title}</span></h2>
-        <p className="rtpl-safe-copy">{description}</p><div className="rtm-grid-bottom"><Price price={finalPrice}/><span className="rtpl-safe-cta">{action} ↗</span></div></div></>
-      break
-    case 'bold-offer':
-      body=<><div className="rtm-offer-photo rtm-photo" style={photoStyle(image,photoPosition)}/><div className="rtm-offer-wash"/>
-        <span className="rtm-offer-tag">{label}</span><div className="rtm-offer-copy"><span className="rtm-offer-kicker">SPECIAL DROP</span>
-        <h2 className={`rtm-title ${titleFit}`}><span className="rtm-title-text">{title}</span></h2><p className="rtpl-safe-copy">{description}</p><div><Price price={finalPrice}/><span className="rtpl-safe-cta">{action} →</span></div></div></>
-      break
-    case 'lunch-time':
-      body=<><div className="rtm-lunch-left"><span className="rtm-kicker light">{label}</span><h2 className={`rtm-title ${titleFit}`}><span className="rtm-title-text">{title}</span></h2>
-        <p className="rtpl-safe-copy">{description}</p><Price price={finalPrice}/><span className="rtm-lunch-time">{slot('lunchHours','12:00 — 16:00')}</span>
-        <span className="rtm-lunch-cta rtpl-safe-cta">{action} ↗</span></div>
-        <div className="rtm-lunch-photo rtm-photo" style={photoStyle(image,photoPosition)}/></>
-      break
-    case 'family':
-      body=<><div className="rtm-photo rtm-photo-full" style={photoStyle(image,photoPosition)}/><div className="rtm-shade family"/>
-        <span className="rtm-family-ribbon">{label}</span><div className="rtm-family-card"><span className="rtm-family-script">{slot('familyNote','Made with love')}</span>
-        <h2 className={`rtm-title ${titleFit}`}><span className="rtm-title-text">{title}</span></h2><p className="rtpl-safe-copy">{description}</p><div><Price price={finalPrice}/><span className="rtpl-safe-cta">{action} ↗</span></div></div></>
-      break
-  }
-  return <div className={`restaurant-template-canvas rtm rtm-${template} ${format} ${className}`} style={rootStyle}>
-    {body}{logoUrl&&<img className={`rtm-logo rtm-logo-badge-${logoBadge}`} src={logoUrl} alt=""/>}<span className="rtpl-accessible-headline">{headline}</span>
+  // Old posts may only have legacy slots. Read them without mutating their metadata.
+  const title=slot('overlayTitle',clean(headline,'Današnja preporuka'))
+  const description=slot('smallDesc',slot('whiteCardText',slot('footerText',clean(text,'Sveže pripremljeno za danas.'))))
+  const action=slot('smallCta',slot('buttonText',clean(cta,'Svrati danas')))
+  const kicker=clean(badge,slot('kicker',labels[d.id]))
+  const finalPrice=clean(price,itemSlots[0]?.price||'')
+  const p=safeColor(primary,'#16473f'),a=safeColor(accent,'#c08a5e'),tx=readableInk(p),ax=readableInk(a),kc=contrast(a,p)>=4.5?a:tx
+  const customFont=baseFont&&baseFont!==defaultBaseFont(d.id)?baseFontStack(baseFont):d.tf
+  const style={height:H,transform:`scale(${scale})`,'--p':p,'--a':a,'--tx':tx,'--ax':ax,'--kc':kc,'--tf':customFont,'--tw':d.tw,'--tc':d.tc,'--ls':d.ls,'--lh':d.lh,'--ts':`${d.ts}px`,'--pk':`${d.pk}px`,'--cap':format==='story'?'230px':'190px','--s':1,'--s2':1,'--rt-base-font':baseFontStack(baseFont),'--rt-script-font':scriptFontStack(scriptFont)} as CSSProperties
+  const photo=photoCrop(L,H,dimensions.src===image?dimensions.w:1800,dimensions.src===image?dimensions.h:1800,photoFocusX??(photoPosition==='left'?30:photoPosition==='right'?70:50),photoFocusY,photoZoom)
+  const paint=useMemo(()=>{
+    const svg=brush(d,format,L,H,id,p).replace('<svg class="br"','<svg xmlns="http://www.w3.org/2000/svg"')
+    return `data:image/svg+xml,${encodeURIComponent(svg)}`
+  },[d,format,L,H,id,p])
+  useLayoutEffect(()=>{
+    const node=wrapper.current!
+    const update=()=>setScale(node.clientWidth/1080)
+    update();const observer=new ResizeObserver(update);observer.observe(node)
+    return ()=>observer.disconnect()
+  },[])
+  useLayoutEffect(()=>{
+    let cancelled=false
+    const measure=()=>{if(!cancelled&&stage.current)fitPoster(stage.current,fontScale)}
+    measure();void document.fonts.ready.then(measure)
+    document.fonts.addEventListener('loadingdone',measure)
+    return ()=>{cancelled=true;document.fonts.removeEventListener('loadingdone',measure)}
+  },[title,description,action,kicker,finalPrice,d,H,fontScale,customFont,scriptFont,scale])
+  const logoBottom=logoPosition.startsWith('bottom'),centered=logoPosition==='top-center'
+  // Keep branding inside Instagram's safe zone as well.
+  const logoStyle:CSSProperties={width:logoSize==='s'?86:logoSize==='l'?140:108,top:logoBottom?undefined:format==='story'?270:48,bottom:logoBottom?(format==='story'?360:48):undefined,left:logoPosition.endsWith('left')?48:centered?'50%':undefined,right:logoPosition.endsWith('right')?48:undefined,transform:centered?'translateX(-50%)':undefined}
+  return <div ref={wrapper} className={`restaurant-template-canvas rtm ${format} ${className}`} data-template={d.id}>
+    <div ref={stage} className="pe-stage" style={style} data-al={d.al} data-k={d.k} data-p={d.p} data-c={d.c} data-r={d.r} data-layout-clearance={layoutClearance(L,H)}>
+      {image?<img className="pe-ph" src={image} alt="" style={photo} onLoad={event=>{const im=event.currentTarget;setDimensions({src:image,w:im.naturalWidth||1800,h:im.naturalHeight||1800})}}/>:<div className="pe-placeholder">Dodaj fotografiju jela</div>}
+      <img className="pe-br" src={paint} width={1080} height={H} alt=""/>
+      <div className="pe-frame"/>
+      <div className="pe-tx" style={{left:L.t[0]*1080,top:L.t[1]*H,width:L.t[2]*1080,height:L.t[3]*H}}><div className="pe-in">
+        <div className="pe-k" style={d.k==='script'?{fontFamily:scriptFontStack(scriptFont)}:undefined}>{kicker}</div>
+        <h2 className="pe-t">{title}</h2><div className="pe-rl"/>
+        <p className="pe-d rtpl-safe-copy">{description}</p>
+        <div className="pe-row">{finalPrice&&<span className="pe-pr">{finalPrice}</span>}<span className="pe-c rtpl-safe-cta">{action}</span></div>
+      </div></div>
+      {logoUrl&&<img className={`pe-logo pe-logo-${logoBadge}`} src={logoUrl} alt="" style={logoStyle}/>}
+    </div><span className="rtpl-accessible-headline">{title}</span>
   </div>
 }

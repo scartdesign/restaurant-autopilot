@@ -1,6 +1,7 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './App'
+import { PosterEnginePreview } from './components/PosterEnginePreview'
 import { AppErrorBoundary } from './components/AppErrorBoundary'
 import { DemoCreative } from './components/DemoCreative'
 import { DemoOwner } from './components/DemoOwner'
@@ -54,7 +55,7 @@ const ownerPreview = params.get('owner') === 'demo'
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <AppErrorBoundary>{ownerPreview ? <PreviewShell kind="owner"/> : creativePreview ? <PreviewShell kind="creative"/> : <App />}</AppErrorBoundary>
+    <AppErrorBoundary>{params.get('posters')==='demo'?<PosterEnginePreview/>:ownerPreview ? <PreviewShell kind="owner"/> : creativePreview ? <PreviewShell kind="creative"/> : <App />}</AppErrorBoundary>
   </React.StrictMode>,
 )
 

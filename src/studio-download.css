@@ -9,7 +9,6 @@
 .dts-font-scale-copy{display:grid;gap:2px;min-width:0}.dts-font-scale-copy strong{font-size:11px;color:#173d35}.dts-font-scale-copy small{font-size:8px;line-height:1.35;color:#78857f}
 .dts-photo-position{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:13px;padding-top:12px;border-top:1px solid #e3e9e5}.dts-photo-position>div:first-child{display:grid;gap:2px}.dts-photo-position strong{font-size:10px;color:#173d35}.dts-photo-position small{font-size:8px;color:#78857f}.dts-photo-position .dts-format{flex:0 0 auto}
 .dts-font-scale-tools{display:flex;align-items:center;gap:7px}.dts-font-scale-tools button{width:28px;height:28px;border:1px solid #d5dfda;border-radius:8px;background:#fff;color:#0b4c45;font-size:16px;font-weight:800;cursor:pointer}.dts-font-scale-tools button:hover{background:#0b4c45;color:#fff;border-color:#0b4c45}.dts-font-scale-tools input{width:104px;accent-color:#0b4c45}.dts-font-scale-tools b{min-width:38px;text-align:right;font-size:10px;color:#0b4c45}
-.restaurant-template-canvas :is(.rtpl-script,p,small,strong,button,.rtpl-vertical-label,.rtpl-label-white){scale:var(--rt-user-font-scale,1);transform-origin:center}
 @keyframes dts-spin{to{transform:rotate(360deg)}}
 @media(max-width:540px){.dts-download-png{order:3;width:100%;min-height:34px;margin-left:0}.dts-preview-topbar>.dts-format.compact{margin-left:auto}.dts-font-scale-control{grid-template-columns:1fr}.dts-font-scale-tools{width:100%}.dts-font-scale-tools input{flex:1;min-width:0}}
 

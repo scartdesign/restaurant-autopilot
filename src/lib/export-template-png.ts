@@ -93,20 +93,46 @@ export async function exportTemplatePng({node,width,height,fileName}:ExportOptio
   const rect=node.getBoundingClientRect()
   if(rect.width<2||rect.height<2)throw new Error('Preview nije spreman za preuzimanje.')
 
+  const poster=node.querySelector<HTMLElement>('.pe-stage')
+  if(poster?.dataset.fit==='false')throw new Error('Tekst je predugačak za ovaj dizajn. Skrati naziv ili opis pre izvoza.')
+  const exportWidth=poster?width:rect.width,exportHeight=poster?height:rect.height
   const clone=node.cloneNode(true) as HTMLElement
   clone.setAttribute('xmlns','http://www.w3.org/1999/xhtml')
-  clone.style.width=`${rect.width}px`
-  clone.style.height=`${rect.height}px`
+  clone.style.width=`${exportWidth}px`
+  clone.style.height=`${exportHeight}px`
   clone.style.maxWidth='none'
   clone.style.maxHeight='none'
   clone.style.margin='0'
   clone.style.transform='none'
 
+  const artboard=clone.querySelector<HTMLElement>('.pe-stage')
+  if(artboard)artboard.style.transform='none'
   await inlineAssets(node,clone)
+  // A foreignObject image has no access to the page's loaded webfonts.
+  // Embed the fonts actually used so exported line breaks match the live artboard.
+  const families=new Set(Array.from(node.querySelectorAll<HTMLElement>('.pe-t,.pe-k,.pe-d,.pe-pr,.pe-c')).flatMap(el=>getComputedStyle(el).fontFamily.split(',').map(f=>f.trim().replace(/['"]/g,''))))
+  const sheets=new Set<string>()
+  for(const sheet of Array.from(document.styleSheets)){
+    if(sheet.href)sheets.add(sheet.href)
+    try{for(const rule of Array.from(sheet.cssRules))if(rule instanceof CSSImportRule)sheets.add(rule.href)}catch{ /* cross origin sheet fetched below */ }
+  }
+  let fontCss=''
+  for(const href of sheets){
+    if(!href.includes('fonts.googleapis.com'))continue
+    const response=await fetch(href);if(!response.ok)throw new Error('Fontovi nisu dostupni za PNG izvoz.')
+    const text=await response.text()
+    for(const block of text.match(/@font-face\s*\{[^}]*\}/g)||[]){
+      const family=block.match(/font-family:\s*['"]?([^;'"}]+)/)?.[1]?.trim()
+      if(!family||!families.has(family))continue
+      let embedded=block
+      for(const url of urlsFromBackground(block))embedded=embedded.split(url).join(await urlToDataUrl(url))
+      fontCss+=embedded+'\n'
+    }
+  }
 
-  const css=collectCss().replace(/<\/style/gi,'<\\/style')
+  const css=(collectCss()+'\n'+fontCss).replace(/<\/style/gi,'<\\/style')
   const markup=new XMLSerializer().serializeToString(clone)
-  const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="${rect.width}" height="${rect.height}" viewBox="0 0 ${rect.width} ${rect.height}"><foreignObject width="100%" height="100%"><div xmlns="http://www.w3.org/1999/xhtml"><style>${css}</style>${markup}</div></foreignObject></svg>`
+  const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="${exportWidth}" height="${exportHeight}" viewBox="0 0 ${exportWidth} ${exportHeight}"><foreignObject width="100%" height="100%"><div xmlns="http://www.w3.org/1999/xhtml"><style>${css}</style>${markup}</div></foreignObject></svg>`
   const svgBlob=new Blob([svg],{type:'image/svg+xml;charset=utf-8'})
   const svgUrl=URL.createObjectURL(svgBlob)
 

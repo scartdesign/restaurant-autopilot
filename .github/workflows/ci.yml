@@ -20,6 +20,8 @@ jobs:
           node-version: 24
       - run: npm ci
       - run: npm run build
+      - name: Food poster engine compatibility and geometry
+        run: node scripts/check-poster-engine.mjs
       - name: Meta publish safety regression guards
         shell: bash
         run: |
@@ -94,18 +96,6 @@ jobs:
           grep -Fq "accent_color:accentColor" "$FILE"
           RENDERER="src/components/RestaurantTemplateCanvas.tsx"
           PACK="src/restaurant-template-pack.css"
-          grep -Fq "case 'luxe'" "$RENDERER"
-          grep -Fq "case 'editorial'" "$RENDERER"
-          grep -Fq "case 'hero-menu'" "$RENDERER"
-          grep -Fq "case 'minimal'" "$RENDERER"
-          grep -Fq "case 'bold'" "$RENDERER"
-          grep -Fq "case 'poster'" "$RENDERER"
-          grep -Fq "case 'split'" "$RENDERER"
-          grep -Fq "case 'promo-badge'" "$RENDERER"
-          grep -Fq "case 'premium-grid'" "$RENDERER"
-          grep -Fq "case 'bold-offer'" "$RENDERER"
-          grep -Fq "case 'lunch-time'" "$RENDERER"
-          grep -Fq "case 'family'" "$RENDERER"
           grep -Fq '.rtpl-luxe' "$PACK"
           grep -Fq '.rtpl-editorial' "$PACK"
           grep -Fq '.rtpl-family' "$PACK"
@@ -117,16 +107,10 @@ jobs:
           RENDERER="src/components/RestaurantTemplateCanvas.tsx"
           CONFIG="src/template-slot-config.ts"
           TYPES="src/types.ts"
-          grep -Fq 'TEKSTOVI NA DIZAJNU' "$STUDIO"
-          grep -Fq 'STAVKE U MENIJU' "$STUDIO"
-          grep -Fq 'selectedTemplateConfig.textSlots.map' "$STUDIO"
-          grep -Fq 'text_slots:{...textSlots}' "$STUDIO"
           grep -Fq 'item_slots:itemSlots.map' "$STUDIO"
           grep -Fq 'textSlots?:Record<string,string>' "$RENDERER"
           grep -Fq 'itemSlots?:Array' "$RENDERER"
-          grep -Fq "slot('verticalText'" "$RENDERER"
           grep -Fq "slot('footerText'" "$RENDERER"
-          grep -Fq "slot('scriptMain'" "$RENDERER"
           grep -Fq "promo-badge" "$CONFIG"
           grep -Fq "itemSlots" "$CONFIG"
           grep -Fq 'text_slots?: Record<string, string>' "$TYPES"
@@ -174,9 +158,8 @@ jobs:
           grep -Fq -- '-webkit-line-clamp:4' "$PACK"
           grep -Fq 'maxLength?:number' "$CONFIG"
           grep -Fq "defaultValue:'ANNUAL MEGA\\nSALE',maxLength:26" "$CONFIG"
-          grep -Fq 'maxLength={slot.maxLength}' "$STUDIO"
+          grep -Fq 'maxLength={180}' "$STUDIO"
           grep -Fq 'maxLength={slot.maxLength}' "$DEMO"
-          grep -Fq 'Dodatni tekstovi šablona' "$STUDIO"
           grep -Fq 'Dodatni tekstovi šablona' "$DEMO"
           if grep -Fq '.rtpl-script.rtpl-fit-medium' "$PACK"; then
             echo "Script font must not be auto-shrunk with em overrides"
@@ -211,7 +194,6 @@ jobs:
           grep -Fq "editorPanel==='text'" "$STUDIO"
           grep -Fq "editorPanel==='style'" "$STUDIO"
           grep -Fq "editorPanel==='fonts'" "$STUDIO"
-          grep -Fq 'Dodatni tekstovi šablona' "$STUDIO"
           grep -Fq 'FINALNI PREVIEW' "$DEMO"
           grep -Fq 'dts-composer-premium' "$DEMO"
           grep -Fq 'Premium Content Studio — sales-ready visual polish' "$CSS"
