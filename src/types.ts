@@ -67,6 +67,9 @@ export type VisualDesignMeta = {
   subline?: string
   cta?: string
   image_url?: string | null
+  photo_focus_y?: number
+  photo_zoom?: number
+  poster_engine?: 'brush-v1'
   photo_position?: 'left' | 'center' | 'right'
   overlay?: number
   primary_color?: string
