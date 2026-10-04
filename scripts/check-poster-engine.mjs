@@ -38,3 +38,31 @@ const studio=readFileSync(new URL('../src/components/SimpleContentStudio.tsx',im
 assert(studio.includes('...(existingPost?.generation_meta?.visual_design||{})'),'Existing design metadata discarded')
 assert(studio.includes("poster_engine:'brush-v1'"))
 console.log('Poster engine: 12 IDs, 24 layouts, safe zones, 1080 crop cases, contrast, stable brush and metadata guards passed.')
+
+const fieldSource=readFileSync(new URL('../src/lib/poster-post-fields.ts',import.meta.url),'utf8')
+const fieldCode=ts.transpileModule(fieldSource,{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.ES2022}}).outputText
+const {posterPostFields}=await import('data:text/javascript;base64,'+Buffer.from(fieldCode).toString('base64'))
+const legacy={title:'Burger',caption:'Ceo tekst objave koji mora ostati sačuvan.',cta:'Poruči odmah',menu_item_id:'dish',generation_meta:{}}
+const snapshot=JSON.stringify(legacy)
+assert.deepEqual(posterPostFields(legacy,[{id:'dish',price:1290,currency:'RSD'}]),{headline:'Burger',description:legacy.caption,cta:'Poruči odmah',price:'1290 RSD',badge:''})
+const generated={...legacy,generation_meta:{visual_design:{headline:'Truffle Smash Burger',subline:'Kratak opis za poster',cta:'Rezerviši sto'}}}
+assert.equal(posterPostFields(generated).description,'Kratak opis za poster')
+assert.equal(generated.caption,legacy.caption)
+const oldSlots={...legacy,generation_meta:{manual_fields:{price:''},visual_design:{text_slots:{overlayTitle:'Stari naziv',smallDesc:'Stari opis',buttonText:'Stari CTA'},item_slots:[{title:'Jelo',price:'900 RSD'}]}}}
+assert.deepEqual(posterPostFields(oldSlots),{headline:'Stari naziv',description:'Stari opis',cta:'Stari CTA',price:'',badge:''})
+assert.equal(JSON.stringify(legacy),snapshot,'Legacy metadata was mutated')
+
+// Render actual React components from legacy props without requiring new fields.
+process.env.NODE_ENV='production'
+const {createRequire}=await import('node:module'),{pathToFileURL}=await import('node:url')
+const require=createRequire(import.meta.url),reactUrl=pathToFileURL(require.resolve('react')).href,jsxUrl=pathToFileURL(require.resolve('react/jsx-runtime')).href
+const fontsCode=ts.transpileModule(readFileSync(new URL('../src/template-fonts.ts',import.meta.url),'utf8'),{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.ES2022}}).outputText
+const dataUrl=code=>'data:text/javascript;base64,'+Buffer.from(code).toString('base64')
+let rendererCode=ts.transpileModule(readFileSync(new URL('../src/components/RestaurantTemplateCanvas.tsx',import.meta.url),'utf8').replace(/^import ['"][^'"]+\.css['"]\s*$/gm,''),{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.ES2022,jsx:ts.JsxEmit.ReactJSX}}).outputText
+rendererCode=rendererCode.replace(/(['"])react\1/g,JSON.stringify(reactUrl)).replace(/(['"])react\/jsx-runtime\1/g,JSON.stringify(jsxUrl)).replace(/(['"])\.\.\/template-fonts\1/g,JSON.stringify(dataUrl(fontsCode))).replace(/(['"])\.\.\/lib\/poster-engine\1/g,JSON.stringify(dataUrl(compiled)))
+const {RestaurantTemplateCanvas}=await import(dataUrl(rendererCode)),React=await import(reactUrl),{renderToStaticMarkup}=await import(pathToFileURL(require.resolve('react-dom/server')).href)
+for(const template of ids)for(const format of ['feed','story']){
+ const markup=renderToStaticMarkup(React.createElement(RestaurantTemplateCanvas,{template,format,image:'',headline:'Burger',text:'Opis',primary:'#16473f',accent:'#c08a5e'}))
+ assert(markup.includes('Burger')&&markup.includes('Opis')&&markup.includes('Svrati danas'),`${template}/${format}: legacy defaults failed`)
+}
+console.log('Legacy React render: all 24 formats, missing new fields, slot copy, menu price and Autopilot caption preservation passed.')

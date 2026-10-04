@@ -2,7 +2,7 @@
 export type PosterLayout={e:readonly number[];s:'b'|'t'|'l'|'r';t:readonly number[]}
 const W=1080
 export const LF:Record<string,PosterLayout>={fb1:{e:[0,.59,1,.49],s:'b',t:[.075,.63,.85,.32]},fb2:{e:[0,.49,1,.59],s:'b',t:[.075,.63,.85,.32]},ft1:{e:[0,.49,1,.57],s:'t',t:[.075,.055,.85,.39]},ft2:{e:[0,.57,1,.49],s:'t',t:[.075,.055,.85,.39]},fl1:{e:[.46,0,.38,1],s:'l',t:[.06,.1,.3,.8]},fl2:{e:[.38,0,.46,1],s:'l',t:[.06,.1,.3,.8]},fr1:{e:[.62,0,.54,1],s:'r',t:[.65,.1,.29,.8]},fr2:{e:[.54,0,.62,1],s:'r',t:[.65,.1,.29,.8]},fd:{e:[0,.66,1,.36],s:'b',t:[.15,.66,.79,.29]},fdl:{e:[0,.36,1,.66],s:'b',t:[.075,.66,.79,.29]}};
-export const LS:Record<string,PosterLayout>={sb1:{e:[0,.6,1,.52],s:'b',t:[.08,.625,.84,.195]},sb2:{e:[0,.52,1,.6],s:'b',t:[.08,.625,.84,.195]},sbs:{e:[0,.62,1,.48],s:'b',t:[.08,.65,.84,.17]},sbs2:{e:[0,.48,1,.62],s:'b',t:[.08,.65,.84,.17]},st1:{e:[0,.38,1,.46],s:'t',t:[.08,.13,.84,.22]},st2:{e:[0,.46,1,.38],s:'t',t:[.08,.13,.84,.22]}};
+export const LS:Record<string,PosterLayout>={sb1:{e:[0,.6,1,.52],s:'b',t:[.08,.625,.84,.195]},sb2:{e:[0,.52,1,.6],s:'b',t:[.08,.625,.84,.195]},sbs:{e:[0,.62,1,.48],s:'b',t:[.08,.625,.84,.195]},sbs2:{e:[0,.48,1,.62],s:'b',t:[.08,.625,.84,.195]},st1:{e:[0,.38,1,.46],s:'t',t:[.08,.13,.84,.22]},st2:{e:[0,.46,1,.38],s:'t',t:[.08,.13,.84,.22]}};
 export const D=([
 ['luxe',"'Playfair Display',Georgia,serif",700,'none','-.01em','left','script','tag','pill','line','fb1','sb1',104,72,1.05],
 ['hero-menu',"Anton,Impact,sans-serif",400,'uppercase','.02em','left','caps','badge','sq','none','ft2','st1',120,72,1],
@@ -87,7 +87,7 @@ export function fitPoster(stage:HTMLElement,preference=1){
  for(const floor of [.95,.85,.72,.6,.48,.36,.24]){
   for(let s=start;s>=.16;s-=.025){
    stage.style.setProperty('--s',String(s));stage.style.setProperty('--s2',String(Math.min(1.3,Math.max(floor,s))))
-   fits=inner.offsetHeight<=box.clientHeight+1&&elements.every(el=>{
+   fits=inner.offsetHeight<=box.clientHeight&&elements.every(el=>{
     if(!el.offsetHeight)return true
     // Read artboard coordinates; rotated price badges and preview scale must not
     // force otherwise readable text down to thumbnail-size fonts.
