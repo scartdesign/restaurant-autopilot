@@ -55,7 +55,7 @@ const ownerPreview = params.get('owner') === 'demo'
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <AppErrorBoundary>{params.get('posters')==='demo'?<PosterEnginePreview/>:ownerPreview ? <PreviewShell kind="owner"/> : creativePreview ? <PreviewShell kind="creative"/> : <App />}</AppErrorBoundary>
+    <AppErrorBoundary>{params.get('viewport')==='mobile'?<iframe title="Restorapp mobilni pregled" src={window.location.href.replace(/[?&]viewport=mobile/,'')} style={{width:390,height:900,border:0,display:'block',margin:'24px auto'}}/>:params.get('posters')==='demo'?<PosterEnginePreview/>:ownerPreview ? <PreviewShell kind="owner"/> : creativePreview ? <PreviewShell kind="creative"/> : <App />}</AppErrorBoundary>
   </React.StrictMode>,
 )
 
