@@ -133,8 +133,7 @@ export async function exportTemplatePng({node,width,height,fileName}:ExportOptio
   const css=(collectCss()+'\n'+fontCss).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
   const markup=new XMLSerializer().serializeToString(clone)
   const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="${exportWidth}" height="${exportHeight}" viewBox="0 0 ${exportWidth} ${exportHeight}"><foreignObject width="100%" height="100%"><div xmlns="http://www.w3.org/1999/xhtml"><style>${css}</style>${markup}</div></foreignObject></svg>`
-  const svgBlob=new Blob([svg],{type:'image/svg+xml;charset=utf-8'})
-  const svgUrl=URL.createObjectURL(svgBlob)
+  const svgUrl='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg)
 
   try{
     const image=await new Promise<HTMLImageElement>((resolve,reject)=>{
@@ -156,6 +155,6 @@ export async function exportTemplatePng({node,width,height,fileName}:ExportOptio
     const png=await new Promise<Blob>((resolve,reject)=>canvas.toBlob(blob=>blob?resolve(blob):reject(new Error('PNG nije generisan.')),'image/png',1))
     downloadBlob(png,fileName)
   }finally{
-    URL.revokeObjectURL(svgUrl)
+    /* SVG data URL has no object URL to release. */
   }
 }
