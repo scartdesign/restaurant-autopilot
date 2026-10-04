@@ -154,6 +154,7 @@ export async function exportTemplatePng({node,width,height,fileName}:ExportOptio
 
     const png=await new Promise<Blob>((resolve,reject)=>canvas.toBlob(blob=>blob?resolve(blob):reject(new Error('PNG nije generisan.')),'image/png',1))
     downloadBlob(png,fileName)
+    return png
   }finally{
     /* SVG data URL has no object URL to release. */
   }

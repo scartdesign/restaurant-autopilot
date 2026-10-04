@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { RestaurantTemplateCanvas, type RestaurantTemplateId } from './RestaurantTemplateCanvas'
 import { D, posterPalettes } from '../lib/poster-engine'
 import { exportTemplatePng } from '../lib/export-template-png'
@@ -10,10 +10,12 @@ export function PosterEnginePreview(){
  const [price,setPrice]=useState('1.290 RSD'),[cta,setCta]=useState('Poruči odmah'),[kicker,setKicker]=useState('Danas u ponudi')
  const [primary,setPrimary]=useState('#16473f'),[accent,setAccent]=useState('#c08a5e'),[x,setX]=useState(50),[y,setY]=useState(50),[zoom,setZoom]=useState(1)
  const [showLogo,setShowLogo]=useState(false)
+ const [exportSrc,setExportSrc]=useState('')
+ useEffect(()=>()=>{if(exportSrc)URL.revokeObjectURL(exportSrc)},[exportSrc])
  const [image,setImage]=useState('./demo-burger.jpg'),[gallery,setGallery]=useState(true),[notice,setNotice]=useState('')
  const live=useRef<HTMLDivElement>(null)
  const common={logoUrl:showLogo?'./restorapp-logo-sidebar.webp':null,image,headline:title,text:description,price,cta,badge:kicker,primary,accent,format,photoFocusX:x,photoFocusY:y,photoZoom:zoom}
- async function download(){try{setNotice('Pripremam PNG…');await exportTemplatePng({node:live.current!.querySelector<HTMLElement>('.restaurant-template-canvas')!,width:1080,height:format==='story'?1920:1080,fileName:`restorapp-${template}-${format}.png`});setNotice('PNG je preuzet.')}catch(e){setNotice(e instanceof Error?e.message:'Izvoz nije uspeo.')}}
+ async function download(){try{setNotice('Pripremam PNG…');const png=await exportTemplatePng({node:live.current!.querySelector<HTMLElement>('.restaurant-template-canvas')!,width:1080,height:format==='story'?1920:1080,fileName:`restorapp-${template}-${format}.png`});setExportSrc(URL.createObjectURL(png));setNotice('PNG je spreman za preuzimanje.')}catch(e){setNotice(e instanceof Error?e.message:'Izvoz nije uspeo.')}}
  return <main className="poster-preview"><header><a href={window.location.pathname}><img src="./restorapp-logo-sidebar.webp" alt="Restorapp"/></a><span>FOOD POSTER STUDIO</span><h1>Dobro jelo zaslužuje dobar dizajn.</h1><p>Isti engine kao u aplikaciji. Promeni sadržaj i uporedi svih 12 stilova.</p></header><div className="poster-preview-workspace"><aside>
  <strong>1 · Format</strong><div className="pp-seg"><button aria-pressed={format==='feed'} onClick={()=>setFormat('feed')}>Post 1:1</button><button aria-pressed={format==='story'} onClick={()=>setFormat('story')}>Story 9:16</button></div>
  <strong>2 · Fotografija</strong><label className="pp-upload">Dodaj fotografiju<input type="file" accept="image/*" onChange={e=>{const f=e.target.files?.[0];if(f){const reader=new FileReader();reader.onload=()=>setImage(String(reader.result));reader.readAsDataURL(f)}}}/></label>
@@ -25,5 +27,5 @@ export function PosterEnginePreview(){
  </aside><section><div className="pp-toolbar"><strong>4 · Izaberi dizajn</strong><button onClick={()=>setGallery(!gallery)}>{gallery?'Veliki pregled':'Svih 12 dizajna'}</button><button onClick={download}>Preuzmi PNG</button></div>
  <div ref={live} className={gallery?'pp-live-hidden':'pp-live'}><RestaurantTemplateCanvas template={template} {...common}/></div>
  {gallery&&<div className={`pp-gallery ${format}`}>{D.map(d=><button className={template===d.id?'selected':''} key={d.id} onClick={()=>{setTemplate(d.id);setGallery(false)}}><RestaurantTemplateCanvas template={d.id} {...common}/><span>{d.id.replaceAll('-',' ')}</span></button>)}</div>}
- <p role="status">{notice}</p></section></div><footer>Fotografija: Unsplash · U probnom studiju se sadržaj ne upisuje u bazu.</footer></main>
+ <p role="status">{notice}</p>{exportSrc&&<div><a href={exportSrc} download={`restorapp-${template}-${format}.png`}>Sačuvaj generisani PNG</a><img className="pp-export-result" src={exportSrc} alt="Generisani PNG" style={{display:'block',width:'100%',maxWidth:440,height:'auto',marginTop:16}}/></div>}</section></div><footer>Fotografija: Unsplash · U probnom studiju se sadržaj ne upisuje u bazu.</footer></main>
 }
