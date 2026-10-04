@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs'
 import ts from 'typescript'
 const source=readFileSync(new URL('../src/lib/poster-engine.ts',import.meta.url),'utf8')
 const compiled=ts.transpileModule(source,{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.ES2022}}).outputText
-const {D,LF,LS,layoutClearance,photoCrop,posterPalettes,readableInk,contrast,brush,safeColor}=await import('data:text/javascript;base64,'+Buffer.from(compiled).toString('base64'))
+const {D,LF,LS,layoutClearance,photoCrop,visiblePhotoBounds,posterPalettes,readableInk,contrast,brush,safeColor}=await import('data:text/javascript;base64,'+Buffer.from(compiled).toString('base64'))
 const ids=['luxe','hero-menu','editorial','minimal','bold','split','poster','promo-badge','premium-grid','bold-offer','lunch-time','family']
 assert.deepEqual(D.map(d=>d.id),ids)
 assert.equal(new Set(D.map(d=>[d.tf,d.al,d.k,d.p,d.c,d.r,d.F,d.S].join('|'))).size,12)
@@ -18,8 +18,9 @@ for(const d of D){
    for(const focus of [0,30,50,70,100])for(const zoom of [1,1.5,2.2]){
     const crop=photoCrop(layout,height,iw,ih,focus,focus,zoom)
     assert(Math.abs(crop.width/crop.height-iw/ih)<1e-8,'Photo aspect ratio changed')
-    assert(crop.width>=1080&&crop.height>=height)
-    assert(crop.left<=0&&crop.top<=0&&crop.left+crop.width>=1080-.001&&crop.top+crop.height>=height-.001,'Uncovered photo edge')
+    const bounds=visiblePhotoBounds(layout,height)
+    assert(crop.width>=bounds.right-bounds.left-.001&&crop.height>=bounds.bottom-bounds.top-.001)
+    assert(crop.left<=bounds.left&&crop.top<=bounds.top&&crop.left+crop.width>=bounds.right-.001&&crop.top+crop.height>=bounds.bottom-.001,'Uncovered photo edge')
    }
   }
   const a=brush(d,format,layout,height,'test','#16473f'),b=brush(d,format,layout,height,'test','#f1e6d3')
