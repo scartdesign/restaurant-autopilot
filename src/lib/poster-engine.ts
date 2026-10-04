@@ -77,11 +77,11 @@ export function fitPoster(stage:HTMLElement,preference=1){
  for(const floor of [.95,.85,.72,.6,.48,.36,.24]){
   for(let s=start;s>=.16;s-=.025){
    stage.style.setProperty('--s',String(s));stage.style.setProperty('--s2',String(Math.min(1.3,Math.max(floor,s))))
-   const bounds=inner.getBoundingClientRect()
    fits=inner.offsetHeight<=box.clientHeight+1&&elements.every(el=>{
     if(!el.offsetHeight)return true
-    const r=el.getBoundingClientRect()
-    return el.scrollWidth<=el.clientWidth+1&&r.left>=bounds.left-1&&r.right<=bounds.right+1
+    // Read artboard coordinates; rotated price badges and preview scale must not
+    // force otherwise readable text down to thumbnail-size fonts.
+    return el.scrollWidth<=el.clientWidth+2&&el.offsetLeft+el.offsetWidth<=inner.clientWidth+2
    })
    if(fits)break
   }

@@ -23,6 +23,7 @@
 .pe-stage[data-p=big] .pe-pr{font-size:calc(var(--pk)*var(--s2));font-weight:800;color:var(--kc)}
 .pe-stage[data-p=inline] .pe-pr{font-size:calc(46px*var(--s2));font-weight:600}
 .pe-stage[data-p=tag] .pe-pr{border:calc(3px*var(--s2)) solid var(--kc);padding:.25em .6em;border-radius:8px;font-size:calc(40px*var(--s2));font-weight:700;color:var(--tx)}
+.pe-stage[data-p=badge] .pe-row{padding:12px}
 .pe-stage[data-p=badge] .pe-pr{width:calc(158px*var(--s2));height:calc(158px*var(--s2));border-radius:50%;background:var(--a);color:var(--ax);display:grid;place-items:center;text-align:center;font-size:calc(38px*var(--s2));font-weight:800;transform:rotate(-8deg);white-space:normal}
 .pe-stage .pe-c{font-weight:800;text-transform:uppercase;letter-spacing:.09em;font-size:calc(28px*var(--s2));white-space:nowrap}
 .pe-stage[data-c=pill] .pe-c{background:var(--a);color:var(--ax);border-radius:99px;padding:.6em 1.3em}
