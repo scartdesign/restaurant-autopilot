@@ -8,7 +8,7 @@ import { PasswordRecovery } from './components/PasswordRecovery'
 import { Onboarding } from './components/Onboarding'
 import { AdminSetup } from './components/AdminSetup'
 import { LandingScreen } from './components/LandingScreen'
-import RestaurantIntelligence from './internal/RestaurantIntelligence'
+import RestaurantIntelligenceCloud from './internal/RestaurantIntelligenceCloud'
 import { LegalScreen } from './components/LegalScreen'
 import { NetworkStatus } from './components/NetworkStatus'
 import { RestorappDashboardV2 } from './components/RestorappDashboardV2'
@@ -424,7 +424,7 @@ function App() {
   if (!isSuperadmin && appControls.maintenance_mode) return <MaintenanceScreen message={appControls.maintenance_message} version={appControls.app_version} onSignOut={signOut}/>
   if (!isSuperadmin && !hasAccess) return <Suspense fallback={<LazyScreenFallback label="Učitavam paket i licencu…" />}><BillingPage email={session.user.email || ''} onAccessChanged={accessChanged} onSignOut={signOut} /></Suspense>
 
-  if (isSuperadmin && activeTab === 'intelligence') return <div className="standalone-admin"><div style={{padding:16}}><button onClick={()=>setActiveTab('launch')}>← Nazad u Restorapp</button></div><RestaurantIntelligence /></div>
+  if (isSuperadmin && activeTab === 'intelligence') return <div className="standalone-admin"><div style={{padding:16}}><button onClick={()=>setActiveTab('launch')}>← Nazad u Restorapp</button></div><RestaurantIntelligenceCloud /></div>
   if (addingRestaurant) return <Onboarding additional userId={session.user.id} onCancel={() => setAddingRestaurant(false)} onCreated={async () => { setAddingRestaurant(false); await loadAccountState(); await loadRestaurants(session.user.id); setActiveTab('launch') }} />
 
   if (!restaurant) {
