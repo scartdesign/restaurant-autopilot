@@ -8,6 +8,7 @@ import { PasswordRecovery } from './components/PasswordRecovery'
 import { Onboarding } from './components/Onboarding'
 import { AdminSetup } from './components/AdminSetup'
 import { LandingScreen } from './components/LandingScreen'
+import RestaurantIntelligence from './internal/RestaurantIntelligence'
 import { LegalScreen } from './components/LegalScreen'
 import { NetworkStatus } from './components/NetworkStatus'
 import { RestorappDashboardV2 } from './components/RestorappDashboardV2'
@@ -28,7 +29,7 @@ const SupportCenter = lazy(() => import('./components/SupportCenter').then((m) =
 const NotificationsCenter = lazy(() => import('./components/NotificationsCenter').then((m) => ({ default: m.NotificationsCenter })))
 
 type BeforeInstallPromptEvent = Event & { prompt:()=>Promise<void>; userChoice:Promise<{outcome:'accepted'|'dismissed';platform:string}> }
-type Tab = 'launch' | 'dashboard' | 'creative' | 'studio' | 'brand' | 'publish' | 'insights' | 'menu' | 'promotions' | 'settings' | 'support' | 'notifications' | 'billing' | 'admin'
+type Tab = 'intelligence' | 'launch' | 'dashboard' | 'creative' | 'studio' | 'brand' | 'publish' | 'insights' | 'menu' | 'promotions' | 'settings' | 'support' | 'notifications' | 'billing' | 'admin'
 type AppControlsLite = { maintenance_mode:boolean; maintenance_message:string|null; sales_open:boolean; signup_open:boolean; announcement_enabled:boolean; announcement_text:string|null; announcement_tone:'info'|'success'|'warning'; app_version:string }
 const ACTIVE_RESTAURANT_KEY = 'restorapp-active-restaurant'
 const LEGACY_ACTIVE_RESTAURANT_KEY = 'restaurant-autopilot-active-restaurant'
@@ -409,7 +410,7 @@ function App() {
   const remainingRestaurants = restaurantLimit === null ? null : Math.max(0, restaurantLimit - restaurants.length)
   const planName = isSuperadmin ? 'OWNER' : entitlement?.plan_name || 'Aktivan paket'
   const generationUsage = useMemo(() => entitlement?.generation_limit == null ? null : `${entitlement.generated_this_month || 0}/${entitlement.generation_limit}`, [entitlement])
-  const activeSectionLabel = ({launch:'Početna',dashboard:'Sadržaj',creative:'AI alat',studio:'Sadržaj',brand:'Brend',publish:'Objave',insights:'Rezultati',menu:'Meni',promotions:'Kampanje',settings:'Podešavanja',support:'Podrška',notifications:'Obaveštenja',billing:'Paket',admin:'OWNER'} as Record<Tab,string>)[activeTab]
+  const activeSectionLabel = ({launch:'Početna',dashboard:'Sadržaj',creative:'AI alat',studio:'Sadržaj',brand:'Brend',publish:'Objave',insights:'Rezultati',menu:'Meni',promotions:'Kampanje',settings:'Podešavanja',support:'Podrška',notifications:'Obaveštenja',billing:'Paket',admin:'OWNER',intelligence:'Restaurant Intelligence'} as Record<Tab,string>)[activeTab]
 
   if (legalParam && ['terms','privacy','ai','refund'].includes(legalParam)) return <LegalScreen kind={legalParam} onBack={()=>{window.history.replaceState({},'',window.location.pathname);window.location.reload()}} />
   if (demo) return <Suspense fallback={<LazyScreenFallback label="Učitavam demo…" />}><DemoScreen onExit={() => { const next = new URL(window.location.href); next.searchParams.delete('demo'); window.history.replaceState({}, '', `${next.pathname}${next.search}${next.hash}`); setDemo(false) }} /></Suspense>
@@ -423,6 +424,7 @@ function App() {
   if (!isSuperadmin && appControls.maintenance_mode) return <MaintenanceScreen message={appControls.maintenance_message} version={appControls.app_version} onSignOut={signOut}/>
   if (!isSuperadmin && !hasAccess) return <Suspense fallback={<LazyScreenFallback label="Učitavam paket i licencu…" />}><BillingPage email={session.user.email || ''} onAccessChanged={accessChanged} onSignOut={signOut} /></Suspense>
 
+  if (isSuperadmin && activeTab === 'intelligence') return <div className="standalone-admin"><div style={{padding:16}}><button onClick={()=>setActiveTab('launch')}>← Nazad u Restorapp</button></div><RestaurantIntelligence /></div>
   if (addingRestaurant) return <Onboarding additional userId={session.user.id} onCancel={() => setAddingRestaurant(false)} onCreated={async () => { setAddingRestaurant(false); await loadAccountState(); await loadRestaurants(session.user.id); setActiveTab('launch') }} />
 
   if (!restaurant) {
@@ -439,6 +441,7 @@ function App() {
       <div className={`autopilot-status ${isSuperadmin?'owner-status':''}`}><span className="live-dot"/> {isSuperadmin?'OWNER · SUPERADMIN':`${planName.toUpperCase()} · AKTIVAN`}</div>
       {!isSuperadmin && <div className="sidebar-plan-mini"><span>{restaurants.length}/{restaurantLimit || '∞'} lokacija</span>{generationUsage&&<span>{generationUsage} objava</span>}{remainingRestaurants===0&&restaurantLimit!==null?<small>Za više lokacija promeni paket.</small>:null}</div>}
       <nav className="simple-primary-nav">
+        {isSuperadmin&&<button onClick={()=>void openTab('intelligence')} className={activeTab==='intelligence'?'nav-active':''}><BarChart3 size={18}/> Intelligence</button>}
         <button className={activeTab==='launch'?'nav-active':''} onClick={()=>void openTab('launch')}><Rocket size={18}/> Početna</button>
         <button className={activeTab==='dashboard'?'nav-active':''} onClick={()=>void openTab('dashboard')}><CalendarDays size={18}/> Nedelja</button>
         <button className={activeTab==='publish'?'nav-active':''} onClick={()=>void openTab('publish')}><Send size={18}/> Objave</button>
@@ -457,6 +460,7 @@ function App() {
       <button onClick={()=>mobileGo('support')}><LifeBuoy size={19}/><span>Podrška</span><small>treba ti pomoć?</small></button>
       <button onClick={()=>mobileGo('notifications')}><Bell size={19}/><span>Obaveštenja</span><small>{unreadNotifications?unreadNotifications+' novo':'sve pročitano'}</small></button>
       {!pwaInstalled&&<button onClick={()=>{setMobileMenuOpen(false);void installPwa()}}><Smartphone size={19}/><span>Instaliraj app</span><small>telefon / desktop</small></button>}
+      {isSuperadmin&&<button onClick={()=>mobileGo('intelligence')}><BarChart3 size={19}/><span>Restaurant Intelligence</span><small>interni CRM · demo</small></button>}
       {isSuperadmin&&<button onClick={()=>mobileGo('admin')} className="owner"><ShieldCheck size={19}/><span>OWNER</span><small>napredna kontrola</small></button>}
     </div><button className="mobile-drawer-logout" onClick={signOut}><LogOut size={17}/> Odjavi se</button></div></div>}
 
