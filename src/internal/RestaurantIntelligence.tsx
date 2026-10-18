@@ -27,6 +27,7 @@ export default function RestaurantIntelligence({
   const [website, setWebsite] = useState('');
   const [email, setEmail] = useState('');
   const [notice, setNotice] = useState('');
+  const [saving, setSaving] = useState(false);
   const [auditId, setAuditId] = useState<string | null>(null);
   const [findingText, setFindingText] = useState('');
   const [sourceText, setSourceText] = useState('');
@@ -34,14 +35,18 @@ export default function RestaurantIntelligence({
     [l.name, l.city, l.stage].join(' ').toLocaleLowerCase().includes(search.toLocaleLowerCase())), [leads, search]);
   const stages: RestaurantLead['stage'][] = ['new', 'audit', 'qualified', 'offer', 'contacted', 'negotiation', 'won', 'lost'];
 
-  async function commit(next: RestaurantLead[]) {
+  async function commit(next: RestaurantLead[]): Promise<boolean> {
+    if (saving) return false;
+    setSaving(true);
     if (!onChange) {
       setNotice('Demo režim: izmene nisu sačuvane na serveru.');
       setLeads(next);
-      return;
+      setSaving(false);
+      return true;
     }
-    try { await onChange(next); setLeads(next); setNotice('Promene su sačuvane.'); }
-    catch { setNotice('Čuvanje nije uspelo. Nema potvrde da su izmene upisane.'); }
+    try { await onChange(next); setLeads(next); setNotice('Promene su sačuvane.'); return true; }
+    catch { setNotice('Čuvanje nije uspelo. Nema potvrde da su izmene upisane.'); return false; }
+    finally { setSaving(false); }
   }
   async function add(e: React.FormEvent) {
     e.preventDefault();
@@ -52,8 +57,9 @@ export default function RestaurantIntelligence({
       && l.city.toLocaleLowerCase() === city.trim().toLocaleLowerCase())) return setNotice('Restoran već postoji.');
     const lead: RestaurantLead = {id: crypto.randomUUID(), name:name.trim(), city:city.trim(),
       website:site, email:email.trim(), stage:'new', findings:[], nextAction:'Proveriti javno dostupne izvore'};
-    await commit([lead, ...leads]);
-    setName(''); setCity(''); setWebsite(''); setEmail('');
+    if (await commit([lead, ...leads])) {
+      setName(''); setCity(''); setWebsite(''); setEmail('');
+    }
   }
   async function recordFinding(e: React.FormEvent) {
     e.preventDefault();
@@ -65,8 +71,9 @@ export default function RestaurantIntelligence({
       ...lead,
       findings: [...lead.findings, { title: findingText.trim(), sourceUrl: parsed.href, verifiedAt: new Date().toISOString() }]
     }));
-    await commit(next);
-    setAuditId(null); setFindingText(''); setSourceText('');
+    if (await commit(next)) {
+      setAuditId(null); setFindingText(''); setSourceText('');
+    }
   }
   function proposal(lead: RestaurantLead) {
     const evidence = lead.findings.map(item => '- ' + item.title + ' (' + item.sourceUrl + ')').join('\n');
@@ -92,7 +99,7 @@ export default function RestaurantIntelligence({
       <input aria-label="Grad" placeholder="Grad" value={city} onChange={e=>setCity(e.target.value)} />
       <input aria-label="Sajt" type="url" placeholder="https://sajt.com" value={website} onChange={e=>setWebsite(e.target.value)} />
       <input aria-label="Email" type="email" placeholder="Poslovni email" value={email} onChange={e=>setEmail(e.target.value)} />
-      <button type="submit">Dodaj restoran</button>
+      <button type="submit" disabled={saving}>{saving ? "Čuvanje…" : "Dodaj restoran"}</button>
     </form>
     <p><input aria-label="Pretraga" placeholder="Pretraži restorane…" value={search} onChange={e=>setSearch(e.target.value)} /></p>
     <div style={{display:'grid',gap:12}}>
@@ -109,7 +116,7 @@ export default function RestaurantIntelligence({
             {auditId===lead.id && <form onSubmit={recordFinding} style={{display:'grid',gap:8,marginTop:8}}>
               <input required maxLength={300} aria-label="Opis nalaza" placeholder="Opis proverenog problema" value={findingText} onChange={e=>setFindingText(e.target.value)} />
               <input required type="url" aria-label="Izvor" placeholder="https://izvor..." value={sourceText} onChange={e=>setSourceText(e.target.value)} />
-              <button type="submit">Sačuvaj nalaz</button>
+              <button type="submit" disabled={saving}>{saving ? "Čuvanje…" : "Sačuvaj nalaz"}</button>
             </form>}
           </div>
           <label>Status <select aria-label={'Status za '+lead.name} value={lead.stage} onChange={e=>void commit(leads.map(l=>l.id===lead.id?{...l,stage:e.target.value as RestaurantLead['stage']}:l))}>
